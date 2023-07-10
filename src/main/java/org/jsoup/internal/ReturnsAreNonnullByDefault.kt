@@ -1,20 +1,15 @@
-package org.jsoup.internal;
+package org.jsoup.internal
 
-import javax.annotation.Nonnull;
-import javax.annotation.meta.TypeQualifierDefault;
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.ElementType
+import javax.annotation.Nonnull
+import javax.annotation.meta.TypeQualifierDefault
 
-@Documented
+@MustBeDocumented
 @Nonnull
 @TypeQualifierDefault(ElementType.METHOD)
-@Retention(value = RetentionPolicy.RUNTIME)
-
+@Retention(AnnotationRetention.RUNTIME)
 /**
- Indicates return types are not nullable, unless otherwise specified by @Nullable.
- @see javax.annotation.ParametersAreNonnullByDefault
+ * Indicates return types are not nullable, unless otherwise specified by @Nullable.
+ * @see javax.annotation.ParametersAreNonnullByDefault
  */
-public @interface ReturnsAreNonnullByDefault {
-}
+annotation class ReturnsAreNonnullByDefault()

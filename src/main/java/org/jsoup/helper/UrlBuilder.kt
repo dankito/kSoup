@@ -1,104 +1,96 @@
-package org.jsoup.helper;
+package org.jsoup.helper
 
-import org.jsoup.Connection;
-import org.jsoup.internal.StringUtil;
-
-import javax.annotation.Nullable;
-import java.io.UnsupportedEncodingException;
-import java.net.IDN;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-
-import static org.jsoup.helper.DataUtil.UTF_8;
+import org.jsoup.Connection
+import org.jsoup.internal.StringUtil
+import java.io.UnsupportedEncodingException
+import java.net.*
 
 /**
- A utility class to normalize input URLs. jsoup internal; API subject to change.
- <p>Normalization includes puny-coding the host, and encoding non-ascii path components. Any non-ascii characters in
- the query string (or the fragment/anchor) are escaped, but any existing escapes in those components are preserved.</p>
+ * A utility class to normalize input URLs. jsoup internal; API subject to change.
+ *
+ * Normalization includes puny-coding the host, and encoding non-ascii path components. Any non-ascii characters in
+ * the query string (or the fragment/anchor) are escaped, but any existing escapes in those components are preserved.
  */
-final class UrlBuilder {
-    URL u;
-    @Nullable StringBuilder q;
+internal class UrlBuilder(var u: URL?) {
+    var q: StringBuilder? = null
 
-    UrlBuilder(URL inputUrl) {
-        this.u = inputUrl;
-        if (u.getQuery() != null)
-            q = StringUtil.borrowBuilder().append(u.getQuery());
+    init {
+        if (u!!.getQuery() != null) q = StringUtil.borrowBuilder().append(u!!.getQuery())
     }
 
-    URL build() {
+    fun build(): URL? {
         try {
             // use the URI class to encode non-ascii in path
-            URI uri = new URI(
-                u.getProtocol(),
-                u.getUserInfo(),
-                IDN.toASCII(decodePart(u.getHost())), // puny-code
-                u.getPort(),
-                decodePart(u.getPath()),
+            val uri: URI = URI(
+                u!!.getProtocol(),
+                u!!.getUserInfo(),
+                IDN.toASCII(decodePart(u!!.getHost())),  // puny-code
+                u!!.getPort(),
+                decodePart(u!!.getPath()),
                 null, null // query and fragment appended later so as not to encode
-            );
-
-            String normUrl = uri.toASCIIString();
-            if (q != null || u.getRef() != null) {
-                StringBuilder sb = StringUtil.borrowBuilder().append(normUrl);
+            )
+            var normUrl: String? = uri.toASCIIString()
+            if (q != null || u!!.getRef() != null) {
+                val sb: StringBuilder = StringUtil.borrowBuilder().append(normUrl)
                 if (q != null) {
-                    sb.append('?');
-                    appendToAscii(StringUtil.releaseBuilder(q), true, sb);
+                    sb.append('?')
+                    appendToAscii(StringUtil.releaseBuilder(q), true, sb)
                 }
-                if (u.getRef() != null) {
-                    sb.append('#');
-                    appendToAscii(u.getRef(), false, sb);
+                if (u!!.getRef() != null) {
+                    sb.append('#')
+                    appendToAscii(u!!.getRef(), false, sb)
                 }
-                normUrl = StringUtil.releaseBuilder(sb);
+                normUrl = StringUtil.releaseBuilder(sb)
             }
-            u =  new URL(normUrl);
-            return u;
-        } catch (MalformedURLException | URISyntaxException | UnsupportedEncodingException e) {
+            u = URL(normUrl)
+            return u
+        } catch (e: MalformedURLException) {
             // we assert here so that any incomplete normalization issues can be caught in devel. but in practise,
             // the remote end will be able to handle it, so in prod we just pass the original URL.
             // The UnsupportedEncodingException would never happen as always UTF8
-            assert Validate.assertFail(e.toString());
-            return u;
+            assert(Validate.assertFail(e.toString()))
+            return u
+        } catch (e: URISyntaxException) {
+            assert(Validate.assertFail(e.toString()))
+            return u
+        } catch (e: UnsupportedEncodingException) {
+            assert(Validate.assertFail(e.toString()))
+            return u
         }
     }
 
-    void appendKeyVal(Connection.KeyVal kv) throws UnsupportedEncodingException {
-        if (q == null)
-            q = StringUtil.borrowBuilder();
-        else
-            q.append('&');
-        q
-            .append(URLEncoder.encode(kv.key(), UTF_8.name()))
+    @Throws(UnsupportedEncodingException::class)
+    fun appendKeyVal(kv: Connection.KeyVal?) {
+        if (q == null) q = StringUtil.borrowBuilder() else q!!.append('&')
+        q!!
+            .append(URLEncoder.encode(kv!!.key(), DataUtil.UTF_8.name()))
             .append('=')
-            .append(URLEncoder.encode(kv.value(), UTF_8.name()));
+            .append(URLEncoder.encode(kv.value(), DataUtil.UTF_8.name()))
     }
 
-    private static String decodePart(String encoded) {
-        try {
-            return URLDecoder.decode(encoded, UTF_8.name());
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e); // wtf!
+    companion object {
+        private fun decodePart(encoded: String): String {
+            try {
+                return URLDecoder.decode(encoded, DataUtil.UTF_8.name())
+            } catch (e: UnsupportedEncodingException) {
+                throw RuntimeException(e) // wtf!
+            }
         }
-    }
 
-    private static void appendToAscii(String s, boolean spaceAsPlus, StringBuilder sb) throws UnsupportedEncodingException {
-        // minimal normalization of Unicode -> Ascii, and space normal. Existing escapes are left as-is.
-        for (int i = 0; i < s.length(); i++) {
-            int c = s.codePointAt(i);
-            if (c == ' ') {
-                sb.append(spaceAsPlus ? '+' : "%20");
-            } else if (c > 127) { // out of ascii range
-                sb.append(URLEncoder.encode(new String(Character.toChars(c)), UTF_8.name()));
-                // ^^ is a bit heavy-handed - if perf critical, we could optimize
-            } else {
-                sb.append((char) c);
+        @Throws(UnsupportedEncodingException::class)
+        private fun appendToAscii(s: String?, spaceAsPlus: Boolean, sb: StringBuilder) {
+            // minimal normalization of Unicode -> Ascii, and space normal. Existing escapes are left as-is.
+            for (i in 0 until s!!.length) {
+                val c: Int = s.codePointAt(i)
+                if (c == ' '.code) {
+                    sb.append(if (spaceAsPlus) '+' else "%20")
+                } else if (c > 127) { // out of ascii range
+                    sb.append(URLEncoder.encode(String(Character.toChars(c)), DataUtil.UTF_8.name()))
+                    // ^^ is a bit heavy-handed - if perf critical, we could optimize
+                } else {
+                    sb.append(c.toChar())
+                }
             }
         }
     }
-
-
 }

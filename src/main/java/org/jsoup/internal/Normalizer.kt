@@ -1,24 +1,21 @@
-package org.jsoup.internal;
-
-import java.util.Locale;
+package org.jsoup.internal
 
 /**
  * Util methods for normalizing strings. Jsoup internal use only, please don't depend on this API.
  */
-public final class Normalizer {
-
-    /** Drops the input string to lower case. */
-    public static String lowerCase(final String input) {
-        return input != null ? input.toLowerCase(Locale.ENGLISH) : "";
+object Normalizer {
+    /** Drops the input string to lower case.  */
+    fun lowerCase(input: String?): String {
+        return if (input != null) input.lowercase() else ""
     }
 
-    /** Lower-cases and trims the input string. */
-    public static String normalize(final String input) {
-        return lowerCase(input).trim();
+    /** Lower-cases and trims the input string.  */
+    fun normalize(input: String?): String {
+        return lowerCase(input).trim({ it <= ' ' })
     }
 
-    /** If a string literal, just lower case the string; otherwise lower-case and trim. */
-    public static String normalize(final String input, boolean isStringLiteral) {
-        return isStringLiteral ? lowerCase(input) : normalize(input);
+    /** If a string literal, just lower case the string; otherwise lower-case and trim.  */
+    fun normalize(input: String?, isStringLiteral: Boolean): String {
+        return if (isStringLiteral) lowerCase(input) else normalize(input)
     }
 }

@@ -1,48 +1,38 @@
-package org.jsoup.parser;
+package org.jsoup.parser
 
-import org.jsoup.internal.StringUtil;
-import org.jsoup.helper.Validate;
+import org.jsoup.helper.Validate
+import org.jsoup.internal.StringUtil
+import java.util.*
 
 /**
  * A character queue with parsing helpers.
  *
  * @author Jonathan Hedley
  */
-public class TokenQueue {
-    private String queue;
-    private int pos = 0;
-    
-    private static final char ESC = '\\'; // escape char for chomp balanced.
+class TokenQueue(data: String?) {
+    private var queue: String?
+    private var pos: Int = 0
+    val isEmpty: Boolean
+        /**
+         * Is the queue empty?
+         * @return true if no data left in queue.
+         */
+        get() {
+            return remainingLength() == 0
+        }
 
-    /**
-     Create a new TokenQueue.
-     @param data string of data to back queue.
-     */
-    public TokenQueue(String data) {
-        Validate.notNull(data);
-        queue = data;
+    private fun remainingLength(): Int {
+        return queue!!.length - pos
     }
 
     /**
-     * Is the queue empty?
-     * @return true if no data left in queue.
+     * Add a string to the start of the queue.
+     * @param seq string to add.
      */
-    public boolean isEmpty() {
-        return remainingLength() == 0;
-    }
-    
-    private int remainingLength() {
-        return queue.length() - pos;
-    }
-
-    /**
-     Add a string to the start of the queue.
-     @param seq string to add.
-     */
-    public void addFirst(String seq) {
+    fun addFirst(seq: String) {
         // not very performant, but an edge case
-        queue = seq + queue.substring(pos);
-        pos = 0;
+        queue = seq + queue!!.substring(pos)
+        pos = 0
     }
 
     /**
@@ -50,32 +40,28 @@ public class TokenQueue {
      * @param seq String to check queue for.
      * @return true if the next characters match.
      */
-    public boolean matches(String seq) {
-        return queue.regionMatches(true, pos, seq, 0, seq.length());
+    fun matches(seq: String): Boolean {
+        return queue!!.regionMatches(pos, seq, 0, seq.length, ignoreCase = true)
     }
 
     /**
-     Tests if the next characters match any of the sequences. Case insensitive.
-     @param seq list of strings to case insensitively check for
-     @return true of any matched, false if none did
+     * Tests if the next characters match any of the sequences. Case insensitive.
+     * @param seq list of strings to case insensitively check for
+     * @return true of any matched, false if none did
      */
-    public boolean matchesAny(String... seq) {
-        for (String s : seq) {
-            if (matches(s))
-                return true;
+    fun matchesAny(vararg seq: String): Boolean {
+        for (s: String in seq) {
+            if (matches(s)) return true
         }
-        return false;
+        return false
     }
 
-    public boolean matchesAny(char... seq) {
-        if (isEmpty())
-            return false;
-
-        for (char c: seq) {
-            if (queue.charAt(pos) == c)
-                return true;
+    fun matchesAny(vararg seq: Char): Boolean {
+        if (isEmpty) return false
+        for (c: Char in seq) {
+            if (queue!!.get(pos) == c) return true
         }
-        return false;
+        return false
     }
 
     /**
@@ -84,137 +70,128 @@ public class TokenQueue {
      * @param seq String to search for, and if found, remove from queue.
      * @return true if found and removed, false if not found.
      */
-    public boolean matchChomp(String seq) {
+    fun matchChomp(seq: String): Boolean {
         if (matches(seq)) {
-            pos += seq.length();
-            return true;
+            pos += seq.length
+            return true
         } else {
-            return false;
+            return false
         }
     }
 
     /**
-     Tests if queue starts with a whitespace character.
-     @return if starts with whitespace
+     * Tests if queue starts with a whitespace character.
+     * @return if starts with whitespace
      */
-    public boolean matchesWhitespace() {
-        return !isEmpty() && StringUtil.isWhitespace(queue.charAt(pos));
+    fun matchesWhitespace(): Boolean {
+        return !isEmpty && StringUtil.isWhitespace(queue!!.get(pos).code)
     }
 
     /**
-     Test if the queue matches a word character (letter or digit).
-     @return if matches a word character
+     * Test if the queue matches a word character (letter or digit).
+     * @return if matches a word character
      */
-    public boolean matchesWord() {
-        return !isEmpty() && Character.isLetterOrDigit(queue.charAt(pos));
+    fun matchesWord(): Boolean {
+        return !isEmpty && Character.isLetterOrDigit(queue!!.get(pos))
     }
 
     /**
      * Drops the next character off the queue.
      */
-    public void advance() {
-        if (!isEmpty()) pos++;
+    fun advance() {
+        if (!isEmpty) pos++
     }
 
     /**
      * Consume one character off queue.
      * @return first character on queue.
      */
-    public char consume() {
-        return queue.charAt(pos++);
+    fun consume(): Char {
+        return queue!!.get(pos++)
     }
 
     /**
      * Consumes the supplied sequence of the queue. If the queue does not start with the supplied sequence, will
      * throw an illegal state exception -- but you should be running match() against that condition.
-     <p>
-     Case insensitive.
+     *
+     *
+     * Case insensitive.
      * @param seq sequence to remove from head of queue.
      */
-    public void consume(String seq) {
-        if (!matches(seq))
-            throw new IllegalStateException("Queue did not match expected sequence");
-        int len = seq.length();
-        if (len > remainingLength())
-            throw new IllegalStateException("Queue not long enough to consume sequence");
-        
-        pos += len;
+    fun consume(seq: String) {
+        if (!matches(seq)) throw IllegalStateException("Queue did not match expected sequence")
+        val len: Int = seq.length
+        if (len > remainingLength()) throw IllegalStateException("Queue not long enough to consume sequence")
+        pos += len
     }
 
     /**
      * Pulls a string off the queue, up to but exclusive of the match sequence, or to the queue running out.
-     * @param seq String to end on (and not include in return, but leave on queue). <b>Case sensitive.</b>
+     * @param seq String to end on (and not include in return, but leave on queue). **Case sensitive.**
      * @return The matched data consumed from queue.
      */
-    public String consumeTo(String seq) {
-        int offset = queue.indexOf(seq, pos);
+    fun consumeTo(seq: String?): String {
+        val offset: Int = queue!!.indexOf((seq)!!, pos)
         if (offset != -1) {
-            String consumed = queue.substring(pos, offset);
-            pos += consumed.length();
-            return consumed;
+            val consumed: String = queue!!.substring(pos, offset)
+            pos += consumed.length
+            return consumed
         } else {
-            return remainder();
+            return remainder()
         }
     }
-    
-    public String consumeToIgnoreCase(String seq) {
-        int start = pos;
-        String first = seq.substring(0, 1);
-        boolean canScan = first.toLowerCase().equals(first.toUpperCase()); // if first is not cased, use index of
-        while (!isEmpty()) {
-            if (matches(seq))
-                break;
-            
-            if (canScan) {
-                int skip = queue.indexOf(first, pos) - pos;
-                if (skip == 0) // this char is the skip char, but not match, so force advance of pos
-                    pos++;
-                else if (skip < 0) // no chance of finding, grab to end
-                    pos = queue.length();
-                else
-                    pos += skip;
-            }
-            else
-                pos++;
-        }
 
-        return queue.substring(start, pos);
+    fun consumeToIgnoreCase(seq: String): String {
+        val start: Int = pos
+        val first: String = seq.substring(0, 1)
+        val canScan: Boolean =
+            (first.lowercase(Locale.getDefault()) == first.uppercase(Locale.getDefault())) // if first is not cased, use index of
+        while (!isEmpty) {
+            if (matches(seq)) break
+            if (canScan) {
+                val skip: Int = queue!!.indexOf(first, pos) - pos
+                if (skip == 0) // this char is the skip char, but not match, so force advance of pos
+                    pos++ else if (skip < 0) // no chance of finding, grab to end
+                    pos = queue!!.length else pos += skip
+            } else pos++
+        }
+        return queue!!.substring(start, pos)
     }
 
     /**
-     Consumes to the first sequence provided, or to the end of the queue. Leaves the terminator on the queue.
-     @param seq any number of terminators to consume to. <b>Case insensitive.</b>
-     @return consumed string   
+     * Consumes to the first sequence provided, or to the end of the queue. Leaves the terminator on the queue.
+     * @param seq any number of terminators to consume to. **Case insensitive.**
+     * @return consumed string
      */
     // todo: method name. not good that consumeTo cares for case, and consume to any doesn't. And the only use for this
     // is a case sensitive time...
-    public String consumeToAny(String... seq) {
-        int start = pos;
-        while (!isEmpty() && !matchesAny(seq)) {
-            pos++;
+    fun consumeToAny(vararg seq: String?): String {
+        val start: Int = pos
+        while (!isEmpty && !matchesAny(*seq)) {
+            pos++
         }
-
-        return queue.substring(start, pos);
+        return queue!!.substring(start, pos)
     }
 
     /**
      * Pulls a string off the queue (like consumeTo), and then pulls off the matched string (but does not return it).
-     * <p>
+     *
+     *
      * If the queue runs out of characters before finding the seq, will return as much as it can (and queue will go
      * isEmpty() == true).
-     * @param seq String to match up to, and not include in return, and to pull off queue. <b>Case sensitive.</b>
+     * @param seq String to match up to, and not include in return, and to pull off queue. **Case sensitive.**
      * @return Data matched from queue.
      */
-    public String chompTo(String seq) {
-        String data = consumeTo(seq);
-        matchChomp(seq);
-        return data;
+    fun chompTo(seq: String): String {
+        val data: String = consumeTo(seq)
+        matchChomp(seq)
+        return data
     }
-    
-    public String chompToIgnoreCase(String seq) {
-        String data = consumeToIgnoreCase(seq); // case insensitive scan
-        matchChomp(seq);
-        return data;
+
+    fun chompToIgnoreCase(seq: String): String {
+        val data: String = consumeToIgnoreCase(seq) // case insensitive scan
+        matchChomp(seq)
+        return data
     }
 
     /**
@@ -226,171 +203,171 @@ public class TokenQueue {
      * @param close closer
      * @return data matched from the queue
      */
-    public String chompBalanced(char open, char close) {
-        int start = -1;
-        int end = -1;
-        int depth = 0;
-        char last = 0;
-        boolean inSingleQuote = false;
-        boolean inDoubleQuote = false;
-        boolean inRegexQE = false; // regex \Q .. \E escapes from Pattern.quote()
-
+    fun chompBalanced(open: Char, close: Char): String {
+        var start: Int = -1
+        var end: Int = -1
+        var depth: Int = 0
+        var last: Char = 0.toChar()
+        var inSingleQuote: Boolean = false
+        var inDoubleQuote: Boolean = false
+        var inRegexQE: Boolean = false // regex \Q .. \E escapes from Pattern.quote()
         do {
-            if (isEmpty()) break;
-            char c = consume();
+            if (isEmpty) break
+            val c: Char = consume()
             if (last != ESC) {
-                if (c == '\'' && c != open && !inDoubleQuote)
-                    inSingleQuote = !inSingleQuote;
-                else if (c == '"' && c != open && !inSingleQuote)
-                    inDoubleQuote = !inDoubleQuote;
-                if (inSingleQuote || inDoubleQuote || inRegexQE){
-                    last = c;
-                    continue;
+                if ((c == '\'') && (c != open) && !inDoubleQuote) inSingleQuote =
+                    !inSingleQuote else if ((c == '"') && (c != open) && !inSingleQuote) inDoubleQuote = !inDoubleQuote
+                if (inSingleQuote || inDoubleQuote || inRegexQE) {
+                    last = c
+                    continue
                 }
-
                 if (c == open) {
-                    depth++;
-                    if (start == -1)
-                        start = pos;
-                }
-                else if (c == close)
-                    depth--;
+                    depth++
+                    if (start == -1) start = pos
+                } else if (c == close) depth--
             } else if (c == 'Q') {
-                inRegexQE = true;
+                inRegexQE = true
             } else if (c == 'E') {
-                inRegexQE = false;
+                inRegexQE = false
             }
-
-            if (depth > 0 && last != 0)
-                end = pos; // don't include the outer match pair in the return
-            last = c;
-        } while (depth > 0);
-        final String out = (end >= 0) ? queue.substring(start, end) : "";
-        if (depth > 0) {// ran out of queue before seeing enough )
-            Validate.fail("Did not find balanced marker at '" + out + "'");
+            if (depth > 0 && last.code != 0) end = pos // don't include the outer match pair in the return
+            last = c
+        } while (depth > 0)
+        val out: String = if ((end >= 0)) queue!!.substring(start, end) else ""
+        if (depth > 0) { // ran out of queue before seeing enough )
+            Validate.fail("Did not find balanced marker at '" + out + "'")
         }
-        return out;
-    }
-    
-    /**
-     * Unescape a \ escaped string.
-     * @param in backslash escaped string
-     * @return unescaped string
-     */
-    public static String unescape(String in) {
-        StringBuilder out = StringUtil.borrowBuilder();
-        char last = 0;
-        for (char c : in.toCharArray()) {
-            if (c == ESC) {
-                if (last == ESC) {
-                    out.append(c);
-                    c = 0;
-                }
-            }
-            else 
-                out.append(c);
-            last = c;
-        }
-        return StringUtil.releaseBuilder(out);
-    }
-
-    /*
-    Given a CSS identifier (such as a tag, ID, or class), escape any CSS special characters that would otherwise not be
-    valid in a selector.
-     */
-    public static String escapeCssIdentifier(String in) {
-        StringBuilder out = StringUtil.borrowBuilder();
-        TokenQueue q = new TokenQueue(in);
-        while (!q.isEmpty()) {
-            if (q.matchesCssIdentifier(ElementSelectorChars)) {
-                out.append(q.consume());
-            } else {
-                out.append(ESC).append(q.consume());
-            }
-        }
-        return StringUtil.releaseBuilder(out);
+        return out
     }
 
     /**
      * Pulls the next run of whitespace characters of the queue.
      * @return Whether consuming whitespace or not
      */
-    public boolean consumeWhitespace() {
-        boolean seen = false;
+    fun consumeWhitespace(): Boolean {
+        var seen: Boolean = false
         while (matchesWhitespace()) {
-            pos++;
-            seen = true;
+            pos++
+            seen = true
         }
-        return seen;
+        return seen
     }
 
     /**
      * Retrieves the next run of word type (letter or digit) off the queue.
      * @return String of word characters from queue, or empty string if none.
      */
-    public String consumeWord() {
-        int start = pos;
-        while (matchesWord())
-            pos++;
-        return queue.substring(start, pos);
+    fun consumeWord(): String {
+        val start: Int = pos
+        while (matchesWord()) pos++
+        return queue!!.substring(start, pos)
     }
 
-    
     /**
      * Consume a CSS element selector (tag name, but | instead of : for namespaces (or *| for wildcard namespace), to not conflict with :pseudo selects).
-     * 
+     *
      * @return tag name
      */
-    public String consumeElementSelector() {
-        return consumeEscapedCssIdentifier(ElementSelectorChars);
+    fun consumeElementSelector(): String? {
+        return consumeEscapedCssIdentifier(*ElementSelectorChars)
     }
-    private static final String[] ElementSelectorChars = {"*|", "|", "_", "-"};
 
     /**
-     Consume a CSS identifier (ID or class) off the queue (letter, digit, -, _)
-     http://www.w3.org/TR/CSS2/syndata.html#value-def-identifier
-     @return identifier
+     * Consume a CSS identifier (ID or class) off the queue (letter, digit, -, _)
+     * http://www.w3.org/TR/CSS2/syndata.html#value-def-identifier
+     * @return identifier
      */
-    public String consumeCssIdentifier() {
-        return consumeEscapedCssIdentifier(CssIdentifierChars);
+    fun consumeCssIdentifier(): String? {
+        return consumeEscapedCssIdentifier(*CssIdentifierChars)
     }
-    private static final String[] CssIdentifierChars = {"-", "_"};
 
+    /**
+     * Create a new TokenQueue.
+     * @param data string of data to back queue.
+     */
+    init {
+        Validate.notNull(data)
+        queue = data
+    }
 
-    private String consumeEscapedCssIdentifier(String... matches) {
-        int start = pos;
-        boolean escaped = false;
-        while (!isEmpty()) {
-            if (queue.charAt(pos) == ESC && remainingLength() >1 ) {
-                escaped = true;
-                pos+=2; // skip the escape and the escaped
-            } else if (matchesCssIdentifier(matches)) {
-                pos++;
+    private fun consumeEscapedCssIdentifier(vararg matches: String): String? {
+        val start: Int = pos
+        var escaped: Boolean = false
+        while (!isEmpty) {
+            if (queue!!.get(pos) == ESC && remainingLength() > 1) {
+                escaped = true
+                pos += 2 // skip the escape and the escaped
+            } else if (matchesCssIdentifier(*matches)) {
+                pos++
             } else {
-                break;
+                break
             }
         }
-
-        String consumed = queue.substring(start, pos);
-        return escaped ? unescape(consumed) : consumed;
+        val consumed: String = queue!!.substring(start, pos)
+        return if (escaped) unescape(consumed) else consumed
     }
 
-    private boolean matchesCssIdentifier(String... matches) {
-        return matchesWord() || matchesAny(matches);
+    private fun matchesCssIdentifier(vararg matches: String): Boolean {
+        return matchesWord() || matchesAny(*matches)
     }
 
     /**
-     Consume and return whatever is left on the queue.
-     @return remained of queue.
+     * Consume and return whatever is left on the queue.
+     * @return remained of queue.
      */
-    public String remainder() {
-        final String remainder = queue.substring(pos);
-        pos = queue.length();
-        return remainder;
+    fun remainder(): String {
+        val remainder: String = queue!!.substring(pos)
+        pos = queue!!.length
+        return remainder
     }
-    
-    @Override
-    public String toString() {
-        return queue.substring(pos);
+
+    public override fun toString(): String {
+        return queue!!.substring(pos)
+    }
+
+    companion object {
+        private val ESC: Char = '\\' // escape char for chomp balanced.
+
+        /**
+         * Unescape a \ escaped string.
+         * @param in backslash escaped string
+         * @return unescaped string
+         */
+        @JvmStatic
+        fun unescape(`in`: String?): String? {
+            val out: StringBuilder? = StringUtil.borrowBuilder()
+            var last: Char = 0.toChar()
+            for (c: Char in `in`!!.toCharArray()) {
+                if (c == ESC) {
+                    if (last == ESC) {
+                        out!!.append(c)
+                        c = 0.toChar()
+                    }
+                } else out!!.append(c)
+                last = c
+            }
+            return StringUtil.releaseBuilder(out)
+        }
+
+        /*
+    Given a CSS identifier (such as a tag, ID, or class), escape any CSS special characters that would otherwise not be
+    valid in a selector.
+     */
+        @JvmStatic
+        fun escapeCssIdentifier(`in`: String?): String? {
+            val out: StringBuilder? = StringUtil.borrowBuilder()
+            val q: TokenQueue = TokenQueue(`in`)
+            while (!q.isEmpty) {
+                if (q.matchesCssIdentifier(*ElementSelectorChars)) {
+                    out!!.append(q.consume())
+                } else {
+                    out!!.append(ESC).append(q.consume())
+                }
+            }
+            return StringUtil.releaseBuilder(out)
+        }
+
+        private val ElementSelectorChars: Array<String> = arrayOf("*|", "|", "_", "-")
+        private val CssIdentifierChars: Array<String> = arrayOf("-", "_")
     }
 }

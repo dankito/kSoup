@@ -1,1745 +1,1656 @@
-package org.jsoup.parser;
+package org.jsoup.parser
 
-import org.jsoup.nodes.DocumentType;
+import org.jsoup.nodes.DocumentType
 
 /**
  * States and transition activations for the Tokeniser.
  */
-enum TokeniserState {
+internal enum class TokeniserState {
     Data {
         // in data state, gather characters until a character reference or tag is found
-        void read(Tokeniser t, CharacterReader r) {
-            switch (r.current()) {
-                case '&':
-                    t.advanceTransition(CharacterReferenceInData);
-                    break;
-                case '<':
-                    t.advanceTransition(TagOpen);
-                    break;
-                case nullChar:
-                    t.error(this); // NOT replacement character (oddly?)
-                    t.emit(r.consume());
-                    break;
-                case eof:
-                    t.emit(new Token.EOF());
-                    break;
-                default:
-                    String data = r.consumeData();
-                    t.emit(data);
-                    break;
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            when (r.current()) {
+                '&' -> t.advanceTransition(CharacterReferenceInData)
+                '<' -> t.advanceTransition(TagOpen)
+                nullChar -> {
+                    t.error(this) // NOT replacement character (oddly?)
+                    t.emit(r.consume())
+                }
+
+                eof -> t.emit(Token.EOF())
+                else -> {
+                    val data: String? = r.consumeData()
+                    t.emit(data)
+                }
             }
         }
     },
     CharacterReferenceInData {
         // from & in data
-        void read(Tokeniser t, CharacterReader r) {
-            readCharRef(t, Data);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            readCharRef(t, Data)
         }
     },
     Rcdata {
         /// handles data in title, textarea etc
-        void read(Tokeniser t, CharacterReader r) {
-            switch (r.current()) {
-                case '&':
-                    t.advanceTransition(CharacterReferenceInRcdata);
-                    break;
-                case '<':
-                    t.advanceTransition(RcdataLessthanSign);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    r.advance();
-                    t.emit(replacementChar);
-                    break;
-                case eof:
-                    t.emit(new Token.EOF());
-                    break;
-                default:
-                    String data = r.consumeData();
-                    t.emit(data);
-                    break;
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            when (r.current()) {
+                '&' -> t.advanceTransition(CharacterReferenceInRcdata)
+                '<' -> t.advanceTransition(RcdataLessthanSign)
+                nullChar -> {
+                    t.error(this)
+                    r.advance()
+                    t.emit(replacementChar)
+                }
+
+                eof -> t.emit(Token.EOF())
+                else -> {
+                    val data: String? = r.consumeData()
+                    t.emit(data)
+                }
             }
         }
     },
     CharacterReferenceInRcdata {
-        void read(Tokeniser t, CharacterReader r) {
-            readCharRef(t, Rcdata);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            readCharRef(t, Rcdata)
         }
     },
     Rawtext {
-        void read(Tokeniser t, CharacterReader r) {
-            readRawData(t, r, this, RawtextLessthanSign);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            readRawData(t, r, this, RawtextLessthanSign)
         }
     },
     ScriptData {
-        void read(Tokeniser t, CharacterReader r) {
-            readRawData(t, r, this, ScriptDataLessthanSign);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            readRawData(t, r, this, ScriptDataLessthanSign)
         }
     },
     PLAINTEXT {
-        void read(Tokeniser t, CharacterReader r) {
-            switch (r.current()) {
-                case nullChar:
-                    t.error(this);
-                    r.advance();
-                    t.emit(replacementChar);
-                    break;
-                case eof:
-                    t.emit(new Token.EOF());
-                    break;
-                default:
-                    String data = r.consumeTo(nullChar);
-                    t.emit(data);
-                    break;
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            when (r.current()) {
+                nullChar -> {
+                    t.error(this)
+                    r.advance()
+                    t.emit(replacementChar)
+                }
+
+                eof -> t.emit(Token.EOF())
+                else -> {
+                    val data: String? = r.consumeTo(nullChar)
+                    t.emit(data)
+                }
             }
         }
     },
     TagOpen {
         // from < in data
-        void read(Tokeniser t, CharacterReader r) {
-            switch (r.current()) {
-                case '!':
-                    t.advanceTransition(MarkupDeclarationOpen);
-                    break;
-                case '/':
-                    t.advanceTransition(EndTagOpen);
-                    break;
-                case '?':
-                    t.createBogusCommentPending();
-                    t.transition(BogusComment);
-                    break;
-                default:
-                    if (r.matchesAsciiAlpha()) {
-                        t.createTagPending(true);
-                        t.transition(TagName);
-                    } else {
-                        t.error(this);
-                        t.emit('<'); // char that got us here
-                        t.transition(Data);
-                    }
-                    break;
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            when (r.current()) {
+                '!' -> t.advanceTransition(MarkupDeclarationOpen)
+                '/' -> t.advanceTransition(EndTagOpen)
+                '?' -> {
+                    t.createBogusCommentPending()
+                    t.transition(BogusComment)
+                }
+
+                else -> if (r.matchesAsciiAlpha()) {
+                    t.createTagPending(true)
+                    t.transition(TagName)
+                } else {
+                    t.error(this)
+                    t.emit('<') // char that got us here
+                    t.transition(Data)
+                }
             }
         }
     },
     EndTagOpen {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.isEmpty()) {
-                t.eofError(this);
-                t.emit("</");
-                t.transition(Data);
+                t.eofError(this)
+                t.emit("</")
+                t.transition(Data)
             } else if (r.matchesAsciiAlpha()) {
-                t.createTagPending(false);
-                t.transition(TagName);
+                t.createTagPending(false)
+                t.transition(TagName)
             } else if (r.matches('>')) {
-                t.error(this);
-                t.advanceTransition(Data);
+                t.error(this)
+                t.advanceTransition(Data)
             } else {
-                t.error(this);
-                t.createBogusCommentPending();
-                t.commentPending.append('/'); // push the / back on that got us here
-                t.transition(BogusComment);
+                t.error(this)
+                t.createBogusCommentPending()
+                t.commentPending.append('/') // push the / back on that got us here
+                t.transition(BogusComment)
             }
         }
     },
     TagName {
         // from < or </ in data, will have start or end tag pending
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             // previous TagOpen state did NOT consume, will have a letter char in current
-            String tagName = r.consumeTagName();
-            t.tagPending.appendTagName(tagName);
+            val tagName: String? = r.consumeTagName()
+            t.tagPending!!.appendTagName(tagName)
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> t.transition(BeforeAttributeName)
+                '/' -> t.transition(SelfClosingStartTag)
+                '<' -> {
+                    r.unconsume()
+                    t.error(this)
+                    t.emitTagPending()
+                    t.transition(Data)
+                }
 
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    t.transition(BeforeAttributeName);
-                    break;
-                case '/':
-                    t.transition(SelfClosingStartTag);
-                    break;
-                case '<': // NOTE: out of spec, but clear author intent
-                    r.unconsume();
-                    t.error(this);
-                    // intended fall through to next >
-                case '>':
-                    t.emitTagPending();
-                    t.transition(Data);
-                    break;
-                case nullChar: // replacement
-                    t.tagPending.appendTagName(replacementStr);
-                    break;
-                case eof: // should emit pending tag?
-                    t.eofError(this);
-                    t.transition(Data);
-                    break;
-                default: // buffer underrun
-                    t.tagPending.appendTagName(c);
+                '>' -> {
+                    t.emitTagPending()
+                    t.transition(Data)
+                }
+
+                nullChar -> t.tagPending!!.appendTagName(replacementStr)
+                eof -> {
+                    t.eofError(this)
+                    t.transition(Data)
+                }
+
+                else -> t.tagPending!!.appendTagName(c)
             }
         }
     },
     RcdataLessthanSign {
         // from < in rcdata
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.matches('/')) {
-                t.createTempBuffer();
-                t.advanceTransition(RCDATAEndTagOpen);
-            } else if (r.readFully() && r.matchesAsciiAlpha() && t.appropriateEndTagName() != null &&  !r.containsIgnoreCase(t.appropriateEndTagSeq())) {
+                t.createTempBuffer()
+                t.advanceTransition(RCDATAEndTagOpen)
+            } else if (r.readFully() && r.matchesAsciiAlpha() && (t.appropriateEndTagName() != null) && !r.containsIgnoreCase(
+                    t.appropriateEndTagSeq()
+                )
+            ) {
                 // diverge from spec: got a start tag, but there's no appropriate end tag (</title>), so rather than
                 // consuming to EOF; break out here
-                t.tagPending = t.createTagPending(false).name(t.appropriateEndTagName());
-                t.emitTagPending();
-                t.transition(TagOpen); // straight into TagOpen, as we came from < and looks like we're on a start tag
+                t.tagPending = t.createTagPending(false)!!.name(t.appropriateEndTagName())
+                t.emitTagPending()
+                t.transition(TagOpen) // straight into TagOpen, as we came from < and looks like we're on a start tag
             } else {
-                t.emit("<");
-                t.transition(Rcdata);
+                t.emit("<")
+                t.transition(Rcdata)
             }
         }
     },
     RCDATAEndTagOpen {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.matchesAsciiAlpha()) {
-                t.createTagPending(false);
-                t.tagPending.appendTagName(r.current());
-                t.dataBuffer.append(r.current());
-                t.advanceTransition(RCDATAEndTagName);
+                t.createTagPending(false)
+                t.tagPending!!.appendTagName(r.current())
+                t.dataBuffer.append(r.current())
+                t.advanceTransition(RCDATAEndTagName)
             } else {
-                t.emit("</");
-                t.transition(Rcdata);
+                t.emit("</")
+                t.transition(Rcdata)
             }
         }
     },
     RCDATAEndTagName {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.matchesAsciiAlpha()) {
-                String name = r.consumeLetterSequence();
-                t.tagPending.appendTagName(name);
-                t.dataBuffer.append(name);
-                return;
+                val name: String? = r.consumeLetterSequence()
+                t.tagPending!!.appendTagName(name)
+                t.dataBuffer.append(name)
+                return
             }
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> if (t.isAppropriateEndTagToken()) t.transition(BeforeAttributeName) else anythingElse(
+                    t,
+                    r
+                )
 
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    if (t.isAppropriateEndTagToken())
-                        t.transition(BeforeAttributeName);
-                    else
-                        anythingElse(t, r);
-                    break;
-                case '/':
-                    if (t.isAppropriateEndTagToken())
-                        t.transition(SelfClosingStartTag);
-                    else
-                        anythingElse(t, r);
-                    break;
-                case '>':
-                    if (t.isAppropriateEndTagToken()) {
-                        t.emitTagPending();
-                        t.transition(Data);
-                    }
-                    else
-                        anythingElse(t, r);
-                    break;
-                default:
-                    anythingElse(t, r);
+                '/' -> if (t.isAppropriateEndTagToken()) t.transition(SelfClosingStartTag) else anythingElse(t, r)
+                '>' -> if (t.isAppropriateEndTagToken()) {
+                    t.emitTagPending()
+                    t.transition(Data)
+                } else anythingElse(t, r)
+
+                else -> anythingElse(t, r)
             }
         }
 
-        private void anythingElse(Tokeniser t, CharacterReader r) {
-            t.emit("</");
-            t.emit(t.dataBuffer);
-            r.unconsume();
-            t.transition(Rcdata);
+        private fun anythingElse(t: Tokeniser, r: CharacterReader) {
+            t.emit("</")
+            t.emit(t.dataBuffer)
+            r.unconsume()
+            t.transition(Rcdata)
         }
     },
     RawtextLessthanSign {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.matches('/')) {
-                t.createTempBuffer();
-                t.advanceTransition(RawtextEndTagOpen);
+                t.createTempBuffer()
+                t.advanceTransition(RawtextEndTagOpen)
             } else {
-                t.emit('<');
-                t.transition(Rawtext);
+                t.emit('<')
+                t.transition(Rawtext)
             }
         }
     },
     RawtextEndTagOpen {
-        void read(Tokeniser t, CharacterReader r) {
-            readEndTag(t, r, RawtextEndTagName, Rawtext);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            readEndTag(t, r, RawtextEndTagName, Rawtext)
         }
     },
     RawtextEndTagName {
-        void read(Tokeniser t, CharacterReader r) {
-            handleDataEndTag(t, r, Rawtext);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            handleDataEndTag(t, r, Rawtext)
         }
     },
     ScriptDataLessthanSign {
-        void read(Tokeniser t, CharacterReader r) {
-            switch (r.consume()) {
-                case '/':
-                    t.createTempBuffer();
-                    t.transition(ScriptDataEndTagOpen);
-                    break;
-                case '!':
-                    t.emit("<!");
-                    t.transition(ScriptDataEscapeStart);
-                    break;
-                case eof:
-                    t.emit("<");
-                    t.eofError(this);
-                    t.transition(Data);
-                    break;
-                default:
-                    t.emit("<");
-                    r.unconsume();
-                    t.transition(ScriptData);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            when (r.consume()) {
+                '/' -> {
+                    t.createTempBuffer()
+                    t.transition(ScriptDataEndTagOpen)
+                }
+
+                '!' -> {
+                    t.emit("<!")
+                    t.transition(ScriptDataEscapeStart)
+                }
+
+                eof -> {
+                    t.emit("<")
+                    t.eofError(this)
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.emit("<")
+                    r.unconsume()
+                    t.transition(ScriptData)
+                }
             }
         }
     },
     ScriptDataEndTagOpen {
-        void read(Tokeniser t, CharacterReader r) {
-            readEndTag(t, r, ScriptDataEndTagName, ScriptData);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            readEndTag(t, r, ScriptDataEndTagName, ScriptData)
         }
     },
     ScriptDataEndTagName {
-        void read(Tokeniser t, CharacterReader r) {
-            handleDataEndTag(t, r, ScriptData);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            handleDataEndTag(t, r, ScriptData)
         }
     },
     ScriptDataEscapeStart {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.matches('-')) {
-                t.emit('-');
-                t.advanceTransition(ScriptDataEscapeStartDash);
+                t.emit('-')
+                t.advanceTransition(ScriptDataEscapeStartDash)
             } else {
-                t.transition(ScriptData);
+                t.transition(ScriptData)
             }
         }
     },
     ScriptDataEscapeStartDash {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.matches('-')) {
-                t.emit('-');
-                t.advanceTransition(ScriptDataEscapedDashDash);
+                t.emit('-')
+                t.advanceTransition(ScriptDataEscapedDashDash)
             } else {
-                t.transition(ScriptData);
+                t.transition(ScriptData)
             }
         }
     },
     ScriptDataEscaped {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.isEmpty()) {
-                t.eofError(this);
-                t.transition(Data);
-                return;
+                t.eofError(this)
+                t.transition(Data)
+                return
             }
+            when (r.current()) {
+                '-' -> {
+                    t.emit('-')
+                    t.advanceTransition(ScriptDataEscapedDash)
+                }
 
-            switch (r.current()) {
-                case '-':
-                    t.emit('-');
-                    t.advanceTransition(ScriptDataEscapedDash);
-                    break;
-                case '<':
-                    t.advanceTransition(ScriptDataEscapedLessthanSign);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    r.advance();
-                    t.emit(replacementChar);
-                    break;
-                default:
-                    String data = r.consumeToAny('-', '<', nullChar);
-                    t.emit(data);
+                '<' -> t.advanceTransition(ScriptDataEscapedLessthanSign)
+                nullChar -> {
+                    t.error(this)
+                    r.advance()
+                    t.emit(replacementChar)
+                }
+
+                else -> {
+                    val data: String? = r.consumeToAny('-', '<', nullChar)
+                    t.emit(data)
+                }
             }
         }
     },
     ScriptDataEscapedDash {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.isEmpty()) {
-                t.eofError(this);
-                t.transition(Data);
-                return;
+                t.eofError(this)
+                t.transition(Data)
+                return
             }
+            val c: Char = r.consume()
+            when (c) {
+                '-' -> {
+                    t.emit(c)
+                    t.transition(ScriptDataEscapedDashDash)
+                }
 
-            char c = r.consume();
-            switch (c) {
-                case '-':
-                    t.emit(c);
-                    t.transition(ScriptDataEscapedDashDash);
-                    break;
-                case '<':
-                    t.transition(ScriptDataEscapedLessthanSign);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.emit(replacementChar);
-                    t.transition(ScriptDataEscaped);
-                    break;
-                default:
-                    t.emit(c);
-                    t.transition(ScriptDataEscaped);
+                '<' -> t.transition(ScriptDataEscapedLessthanSign)
+                nullChar -> {
+                    t.error(this)
+                    t.emit(replacementChar)
+                    t.transition(ScriptDataEscaped)
+                }
+
+                else -> {
+                    t.emit(c)
+                    t.transition(ScriptDataEscaped)
+                }
             }
         }
     },
     ScriptDataEscapedDashDash {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.isEmpty()) {
-                t.eofError(this);
-                t.transition(Data);
-                return;
+                t.eofError(this)
+                t.transition(Data)
+                return
             }
+            val c: Char = r.consume()
+            when (c) {
+                '-' -> t.emit(c)
+                '<' -> t.transition(ScriptDataEscapedLessthanSign)
+                '>' -> {
+                    t.emit(c)
+                    t.transition(ScriptData)
+                }
 
-            char c = r.consume();
-            switch (c) {
-                case '-':
-                    t.emit(c);
-                    break;
-                case '<':
-                    t.transition(ScriptDataEscapedLessthanSign);
-                    break;
-                case '>':
-                    t.emit(c);
-                    t.transition(ScriptData);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.emit(replacementChar);
-                    t.transition(ScriptDataEscaped);
-                    break;
-                default:
-                    t.emit(c);
-                    t.transition(ScriptDataEscaped);
+                nullChar -> {
+                    t.error(this)
+                    t.emit(replacementChar)
+                    t.transition(ScriptDataEscaped)
+                }
+
+                else -> {
+                    t.emit(c)
+                    t.transition(ScriptDataEscaped)
+                }
             }
         }
     },
     ScriptDataEscapedLessthanSign {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.matchesAsciiAlpha()) {
-                t.createTempBuffer();
-                t.dataBuffer.append(r.current());
-                t.emit("<");
-                t.emit(r.current());
-                t.advanceTransition(ScriptDataDoubleEscapeStart);
+                t.createTempBuffer()
+                t.dataBuffer.append(r.current())
+                t.emit("<")
+                t.emit(r.current())
+                t.advanceTransition(ScriptDataDoubleEscapeStart)
             } else if (r.matches('/')) {
-                t.createTempBuffer();
-                t.advanceTransition(ScriptDataEscapedEndTagOpen);
+                t.createTempBuffer()
+                t.advanceTransition(ScriptDataEscapedEndTagOpen)
             } else {
-                t.emit('<');
-                t.transition(ScriptDataEscaped);
+                t.emit('<')
+                t.transition(ScriptDataEscaped)
             }
         }
     },
     ScriptDataEscapedEndTagOpen {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.matchesAsciiAlpha()) {
-                t.createTagPending(false);
-                t.tagPending.appendTagName(r.current());
-                t.dataBuffer.append(r.current());
-                t.advanceTransition(ScriptDataEscapedEndTagName);
+                t.createTagPending(false)
+                t.tagPending!!.appendTagName(r.current())
+                t.dataBuffer.append(r.current())
+                t.advanceTransition(ScriptDataEscapedEndTagName)
             } else {
-                t.emit("</");
-                t.transition(ScriptDataEscaped);
+                t.emit("</")
+                t.transition(ScriptDataEscaped)
             }
         }
     },
     ScriptDataEscapedEndTagName {
-        void read(Tokeniser t, CharacterReader r) {
-            handleDataEndTag(t, r, ScriptDataEscaped);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            handleDataEndTag(t, r, ScriptDataEscaped)
         }
     },
     ScriptDataDoubleEscapeStart {
-        void read(Tokeniser t, CharacterReader r) {
-            handleDataDoubleEscapeTag(t, r, ScriptDataDoubleEscaped, ScriptDataEscaped);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            handleDataDoubleEscapeTag(t, r, ScriptDataDoubleEscaped, ScriptDataEscaped)
         }
     },
     ScriptDataDoubleEscaped {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.current();
-            switch (c) {
-                case '-':
-                    t.emit(c);
-                    t.advanceTransition(ScriptDataDoubleEscapedDash);
-                    break;
-                case '<':
-                    t.emit(c);
-                    t.advanceTransition(ScriptDataDoubleEscapedLessthanSign);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    r.advance();
-                    t.emit(replacementChar);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.transition(Data);
-                    break;
-                default:
-                    String data = r.consumeToAny('-', '<', nullChar);
-                    t.emit(data);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.current()
+            when (c) {
+                '-' -> {
+                    t.emit(c)
+                    t.advanceTransition(ScriptDataDoubleEscapedDash)
+                }
+
+                '<' -> {
+                    t.emit(c)
+                    t.advanceTransition(ScriptDataDoubleEscapedLessthanSign)
+                }
+
+                nullChar -> {
+                    t.error(this)
+                    r.advance()
+                    t.emit(replacementChar)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.transition(Data)
+                }
+
+                else -> {
+                    val data: String? = r.consumeToAny('-', '<', nullChar)
+                    t.emit(data)
+                }
             }
         }
     },
     ScriptDataDoubleEscapedDash {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '-':
-                    t.emit(c);
-                    t.transition(ScriptDataDoubleEscapedDashDash);
-                    break;
-                case '<':
-                    t.emit(c);
-                    t.transition(ScriptDataDoubleEscapedLessthanSign);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.emit(replacementChar);
-                    t.transition(ScriptDataDoubleEscaped);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.transition(Data);
-                    break;
-                default:
-                    t.emit(c);
-                    t.transition(ScriptDataDoubleEscaped);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '-' -> {
+                    t.emit(c)
+                    t.transition(ScriptDataDoubleEscapedDashDash)
+                }
+
+                '<' -> {
+                    t.emit(c)
+                    t.transition(ScriptDataDoubleEscapedLessthanSign)
+                }
+
+                nullChar -> {
+                    t.error(this)
+                    t.emit(replacementChar)
+                    t.transition(ScriptDataDoubleEscaped)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.emit(c)
+                    t.transition(ScriptDataDoubleEscaped)
+                }
             }
         }
     },
     ScriptDataDoubleEscapedDashDash {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '-':
-                    t.emit(c);
-                    break;
-                case '<':
-                    t.emit(c);
-                    t.transition(ScriptDataDoubleEscapedLessthanSign);
-                    break;
-                case '>':
-                    t.emit(c);
-                    t.transition(ScriptData);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.emit(replacementChar);
-                    t.transition(ScriptDataDoubleEscaped);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.transition(Data);
-                    break;
-                default:
-                    t.emit(c);
-                    t.transition(ScriptDataDoubleEscaped);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '-' -> t.emit(c)
+                '<' -> {
+                    t.emit(c)
+                    t.transition(ScriptDataDoubleEscapedLessthanSign)
+                }
+
+                '>' -> {
+                    t.emit(c)
+                    t.transition(ScriptData)
+                }
+
+                nullChar -> {
+                    t.error(this)
+                    t.emit(replacementChar)
+                    t.transition(ScriptDataDoubleEscaped)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.emit(c)
+                    t.transition(ScriptDataDoubleEscaped)
+                }
             }
         }
     },
     ScriptDataDoubleEscapedLessthanSign {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.matches('/')) {
-                t.emit('/');
-                t.createTempBuffer();
-                t.advanceTransition(ScriptDataDoubleEscapeEnd);
+                t.emit('/')
+                t.createTempBuffer()
+                t.advanceTransition(ScriptDataDoubleEscapeEnd)
             } else {
-                t.transition(ScriptDataDoubleEscaped);
+                t.transition(ScriptDataDoubleEscaped)
             }
         }
     },
     ScriptDataDoubleEscapeEnd {
-        void read(Tokeniser t, CharacterReader r) {
-            handleDataDoubleEscapeTag(t,r, ScriptDataEscaped, ScriptDataDoubleEscaped);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            handleDataDoubleEscapeTag(t, r, ScriptDataEscaped, ScriptDataDoubleEscaped)
         }
     },
     BeforeAttributeName {
         // from tagname <xxx
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    break; // ignore whitespace
-                case '/':
-                    t.transition(SelfClosingStartTag);
-                    break;
-                case '<': // NOTE: out of spec, but clear (spec has this as a part of the attribute name)
-                    r.unconsume();
-                    t.error(this);
-                    // intended fall through as if >
-                case '>':
-                    t.emitTagPending();
-                    t.transition(Data);
-                    break;
-                case nullChar:
-                    r.unconsume();
-                    t.error(this);
-                    t.tagPending.newAttribute();
-                    t.transition(AttributeName);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.transition(Data);
-                    break;
-                case '"':
-                case '\'':
-                case '=':
-                    t.error(this);
-                    t.tagPending.newAttribute();
-                    t.tagPending.appendAttributeName(c);
-                    t.transition(AttributeName);
-                    break;
-                default: // A-Z, anything else
-                    t.tagPending.newAttribute();
-                    r.unconsume();
-                    t.transition(AttributeName);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> {}
+                '/' -> t.transition(SelfClosingStartTag)
+                '<' -> {
+                    r.unconsume()
+                    t.error(this)
+                    t.emitTagPending()
+                    t.transition(Data)
+                }
+
+                '>' -> {
+                    t.emitTagPending()
+                    t.transition(Data)
+                }
+
+                nullChar -> {
+                    r.unconsume()
+                    t.error(this)
+                    t.tagPending!!.newAttribute()
+                    t.transition(AttributeName)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.transition(Data)
+                }
+
+                '"', '\'', '=' -> {
+                    t.error(this)
+                    t.tagPending!!.newAttribute()
+                    t.tagPending!!.appendAttributeName(c)
+                    t.transition(AttributeName)
+                }
+
+                else -> {
+                    t.tagPending!!.newAttribute()
+                    r.unconsume()
+                    t.transition(AttributeName)
+                }
             }
         }
     },
     AttributeName {
         // from before attribute name
-        void read(Tokeniser t, CharacterReader r) {
-            String name = r.consumeToAnySorted(attributeNameCharsSorted); // spec deviate - consume and emit nulls in one hit vs stepping
-            t.tagPending.appendAttributeName(name);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val name: String? =
+                r.consumeToAnySorted(*attributeNameCharsSorted) // spec deviate - consume and emit nulls in one hit vs stepping
+            t.tagPending!!.appendAttributeName(name)
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> t.transition(AfterAttributeName)
+                '/' -> t.transition(SelfClosingStartTag)
+                '=' -> t.transition(BeforeAttributeValue)
+                '>' -> {
+                    t.emitTagPending()
+                    t.transition(Data)
+                }
 
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    t.transition(AfterAttributeName);
-                    break;
-                case '/':
-                    t.transition(SelfClosingStartTag);
-                    break;
-                case '=':
-                    t.transition(BeforeAttributeValue);
-                    break;
-                case '>':
-                    t.emitTagPending();
-                    t.transition(Data);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.transition(Data);
-                    break;
-                case '"':
-                case '\'':
-                case '<':
-                    t.error(this);
-                    t.tagPending.appendAttributeName(c);
-                    break;
-                default: // buffer underrun
-                    t.tagPending.appendAttributeName(c);
+                eof -> {
+                    t.eofError(this)
+                    t.transition(Data)
+                }
+
+                '"', '\'', '<' -> {
+                    t.error(this)
+                    t.tagPending!!.appendAttributeName(c)
+                }
+
+                else -> t.tagPending!!.appendAttributeName(c)
             }
         }
     },
     AfterAttributeName {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    // ignore
-                    break;
-                case '/':
-                    t.transition(SelfClosingStartTag);
-                    break;
-                case '=':
-                    t.transition(BeforeAttributeValue);
-                    break;
-                case '>':
-                    t.emitTagPending();
-                    t.transition(Data);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.tagPending.appendAttributeName(replacementChar);
-                    t.transition(AttributeName);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.transition(Data);
-                    break;
-                case '"':
-                case '\'':
-                case '<':
-                    t.error(this);
-                    t.tagPending.newAttribute();
-                    t.tagPending.appendAttributeName(c);
-                    t.transition(AttributeName);
-                    break;
-                default: // A-Z, anything else
-                    t.tagPending.newAttribute();
-                    r.unconsume();
-                    t.transition(AttributeName);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> {}
+                '/' -> t.transition(SelfClosingStartTag)
+                '=' -> t.transition(BeforeAttributeValue)
+                '>' -> {
+                    t.emitTagPending()
+                    t.transition(Data)
+                }
+
+                nullChar -> {
+                    t.error(this)
+                    t.tagPending!!.appendAttributeName(replacementChar)
+                    t.transition(AttributeName)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.transition(Data)
+                }
+
+                '"', '\'', '<' -> {
+                    t.error(this)
+                    t.tagPending!!.newAttribute()
+                    t.tagPending!!.appendAttributeName(c)
+                    t.transition(AttributeName)
+                }
+
+                else -> {
+                    t.tagPending!!.newAttribute()
+                    r.unconsume()
+                    t.transition(AttributeName)
+                }
             }
         }
     },
     BeforeAttributeValue {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    // ignore
-                    break;
-                case '"':
-                    t.transition(AttributeValue_doubleQuoted);
-                    break;
-                case '&':
-                    r.unconsume();
-                    t.transition(AttributeValue_unquoted);
-                    break;
-                case '\'':
-                    t.transition(AttributeValue_singleQuoted);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.tagPending.appendAttributeValue(replacementChar);
-                    t.transition(AttributeValue_unquoted);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.emitTagPending();
-                    t.transition(Data);
-                    break;
-                case '>':
-                    t.error(this);
-                    t.emitTagPending();
-                    t.transition(Data);
-                    break;
-                case '<':
-                case '=':
-                case '`':
-                    t.error(this);
-                    t.tagPending.appendAttributeValue(c);
-                    t.transition(AttributeValue_unquoted);
-                    break;
-                default:
-                    r.unconsume();
-                    t.transition(AttributeValue_unquoted);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> {}
+                '"' -> t.transition(AttributeValue_doubleQuoted)
+                '&' -> {
+                    r.unconsume()
+                    t.transition(AttributeValue_unquoted)
+                }
+
+                '\'' -> t.transition(AttributeValue_singleQuoted)
+                nullChar -> {
+                    t.error(this)
+                    t.tagPending!!.appendAttributeValue(replacementChar)
+                    t.transition(AttributeValue_unquoted)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.emitTagPending()
+                    t.transition(Data)
+                }
+
+                '>' -> {
+                    t.error(this)
+                    t.emitTagPending()
+                    t.transition(Data)
+                }
+
+                '<', '=', '`' -> {
+                    t.error(this)
+                    t.tagPending!!.appendAttributeValue(c)
+                    t.transition(AttributeValue_unquoted)
+                }
+
+                else -> {
+                    r.unconsume()
+                    t.transition(AttributeValue_unquoted)
+                }
             }
         }
     },
     AttributeValue_doubleQuoted {
-        void read(Tokeniser t, CharacterReader r) {
-            String value = r.consumeAttributeQuoted(false);
-            if (value.length() > 0)
-                t.tagPending.appendAttributeValue(value);
-            else
-                t.tagPending.setEmptyAttributeValue();
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val value: String? = r.consumeAttributeQuoted(false)
+            if (value!!.length > 0) t.tagPending!!.appendAttributeValue(value) else t.tagPending!!.setEmptyAttributeValue()
+            val c: Char = r.consume()
+            when (c) {
+                '"' -> t.transition(AfterAttributeValue_quoted)
+                '&' -> {
+                    val ref: IntArray? = t.consumeCharacterReference('"', true)
+                    if (ref != null) t.tagPending!!.appendAttributeValue(ref) else t.tagPending!!.appendAttributeValue(
+                        '&'
+                    )
+                }
 
-            char c = r.consume();
-            switch (c) {
-                case '"':
-                    t.transition(AfterAttributeValue_quoted);
-                    break;
-                case '&':
-                    int[] ref = t.consumeCharacterReference('"', true);
-                    if (ref != null)
-                        t.tagPending.appendAttributeValue(ref);
-                    else
-                        t.tagPending.appendAttributeValue('&');
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.tagPending.appendAttributeValue(replacementChar);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.transition(Data);
-                    break;
-                default: // hit end of buffer in first read, still in attribute
-                    t.tagPending.appendAttributeValue(c);
+                nullChar -> {
+                    t.error(this)
+                    t.tagPending!!.appendAttributeValue(replacementChar)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.transition(Data)
+                }
+
+                else -> t.tagPending!!.appendAttributeValue(c)
             }
         }
     },
     AttributeValue_singleQuoted {
-        void read(Tokeniser t, CharacterReader r) {
-            String value = r.consumeAttributeQuoted(true);
-            if (value.length() > 0)
-                t.tagPending.appendAttributeValue(value);
-            else
-                t.tagPending.setEmptyAttributeValue();
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val value: String? = r.consumeAttributeQuoted(true)
+            if (value!!.length > 0) t.tagPending!!.appendAttributeValue(value) else t.tagPending!!.setEmptyAttributeValue()
+            val c: Char = r.consume()
+            when (c) {
+                '\'' -> t.transition(AfterAttributeValue_quoted)
+                '&' -> {
+                    val ref: IntArray? = t.consumeCharacterReference('\'', true)
+                    if (ref != null) t.tagPending!!.appendAttributeValue(ref) else t.tagPending!!.appendAttributeValue(
+                        '&'
+                    )
+                }
 
-            char c = r.consume();
-            switch (c) {
-                case '\'':
-                    t.transition(AfterAttributeValue_quoted);
-                    break;
-                case '&':
-                    int[] ref = t.consumeCharacterReference('\'', true);
-                    if (ref != null)
-                        t.tagPending.appendAttributeValue(ref);
-                    else
-                        t.tagPending.appendAttributeValue('&');
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.tagPending.appendAttributeValue(replacementChar);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.transition(Data);
-                    break;
-                default: // hit end of buffer in first read, still in attribute
-                    t.tagPending.appendAttributeValue(c);
+                nullChar -> {
+                    t.error(this)
+                    t.tagPending!!.appendAttributeValue(replacementChar)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.transition(Data)
+                }
+
+                else -> t.tagPending!!.appendAttributeValue(c)
             }
         }
     },
     AttributeValue_unquoted {
-        void read(Tokeniser t, CharacterReader r) {
-            String value = r.consumeToAnySorted(attributeValueUnquoted);
-            if (value.length() > 0)
-                t.tagPending.appendAttributeValue(value);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val value: String? = r.consumeToAnySorted(*attributeValueUnquoted)
+            if (value!!.length > 0) t.tagPending!!.appendAttributeValue(value)
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> t.transition(BeforeAttributeName)
+                '&' -> {
+                    val ref: IntArray? = t.consumeCharacterReference('>', true)
+                    if (ref != null) t.tagPending!!.appendAttributeValue(ref) else t.tagPending!!.appendAttributeValue(
+                        '&'
+                    )
+                }
 
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    t.transition(BeforeAttributeName);
-                    break;
-                case '&':
-                    int[] ref = t.consumeCharacterReference('>', true);
-                    if (ref != null)
-                        t.tagPending.appendAttributeValue(ref);
-                    else
-                        t.tagPending.appendAttributeValue('&');
-                    break;
-                case '>':
-                    t.emitTagPending();
-                    t.transition(Data);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.tagPending.appendAttributeValue(replacementChar);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.transition(Data);
-                    break;
-                case '"':
-                case '\'':
-                case '<':
-                case '=':
-                case '`':
-                    t.error(this);
-                    t.tagPending.appendAttributeValue(c);
-                    break;
-                default: // hit end of buffer in first read, still in attribute
-                    t.tagPending.appendAttributeValue(c);
+                '>' -> {
+                    t.emitTagPending()
+                    t.transition(Data)
+                }
+
+                nullChar -> {
+                    t.error(this)
+                    t.tagPending!!.appendAttributeValue(replacementChar)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.transition(Data)
+                }
+
+                '"', '\'', '<', '=', '`' -> {
+                    t.error(this)
+                    t.tagPending!!.appendAttributeValue(c)
+                }
+
+                else -> t.tagPending!!.appendAttributeValue(c)
             }
-
         }
     },
+
     // CharacterReferenceInAttributeValue state handled inline
     AfterAttributeValue_quoted {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    t.transition(BeforeAttributeName);
-                    break;
-                case '/':
-                    t.transition(SelfClosingStartTag);
-                    break;
-                case '>':
-                    t.emitTagPending();
-                    t.transition(Data);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.transition(Data);
-                    break;
-                default:
-                    r.unconsume();
-                    t.error(this);
-                    t.transition(BeforeAttributeName);
-            }
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> t.transition(BeforeAttributeName)
+                '/' -> t.transition(SelfClosingStartTag)
+                '>' -> {
+                    t.emitTagPending()
+                    t.transition(Data)
+                }
 
+                eof -> {
+                    t.eofError(this)
+                    t.transition(Data)
+                }
+
+                else -> {
+                    r.unconsume()
+                    t.error(this)
+                    t.transition(BeforeAttributeName)
+                }
+            }
         }
     },
     SelfClosingStartTag {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '>':
-                    t.tagPending.selfClosing = true;
-                    t.emitTagPending();
-                    t.transition(Data);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.transition(Data);
-                    break;
-                default:
-                    r.unconsume();
-                    t.error(this);
-                    t.transition(BeforeAttributeName);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '>' -> {
+                    t.tagPending.selfClosing = true
+                    t.emitTagPending()
+                    t.transition(Data)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.transition(Data)
+                }
+
+                else -> {
+                    r.unconsume()
+                    t.error(this)
+                    t.transition(BeforeAttributeName)
+                }
             }
         }
     },
     BogusComment {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             // todo: handle bogus comment starting from eof. when does that trigger?
-            t.commentPending.append(r.consumeTo('>'));
+            t.commentPending.append(r.consumeTo('>'))
             // todo: replace nullChar with replaceChar
-            char next = r.current();
+            val next: Char = r.current()
             if (next == '>' || next == eof) {
-                r.consume();
-                t.emitCommentPending();
-                t.transition(Data);
+                r.consume()
+                t.emitCommentPending()
+                t.transition(Data)
             }
         }
     },
     MarkupDeclarationOpen {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.matchConsume("--")) {
-                t.createCommentPending();
-                t.transition(CommentStart);
+                t.createCommentPending()
+                t.transition(CommentStart)
             } else if (r.matchConsumeIgnoreCase("DOCTYPE")) {
-                t.transition(Doctype);
+                t.transition(Doctype)
             } else if (r.matchConsume("[CDATA[")) {
                 // todo: should actually check current namespace, and only non-html allows cdata. until namespace
                 // is implemented properly, keep handling as cdata
                 //} else if (!t.currentNodeInHtmlNS() && r.matchConsume("[CDATA[")) {
-                t.createTempBuffer();
-                t.transition(CdataSection);
+                t.createTempBuffer()
+                t.transition(CdataSection)
             } else {
-                t.error(this);
-                t.createBogusCommentPending();
-                t.transition(BogusComment);
+                t.error(this)
+                t.createBogusCommentPending()
+                t.transition(BogusComment)
             }
         }
     },
     CommentStart {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '-':
-                    t.transition(CommentStartDash);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.commentPending.append(replacementChar);
-                    t.transition(Comment);
-                    break;
-                case '>':
-                    t.error(this);
-                    t.emitCommentPending();
-                    t.transition(Data);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.emitCommentPending();
-                    t.transition(Data);
-                    break;
-                default:
-                    r.unconsume();
-                    t.transition(Comment);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '-' -> t.transition(CommentStartDash)
+                nullChar -> {
+                    t.error(this)
+                    t.commentPending.append(replacementChar)
+                    t.transition(Comment)
+                }
+
+                '>' -> {
+                    t.error(this)
+                    t.emitCommentPending()
+                    t.transition(Data)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.emitCommentPending()
+                    t.transition(Data)
+                }
+
+                else -> {
+                    r.unconsume()
+                    t.transition(Comment)
+                }
             }
         }
     },
     CommentStartDash {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '-':
-                    t.transition(CommentEnd);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.commentPending.append(replacementChar);
-                    t.transition(Comment);
-                    break;
-                case '>':
-                    t.error(this);
-                    t.emitCommentPending();
-                    t.transition(Data);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.emitCommentPending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.commentPending.append(c);
-                    t.transition(Comment);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '-' -> t.transition(CommentEnd)
+                nullChar -> {
+                    t.error(this)
+                    t.commentPending.append(replacementChar)
+                    t.transition(Comment)
+                }
+
+                '>' -> {
+                    t.error(this)
+                    t.emitCommentPending()
+                    t.transition(Data)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.emitCommentPending()
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.commentPending.append(c)
+                    t.transition(Comment)
+                }
             }
         }
     },
     Comment {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.current();
-            switch (c) {
-                case '-':
-                    t.advanceTransition(CommentEndDash);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    r.advance();
-                    t.commentPending.append(replacementChar);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.emitCommentPending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.commentPending.append(r.consumeToAny('-', nullChar));
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.current()
+            when (c) {
+                '-' -> t.advanceTransition(CommentEndDash)
+                nullChar -> {
+                    t.error(this)
+                    r.advance()
+                    t.commentPending.append(replacementChar)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.emitCommentPending()
+                    t.transition(Data)
+                }
+
+                else -> t.commentPending.append(r.consumeToAny('-', nullChar))
             }
         }
     },
     CommentEndDash {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '-':
-                    t.transition(CommentEnd);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.commentPending.append('-').append(replacementChar);
-                    t.transition(Comment);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.emitCommentPending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.commentPending.append('-').append(c);
-                    t.transition(Comment);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '-' -> t.transition(CommentEnd)
+                nullChar -> {
+                    t.error(this)
+                    t.commentPending.append('-').append(replacementChar)
+                    t.transition(Comment)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.emitCommentPending()
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.commentPending.append('-').append(c)
+                    t.transition(Comment)
+                }
             }
         }
     },
     CommentEnd {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '>':
-                    t.emitCommentPending();
-                    t.transition(Data);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.commentPending.append("--").append(replacementChar);
-                    t.transition(Comment);
-                    break;
-                case '!':
-                    t.transition(CommentEndBang);
-                    break;
-                case '-':
-                    t.commentPending.append('-');
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.emitCommentPending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.commentPending.append("--").append(c);
-                    t.transition(Comment);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '>' -> {
+                    t.emitCommentPending()
+                    t.transition(Data)
+                }
+
+                nullChar -> {
+                    t.error(this)
+                    t.commentPending.append("--").append(replacementChar)
+                    t.transition(Comment)
+                }
+
+                '!' -> t.transition(CommentEndBang)
+                '-' -> t.commentPending.append('-')
+                eof -> {
+                    t.eofError(this)
+                    t.emitCommentPending()
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.commentPending.append("--").append(c)
+                    t.transition(Comment)
+                }
             }
         }
     },
     CommentEndBang {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '-':
-                    t.commentPending.append("--!");
-                    t.transition(CommentEndDash);
-                    break;
-                case '>':
-                    t.emitCommentPending();
-                    t.transition(Data);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.commentPending.append("--!").append(replacementChar);
-                    t.transition(Comment);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.emitCommentPending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.commentPending.append("--!").append(c);
-                    t.transition(Comment);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '-' -> {
+                    t.commentPending.append("--!")
+                    t.transition(CommentEndDash)
+                }
+
+                '>' -> {
+                    t.emitCommentPending()
+                    t.transition(Data)
+                }
+
+                nullChar -> {
+                    t.error(this)
+                    t.commentPending.append("--!").append(replacementChar)
+                    t.transition(Comment)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.emitCommentPending()
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.commentPending.append("--!").append(c)
+                    t.transition(Comment)
+                }
             }
         }
     },
     Doctype {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    t.transition(BeforeDoctypeName);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    // note: fall through to > case
-                case '>': // catch invalid <!DOCTYPE>
-                    t.error(this);
-                    t.createDoctypePending();
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.error(this);
-                    t.transition(BeforeDoctypeName);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> t.transition(BeforeDoctypeName)
+                eof -> {
+                    t.eofError(this)
+                    t.error(this)
+                    t.createDoctypePending()
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                '>' -> {
+                    t.error(this)
+                    t.createDoctypePending()
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.error(this)
+                    t.transition(BeforeDoctypeName)
+                }
             }
         }
     },
     BeforeDoctypeName {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.matchesAsciiAlpha()) {
-                t.createDoctypePending();
-                t.transition(DoctypeName);
-                return;
+                t.createDoctypePending()
+                t.transition(DoctypeName)
+                return
             }
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    break; // ignore whitespace
-                case nullChar:
-                    t.error(this);
-                    t.createDoctypePending();
-                    t.doctypePending.name.append(replacementChar);
-                    t.transition(DoctypeName);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.createDoctypePending();
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.createDoctypePending();
-                    t.doctypePending.name.append(c);
-                    t.transition(DoctypeName);
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> {}
+                nullChar -> {
+                    t.error(this)
+                    t.createDoctypePending()
+                    t.doctypePending.name.append(replacementChar)
+                    t.transition(DoctypeName)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.createDoctypePending()
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.createDoctypePending()
+                    t.doctypePending.name.append(c)
+                    t.transition(DoctypeName)
+                }
             }
         }
     },
     DoctypeName {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.matchesLetter()) {
-                String name = r.consumeLetterSequence();
-                t.doctypePending.name.append(name);
-                return;
+                val name: String? = r.consumeLetterSequence()
+                t.doctypePending.name.append(name)
+                return
             }
-            char c = r.consume();
-            switch (c) {
-                case '>':
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    t.transition(AfterDoctypeName);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.doctypePending.name.append(replacementChar);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.doctypePending.name.append(c);
+            val c: Char = r.consume()
+            when (c) {
+                '>' -> {
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                '\t', '\n', '\r', '\u000C', ' ' -> t.transition(AfterDoctypeName)
+                nullChar -> {
+                    t.error(this)
+                    t.doctypePending.name.append(replacementChar)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                else -> t.doctypePending.name.append(c)
             }
         }
     },
     AfterDoctypeName {
-        void read(Tokeniser t, CharacterReader r) {
+        public override fun read(t: Tokeniser, r: CharacterReader) {
             if (r.isEmpty()) {
-                t.eofError(this);
-                t.doctypePending.forceQuirks = true;
-                t.emitDoctypePending();
-                t.transition(Data);
-                return;
+                t.eofError(this)
+                t.doctypePending.forceQuirks = true
+                t.emitDoctypePending()
+                t.transition(Data)
+                return
             }
-            if (r.matchesAny('\t', '\n', '\r', '\f', ' '))
-                r.advance(); // ignore whitespace
+            if (r.matchesAny('\t', '\n', '\r', '\u000C', ' ')) r.advance() // ignore whitespace
             else if (r.matches('>')) {
-                t.emitDoctypePending();
-                t.advanceTransition(Data);
-            } else if (r.matchConsumeIgnoreCase(DocumentType.PUBLIC_KEY)) {
-                t.doctypePending.pubSysKey = DocumentType.PUBLIC_KEY;
-                t.transition(AfterDoctypePublicKeyword);
-            } else if (r.matchConsumeIgnoreCase(DocumentType.SYSTEM_KEY)) {
-                t.doctypePending.pubSysKey = DocumentType.SYSTEM_KEY;
-                t.transition(AfterDoctypeSystemKeyword);
+                t.emitDoctypePending()
+                t.advanceTransition(Data)
+            } else if (r.matchConsumeIgnoreCase(DocumentType.Companion.PUBLIC_KEY)) {
+                t.doctypePending.pubSysKey = DocumentType.Companion.PUBLIC_KEY
+                t.transition(AfterDoctypePublicKeyword)
+            } else if (r.matchConsumeIgnoreCase(DocumentType.Companion.SYSTEM_KEY)) {
+                t.doctypePending.pubSysKey = DocumentType.Companion.SYSTEM_KEY
+                t.transition(AfterDoctypeSystemKeyword)
             } else {
-                t.error(this);
-                t.doctypePending.forceQuirks = true;
-                t.advanceTransition(BogusDoctype);
+                t.error(this)
+                t.doctypePending.forceQuirks = true
+                t.advanceTransition(BogusDoctype)
             }
-
         }
     },
     AfterDoctypePublicKeyword {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    t.transition(BeforeDoctypePublicIdentifier);
-                    break;
-                case '"':
-                    t.error(this);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> t.transition(BeforeDoctypePublicIdentifier)
+                '"' -> {
+                    t.error(this)
                     // set public id to empty string
-                    t.transition(DoctypePublicIdentifier_doubleQuoted);
-                    break;
-                case '\'':
-                    t.error(this);
+                    t.transition(DoctypePublicIdentifier_doubleQuoted)
+                }
+
+                '\'' -> {
+                    t.error(this)
                     // set public id to empty string
-                    t.transition(DoctypePublicIdentifier_singleQuoted);
-                    break;
-                case '>':
-                    t.error(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.error(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.transition(BogusDoctype);
+                    t.transition(DoctypePublicIdentifier_singleQuoted)
+                }
+
+                '>' -> {
+                    t.error(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.error(this)
+                    t.doctypePending.forceQuirks = true
+                    t.transition(BogusDoctype)
+                }
             }
         }
     },
     BeforeDoctypePublicIdentifier {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    break;
-                case '"':
-                    // set public id to empty string
-                    t.transition(DoctypePublicIdentifier_doubleQuoted);
-                    break;
-                case '\'':
-                    // set public id to empty string
-                    t.transition(DoctypePublicIdentifier_singleQuoted);
-                    break;
-                case '>':
-                    t.error(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.error(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.transition(BogusDoctype);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> {}
+                '"' ->                     // set public id to empty string
+                    t.transition(DoctypePublicIdentifier_doubleQuoted)
+
+                '\'' ->                     // set public id to empty string
+                    t.transition(DoctypePublicIdentifier_singleQuoted)
+
+                '>' -> {
+                    t.error(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.error(this)
+                    t.doctypePending.forceQuirks = true
+                    t.transition(BogusDoctype)
+                }
             }
         }
     },
     DoctypePublicIdentifier_doubleQuoted {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '"':
-                    t.transition(AfterDoctypePublicIdentifier);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.doctypePending.publicIdentifier.append(replacementChar);
-                    break;
-                case '>':
-                    t.error(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.doctypePending.publicIdentifier.append(c);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '"' -> t.transition(AfterDoctypePublicIdentifier)
+                nullChar -> {
+                    t.error(this)
+                    t.doctypePending.publicIdentifier.append(replacementChar)
+                }
+
+                '>' -> {
+                    t.error(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                else -> t.doctypePending.publicIdentifier.append(c)
             }
         }
     },
     DoctypePublicIdentifier_singleQuoted {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '\'':
-                    t.transition(AfterDoctypePublicIdentifier);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.doctypePending.publicIdentifier.append(replacementChar);
-                    break;
-                case '>':
-                    t.error(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.doctypePending.publicIdentifier.append(c);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '\'' -> t.transition(AfterDoctypePublicIdentifier)
+                nullChar -> {
+                    t.error(this)
+                    t.doctypePending.publicIdentifier.append(replacementChar)
+                }
+
+                '>' -> {
+                    t.error(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                else -> t.doctypePending.publicIdentifier.append(c)
             }
         }
     },
     AfterDoctypePublicIdentifier {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    t.transition(BetweenDoctypePublicAndSystemIdentifiers);
-                    break;
-                case '>':
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                case '"':
-                    t.error(this);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> t.transition(BetweenDoctypePublicAndSystemIdentifiers)
+                '>' -> {
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                '"' -> {
+                    t.error(this)
                     // system id empty
-                    t.transition(DoctypeSystemIdentifier_doubleQuoted);
-                    break;
-                case '\'':
-                    t.error(this);
+                    t.transition(DoctypeSystemIdentifier_doubleQuoted)
+                }
+
+                '\'' -> {
+                    t.error(this)
                     // system id empty
-                    t.transition(DoctypeSystemIdentifier_singleQuoted);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.error(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.transition(BogusDoctype);
+                    t.transition(DoctypeSystemIdentifier_singleQuoted)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.error(this)
+                    t.doctypePending.forceQuirks = true
+                    t.transition(BogusDoctype)
+                }
             }
         }
     },
     BetweenDoctypePublicAndSystemIdentifiers {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    break;
-                case '>':
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                case '"':
-                    t.error(this);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> {}
+                '>' -> {
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                '"' -> {
+                    t.error(this)
                     // system id empty
-                    t.transition(DoctypeSystemIdentifier_doubleQuoted);
-                    break;
-                case '\'':
-                    t.error(this);
+                    t.transition(DoctypeSystemIdentifier_doubleQuoted)
+                }
+
+                '\'' -> {
+                    t.error(this)
                     // system id empty
-                    t.transition(DoctypeSystemIdentifier_singleQuoted);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.error(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.transition(BogusDoctype);
+                    t.transition(DoctypeSystemIdentifier_singleQuoted)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.error(this)
+                    t.doctypePending.forceQuirks = true
+                    t.transition(BogusDoctype)
+                }
             }
         }
     },
     AfterDoctypeSystemKeyword {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    t.transition(BeforeDoctypeSystemIdentifier);
-                    break;
-                case '>':
-                    t.error(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                case '"':
-                    t.error(this);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> t.transition(BeforeDoctypeSystemIdentifier)
+                '>' -> {
+                    t.error(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                '"' -> {
+                    t.error(this)
                     // system id empty
-                    t.transition(DoctypeSystemIdentifier_doubleQuoted);
-                    break;
-                case '\'':
-                    t.error(this);
+                    t.transition(DoctypeSystemIdentifier_doubleQuoted)
+                }
+
+                '\'' -> {
+                    t.error(this)
                     // system id empty
-                    t.transition(DoctypeSystemIdentifier_singleQuoted);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.error(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
+                    t.transition(DoctypeSystemIdentifier_singleQuoted)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.error(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                }
             }
         }
     },
     BeforeDoctypeSystemIdentifier {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    break;
-                case '"':
-                    // set system id to empty string
-                    t.transition(DoctypeSystemIdentifier_doubleQuoted);
-                    break;
-                case '\'':
-                    // set public id to empty string
-                    t.transition(DoctypeSystemIdentifier_singleQuoted);
-                    break;
-                case '>':
-                    t.error(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.error(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.transition(BogusDoctype);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> {}
+                '"' ->                     // set system id to empty string
+                    t.transition(DoctypeSystemIdentifier_doubleQuoted)
+
+                '\'' ->                     // set public id to empty string
+                    t.transition(DoctypeSystemIdentifier_singleQuoted)
+
+                '>' -> {
+                    t.error(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.error(this)
+                    t.doctypePending.forceQuirks = true
+                    t.transition(BogusDoctype)
+                }
             }
         }
     },
     DoctypeSystemIdentifier_doubleQuoted {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '"':
-                    t.transition(AfterDoctypeSystemIdentifier);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.doctypePending.systemIdentifier.append(replacementChar);
-                    break;
-                case '>':
-                    t.error(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.doctypePending.systemIdentifier.append(c);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '"' -> t.transition(AfterDoctypeSystemIdentifier)
+                nullChar -> {
+                    t.error(this)
+                    t.doctypePending.systemIdentifier.append(replacementChar)
+                }
+
+                '>' -> {
+                    t.error(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                else -> t.doctypePending.systemIdentifier.append(c)
             }
         }
     },
     DoctypeSystemIdentifier_singleQuoted {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '\'':
-                    t.transition(AfterDoctypeSystemIdentifier);
-                    break;
-                case nullChar:
-                    t.error(this);
-                    t.doctypePending.systemIdentifier.append(replacementChar);
-                    break;
-                case '>':
-                    t.error(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.doctypePending.systemIdentifier.append(c);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '\'' -> t.transition(AfterDoctypeSystemIdentifier)
+                nullChar -> {
+                    t.error(this)
+                    t.doctypePending.systemIdentifier.append(replacementChar)
+                }
+
+                '>' -> {
+                    t.error(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                else -> t.doctypePending.systemIdentifier.append(c)
             }
         }
     },
     AfterDoctypeSystemIdentifier {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    break;
-                case '>':
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                case eof:
-                    t.eofError(this);
-                    t.doctypePending.forceQuirks = true;
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.error(this);
-                    t.transition(BogusDoctype);
-                    // NOT force quirks
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ' -> {}
+                '>' -> {
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                eof -> {
+                    t.eofError(this)
+                    t.doctypePending.forceQuirks = true
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                else -> {
+                    t.error(this)
+                    t.transition(BogusDoctype)
+                }
             }
         }
     },
     BogusDoctype {
-        void read(Tokeniser t, CharacterReader r) {
-            char c = r.consume();
-            switch (c) {
-                case '>':
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                case eof:
-                    t.emitDoctypePending();
-                    t.transition(Data);
-                    break;
-                default:
-                    // ignore char
-                    break;
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val c: Char = r.consume()
+            when (c) {
+                '>' -> {
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                eof -> {
+                    t.emitDoctypePending()
+                    t.transition(Data)
+                }
+
+                else -> {}
             }
         }
     },
     CdataSection {
-        void read(Tokeniser t, CharacterReader r) {
-            String data = r.consumeTo("]]>");
-            t.dataBuffer.append(data);
+        public override fun read(t: Tokeniser, r: CharacterReader) {
+            val data: String? = r.consumeTo("]]>")
+            t.dataBuffer.append(data)
             if (r.matchConsume("]]>") || r.isEmpty()) {
-                t.emit(new Token.CData(t.dataBuffer.toString()));
-                t.transition(Data);
-            }// otherwise, buffer underrun, stay in data section
+                t.emit(Token.CData(t.dataBuffer.toString()))
+                t.transition(Data)
+            } // otherwise, buffer underrun, stay in data section
         }
     };
 
+    abstract fun read(t: Tokeniser, r: CharacterReader)
 
-    abstract void read(Tokeniser t, CharacterReader r);
+    companion object {
+        val nullChar: Char = '\u0000'
 
-    static final char nullChar = '\u0000';
-    // char searches. must be sorted, used in inSorted. MUST update TokenisetStateTest if more arrays are added.
-    static final char[] attributeNameCharsSorted = new char[]{'\t', '\n', '\f', '\r', ' ', '"', '\'', '/', '<', '=', '>'};
-    static final char[] attributeValueUnquoted = new char[]{nullChar, '\t', '\n', '\f', '\r', ' ', '"', '&', '\'', '<', '=', '>', '`'};
+        // char searches. must be sorted, used in inSorted. MUST update TokenisetStateTest if more arrays are added.
+        @JvmField
+        val attributeNameCharsSorted: CharArray =
+            charArrayOf('\t', '\n', '\u000C', '\r', ' ', '"', '\'', '/', '<', '=', '>')
+        @JvmField
+        val attributeValueUnquoted: CharArray =
+            charArrayOf(nullChar, '\t', '\n', '\u000C', '\r', ' ', '"', '&', '\'', '<', '=', '>', '`')
+        private val replacementChar: Char = Tokeniser.Companion.replacementChar
+        private val replacementStr: String = Tokeniser.Companion.replacementChar.toString()
+        private val eof: Char = CharacterReader.Companion.EOF
 
-    private static final char replacementChar = Tokeniser.replacementChar;
-    private static final String replacementStr = String.valueOf(Tokeniser.replacementChar);
-    private static final char eof = CharacterReader.EOF;
-
-    /**
-     * Handles RawtextEndTagName, ScriptDataEndTagName, and ScriptDataEscapedEndTagName. Same body impl, just
-     * different else exit transitions.
-     */
-    private static void handleDataEndTag(Tokeniser t, CharacterReader r, TokeniserState elseTransition) {
-        if (r.matchesLetter()) {
-            String name = r.consumeLetterSequence();
-            t.tagPending.appendTagName(name);
-            t.dataBuffer.append(name);
-            return;
-        }
-
-        boolean needsExitTransition = false;
-        if (t.isAppropriateEndTagToken() && !r.isEmpty()) {
-            char c = r.consume();
-            switch (c) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                    t.transition(BeforeAttributeName);
-                    break;
-                case '/':
-                    t.transition(SelfClosingStartTag);
-                    break;
-                case '>':
-                    t.emitTagPending();
-                    t.transition(Data);
-                    break;
-                default:
-                    t.dataBuffer.append(c);
-                    needsExitTransition = true;
+        /**
+         * Handles RawtextEndTagName, ScriptDataEndTagName, and ScriptDataEscapedEndTagName. Same body impl, just
+         * different else exit transitions.
+         */
+        private fun handleDataEndTag(t: Tokeniser, r: CharacterReader, elseTransition: TokeniserState) {
+            if (r.matchesLetter()) {
+                val name: String? = r.consumeLetterSequence()
+                t.tagPending!!.appendTagName(name)
+                t.dataBuffer.append(name)
+                return
             }
-        } else {
-            needsExitTransition = true;
+            var needsExitTransition: Boolean = false
+            if (t.isAppropriateEndTagToken() && !r.isEmpty()) {
+                val c: Char = r.consume()
+                when (c) {
+                    '\t', '\n', '\r', '\u000C', ' ' -> t.transition(BeforeAttributeName)
+                    '/' -> t.transition(SelfClosingStartTag)
+                    '>' -> {
+                        t.emitTagPending()
+                        t.transition(Data)
+                    }
+
+                    else -> {
+                        t.dataBuffer.append(c)
+                        needsExitTransition = true
+                    }
+                }
+            } else {
+                needsExitTransition = true
+            }
+            if (needsExitTransition) {
+                t.emit("</")
+                t.emit(t.dataBuffer)
+                t.transition(elseTransition)
+            }
         }
 
-        if (needsExitTransition) {
-            t.emit("</");
-            t.emit(t.dataBuffer);
-            t.transition(elseTransition);
-        }
-    }
+        private fun readRawData(t: Tokeniser, r: CharacterReader, current: TokeniserState, advance: TokeniserState) {
+            when (r.current()) {
+                '<' -> t.advanceTransition(advance)
+                nullChar -> {
+                    t.error(current)
+                    r.advance()
+                    t.emit(replacementChar)
+                }
 
-    private static void readRawData(Tokeniser t, CharacterReader r, TokeniserState current, TokeniserState advance) {
-        switch (r.current()) {
-            case '<':
-                t.advanceTransition(advance);
-                break;
-            case nullChar:
-                t.error(current);
-                r.advance();
-                t.emit(replacementChar);
-                break;
-            case eof:
-                t.emit(new Token.EOF());
-                break;
-            default:
-                String data = r.consumeRawData();
-                t.emit(data);
-                break;
-        }
-    }
-
-    private static void readCharRef(Tokeniser t, TokeniserState advance) {
-        int[] c = t.consumeCharacterReference(null, false);
-        if (c == null)
-            t.emit('&');
-        else
-            t.emit(c);
-        t.transition(advance);
-    }
-
-    private static void readEndTag(Tokeniser t, CharacterReader r, TokeniserState a, TokeniserState b) {
-        if (r.matchesAsciiAlpha()) {
-            t.createTagPending(false);
-            t.transition(a);
-        } else {
-            t.emit("</");
-            t.transition(b);
-        }
-    }
-
-    private static void handleDataDoubleEscapeTag(Tokeniser t, CharacterReader r, TokeniserState primary, TokeniserState fallback) {
-        if (r.matchesLetter()) {
-            String name = r.consumeLetterSequence();
-            t.dataBuffer.append(name);
-            t.emit(name);
-            return;
+                eof -> t.emit(Token.EOF())
+                else -> {
+                    val data: String? = r.consumeRawData()
+                    t.emit(data)
+                }
+            }
         }
 
-        char c = r.consume();
-        switch (c) {
-            case '\t':
-            case '\n':
-            case '\r':
-            case '\f':
-            case ' ':
-            case '/':
-            case '>':
-                if (t.dataBuffer.toString().equals("script"))
-                    t.transition(primary);
-                else
-                    t.transition(fallback);
-                t.emit(c);
-                break;
-            default:
-                r.unconsume();
-                t.transition(fallback);
+        private fun readCharRef(t: Tokeniser, advance: TokeniserState) {
+            val c: IntArray? = t.consumeCharacterReference(null, false)
+            if (c == null) t.emit('&') else t.emit(c)
+            t.transition(advance)
+        }
+
+        private fun readEndTag(t: Tokeniser, r: CharacterReader, a: TokeniserState, b: TokeniserState) {
+            if (r.matchesAsciiAlpha()) {
+                t.createTagPending(false)
+                t.transition(a)
+            } else {
+                t.emit("</")
+                t.transition(b)
+            }
+        }
+
+        private fun handleDataDoubleEscapeTag(
+            t: Tokeniser,
+            r: CharacterReader,
+            primary: TokeniserState,
+            fallback: TokeniserState
+        ) {
+            if (r.matchesLetter()) {
+                val name: String? = r.consumeLetterSequence()
+                t.dataBuffer.append(name)
+                t.emit(name)
+                return
+            }
+            val c: Char = r.consume()
+            when (c) {
+                '\t', '\n', '\r', '\u000C', ' ', '/', '>' -> {
+                    if ((t.dataBuffer.toString() == "script")) t.transition(primary) else t.transition(fallback)
+                    t.emit(c)
+                }
+
+                else -> {
+                    r.unconsume()
+                    t.transition(fallback)
+                }
+            }
         }
     }
 }

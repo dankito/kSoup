@@ -1,222 +1,112 @@
-package org.jsoup.helper;
+package org.jsoup.helper
 
-import org.jsoup.internal.StringUtil;
-import org.jsoup.nodes.Attribute;
-import org.jsoup.nodes.Attributes;
-import org.jsoup.parser.HtmlTreeBuilder;
-import org.jsoup.select.NodeTraversor;
-import org.jsoup.select.NodeVisitor;
-import org.jsoup.select.Selector;
-import org.w3c.dom.Comment;
-import org.w3c.dom.DOMException;
-import org.w3c.dom.DOMImplementation;
-import org.w3c.dom.Document;
-import org.w3c.dom.DocumentType;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Text;
-
-import javax.annotation.Nullable;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-import javax.xml.xpath.XPathFactoryConfigurationException;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Stack;
-
-import static javax.xml.transform.OutputKeys.METHOD;
-import static org.jsoup.nodes.Document.OutputSettings.Syntax;
+import org.jsoup.internal.StringUtil
+import org.jsoup.nodes.*
+import org.jsoup.nodes.Comment
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.DocumentType
+import org.jsoup.nodes.Element
+import org.jsoup.parser.HtmlTreeBuilder
+import org.jsoup.select.NodeTraversor
+import org.jsoup.select.NodeVisitor
+import org.jsoup.select.Selector
+import org.w3c.dom.*
+import org.w3c.dom.Node
+import java.io.*
+import java.util.*
+import javax.xml.parsers.DocumentBuilder
+import javax.xml.parsers.DocumentBuilderFactory
+import javax.xml.parsers.ParserConfigurationException
+import javax.xml.transform.OutputKeys
+import javax.xml.transform.Transformer
+import javax.xml.transform.TransformerException
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.dom.DOMSource
+import javax.xml.transform.stream.StreamResult
+import javax.xml.xpath.*
 
 /**
- * Helper class to transform a {@link org.jsoup.nodes.Document} to a {@link org.w3c.dom.Document org.w3c.dom.Document},
+ * Helper class to transform a [org.jsoup.nodes.Document] to a [org.w3c.dom.Document],
  * for integration with toolsets that use the W3C DOM.
  */
-public class W3CDom {
-    /** For W3C Documents created by this class, this property is set on each node to link back to the original jsoup node. */
-    public static final String SourceProperty = "jsoupSource";
-    private static final String ContextProperty = "jsoupContextSource"; // tracks the jsoup context element on w3c doc
-    private static final String ContextNodeProperty = "jsoupContextNode"; // the w3c node used as the creating context
+class W3CDom() {
+    protected var factory: DocumentBuilderFactory
+    private var namespaceAware: Boolean = true // false when using selectXpath, for user's query convenience
 
-    /**
-     To get support for XPath versions &gt; 1, set this property to the classname of an alternate XPathFactory
-     implementation. (For e.g. {@code net.sf.saxon.xpath.XPathFactoryImpl}).
-     */
-    public static final String XPathFactoryProperty = "javax.xml.xpath.XPathFactory:jsoup";
-
-    protected DocumentBuilderFactory factory;
-    private boolean namespaceAware = true; // false when using selectXpath, for user's query convenience
-
-    public W3CDom() {
-        factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
+    init {
+        factory = DocumentBuilderFactory.newInstance()
+        factory.setNamespaceAware(true)
     }
 
     /**
-     Returns if this W3C DOM is namespace aware. By default, this will be {@code true}, but is disabled for simplicity
-     when using XPath selectors in {@link org.jsoup.nodes.Element#selectXpath(String)}.
-     @return the current namespace aware setting.
+     * Returns if this W3C DOM is namespace aware. By default, this will be `true`, but is disabled for simplicity
+     * when using XPath selectors in [org.jsoup.nodes.Element.selectXpath].
+     * @return the current namespace aware setting.
      */
-    public boolean namespaceAware() {
-        return namespaceAware;
+    fun namespaceAware(): Boolean {
+        return namespaceAware
     }
 
     /**
-     Update the namespace aware setting. This impacts the factory that is used to create W3C nodes from jsoup nodes.
-     <p>For HTML documents, controls if the document will be in the default {@code http://www.w3.org/1999/xhtml}
-     namespace if otherwise unset.</p>.
-     @param namespaceAware the updated setting
-     @return this W3CDom, for chaining.
-     */
-    public W3CDom namespaceAware(boolean namespaceAware) {
-        this.namespaceAware = namespaceAware;
-        factory.setNamespaceAware(namespaceAware);
-        return this;
-    }
-
-    /**
-     * Converts a jsoup DOM to a W3C DOM.
+     * Update the namespace aware setting. This impacts the factory that is used to create W3C nodes from jsoup nodes.
      *
-     * @param in jsoup Document
-     * @return W3C Document
+     * For HTML documents, controls if the document will be in the default `http://www.w3.org/1999/xhtml`
+     * namespace if otherwise unset..
+     * @param namespaceAware the updated setting
+     * @return this W3CDom, for chaining.
      */
-    public static Document convert(org.jsoup.nodes.Document in) {
-        return (new W3CDom().fromJsoup(in));
-    }
-
-    /**
-     * Serialize a W3C document to a String. Provide Properties to define output settings including if HTML or XML. If
-     * you don't provide the properties ({@code null}), the output will be auto-detected based on the content of the
-     * document.
-     *
-     * @param doc Document
-     * @param properties (optional/nullable) the output properties to use. See {@link
-     *     Transformer#setOutputProperties(Properties)} and {@link OutputKeys}
-     * @return Document as string
-     * @see #OutputHtml
-     * @see #OutputXml
-     * @see OutputKeys#ENCODING
-     * @see OutputKeys#OMIT_XML_DECLARATION
-     * @see OutputKeys#STANDALONE
-     * @see OutputKeys#STANDALONE
-     * @see OutputKeys#DOCTYPE_PUBLIC
-     * @see OutputKeys#CDATA_SECTION_ELEMENTS
-     * @see OutputKeys#INDENT
-     * @see OutputKeys#MEDIA_TYPE
-     */
-    public static String asString(Document doc, @Nullable Map<String, String> properties) {
-        try {
-            DOMSource domSource = new DOMSource(doc);
-            StringWriter writer = new StringWriter();
-            StreamResult result = new StreamResult(writer);
-            TransformerFactory tf = TransformerFactory.newInstance();
-            Transformer transformer = tf.newTransformer();
-            if (properties != null)
-                transformer.setOutputProperties(propertiesFromMap(properties));
-
-            if (doc.getDoctype() != null) {
-                DocumentType doctype = doc.getDoctype();
-                if (!StringUtil.isBlank(doctype.getPublicId()))
-                    transformer.setOutputProperty(OutputKeys.DOCTYPE_PUBLIC, doctype.getPublicId());
-                if (!StringUtil.isBlank(doctype.getSystemId()))
-                    transformer.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, doctype.getSystemId());
-                    // handle <!doctype html> for legacy dom. TODO: nicer if <!doctype html>
-                else if (doctype.getName().equalsIgnoreCase("html")
-                    && StringUtil.isBlank(doctype.getPublicId())
-                    && StringUtil.isBlank(doctype.getSystemId()))
-                    transformer.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, "about:legacy-compat");
-            }
-
-            transformer.transform(domSource, result);
-            return writer.toString();
-
-        } catch (TransformerException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    static Properties propertiesFromMap(Map<String, String> map) {
-        Properties props = new Properties();
-        props.putAll(map);
-        return props;
-    }
-
-    /** Canned default for HTML output. */
-    public static HashMap<String, String> OutputHtml() {
-        return methodMap("html");
-    }
-
-    /** Canned default for XML output. */
-    public static HashMap<String, String> OutputXml() {
-        return methodMap("xml");
-    }
-
-    private static HashMap<String, String> methodMap(String method) {
-        HashMap<String, String> map = new HashMap<>();
-        map.put(METHOD, method);
-        return map;
+    fun namespaceAware(namespaceAware: Boolean): W3CDom {
+        this.namespaceAware = namespaceAware
+        factory.setNamespaceAware(namespaceAware)
+        return this
     }
 
     /**
      * Convert a jsoup Document to a W3C Document. The created nodes will link back to the original
-     * jsoup nodes in the user property {@link #SourceProperty} (but after conversion, changes on one side will not
+     * jsoup nodes in the user property [.SourceProperty] (but after conversion, changes on one side will not
      * flow to the other).
      *
      * @param in jsoup doc
      * @return a W3C DOM Document representing the jsoup Document or Element contents.
      */
-    public Document fromJsoup(org.jsoup.nodes.Document in) {
+    fun fromJsoup(`in`: Document): org.w3c.dom.Document {
         // just method API backcompat
-        return fromJsoup((org.jsoup.nodes.Element) in);
+        return fromJsoup(`in` as Element)
     }
 
     /**
      * Convert a jsoup DOM to a W3C Document. The created nodes will link back to the original
-     * jsoup nodes in the user property {@link #SourceProperty} (but after conversion, changes on one side will not
+     * jsoup nodes in the user property [.SourceProperty] (but after conversion, changes on one side will not
      * flow to the other). The input Element is used as a context node, but the whole surrounding jsoup Document is
-     * converted. (If you just want a subtree converted, use {@link #convert(org.jsoup.nodes.Element, Document)}.)
+     * converted. (If you just want a subtree converted, use [.convert].)
      *
      * @param in jsoup element or doc
      * @return a W3C DOM Document representing the jsoup Document or Element contents.
-     * @see #sourceNodes(NodeList, Class)
-     * @see #contextNode(Document)
+     * @see .sourceNodes
+     * @see .contextNode
      */
-    public Document fromJsoup(org.jsoup.nodes.Element in) {
-        Validate.notNull(in);
-        DocumentBuilder builder;
+    fun fromJsoup(`in`: Element): org.w3c.dom.Document {
+        Validate.notNull(`in`)
+        val builder: DocumentBuilder
         try {
-            builder = factory.newDocumentBuilder();
-            DOMImplementation impl = builder.getDOMImplementation();
-            Document out = builder.newDocument();
-            org.jsoup.nodes.Document inDoc = in.ownerDocument();
-            org.jsoup.nodes.DocumentType doctype = inDoc != null ? inDoc.documentType() : null;
+            builder = factory.newDocumentBuilder()
+            val impl: DOMImplementation = builder.getDOMImplementation()
+            val out: org.w3c.dom.Document = builder.newDocument()
+            val inDoc: Document? = `in`.ownerDocument()
+            val doctype: DocumentType? = if (inDoc != null) inDoc.documentType() else null
             if (doctype != null) {
-                org.w3c.dom.DocumentType documentType = impl.createDocumentType(doctype.name(), doctype.publicId(), doctype.systemId());
-                out.appendChild(documentType);
+                val documentType: org.w3c.dom.DocumentType =
+                    impl.createDocumentType(doctype.name(), doctype.publicId(), doctype.systemId())
+                out.appendChild(documentType)
             }
-            out.setXmlStandalone(true);
+            out.setXmlStandalone(true)
             // if in is Document, use the root element, not the wrapping document, as the context:
-            org.jsoup.nodes.Element context = (in instanceof org.jsoup.nodes.Document) ? in.firstElementChild() : in;
-            out.setUserData(ContextProperty, context, null);
-            convert(inDoc != null ? inDoc : in, out);
-            return out;
-        } catch (ParserConfigurationException e) {
-            throw new IllegalStateException(e);
+            val context: Element? = if ((`in` is Document)) `in`.firstElementChild() else `in`
+            out.setUserData(ContextProperty, context, null)
+            convert(if (inDoc != null) inDoc else `in`, out)
+            return out
+        } catch (e: ParserConfigurationException) {
+            throw IllegalStateException(e)
         }
     }
 
@@ -226,11 +116,11 @@ public class W3CDom {
      *
      * @param in jsoup doc
      * @param out w3c doc
-     * @see org.jsoup.helper.W3CDom#fromJsoup(org.jsoup.nodes.Element)
+     * @see org.jsoup.helper.W3CDom.fromJsoup
      */
-    public void convert(org.jsoup.nodes.Document in, Document out) {
+    fun convert(`in`: Document, out: org.w3c.dom.Document) {
         // just provides method API backcompat
-        convert((org.jsoup.nodes.Element) in, out);
+        convert(`in` as Element, out)
     }
 
     /**
@@ -239,137 +129,122 @@ public class W3CDom {
      *
      * @param in jsoup element
      * @param out w3c doc
-     * @see org.jsoup.helper.W3CDom#fromJsoup(org.jsoup.nodes.Element)
+     * @see org.jsoup.helper.W3CDom.fromJsoup
      */
-    public void convert(org.jsoup.nodes.Element in, Document out) {
-        W3CBuilder builder = new W3CBuilder(out);
-        builder.namespaceAware = namespaceAware;
-        org.jsoup.nodes.Document inDoc = in.ownerDocument();
+    fun convert(`in`: Element, out: org.w3c.dom.Document) {
+        val builder: W3CBuilder = W3CBuilder(out)
+        builder.namespaceAware = namespaceAware
+        val inDoc: Document? = `in`.ownerDocument()
         if (inDoc != null) {
             if (!StringUtil.isBlank(inDoc.location())) {
-                out.setDocumentURI(inDoc.location());
+                out.setDocumentURI(inDoc.location())
             }
-            builder.syntax = inDoc.outputSettings().syntax();
+            builder.syntax = inDoc.outputSettings()!!.syntax()
         }
-        org.jsoup.nodes.Element rootEl = in instanceof org.jsoup.nodes.Document ? in.firstElementChild() : in; // skip the #root node if a Document
-        NodeTraversor.traverse(builder, rootEl);
+        val rootEl: Element? =
+            if (`in` is Document) `in`.firstElementChild() else `in` // skip the #root node if a Document
+        NodeTraversor.traverse(builder, rootEl)
     }
 
     /**
-     Evaluate an XPath query against the supplied document, and return the results.
-     @param xpath an XPath query
-     @param doc the document to evaluate against
-     @return the matches nodes
+     * Evaluate an XPath query against the supplied document, and return the results.
+     * @param xpath an XPath query
+     * @param doc the document to evaluate against
+     * @return the matches nodes
      */
-    public NodeList selectXpath(String xpath, Document doc) {
-        return selectXpath(xpath, (Node) doc);
+    fun selectXpath(xpath: String?, doc: org.w3c.dom.Document?): NodeList {
+        return selectXpath(xpath, doc as Node?)
     }
 
     /**
-     Evaluate an XPath query against the supplied context node, and return the results.
-     @param xpath an XPath query
-     @param contextNode the context node to evaluate against
-     @return the matches nodes
+     * Evaluate an XPath query against the supplied context node, and return the results.
+     * @param xpath an XPath query
+     * @param contextNode the context node to evaluate against
+     * @return the matches nodes
      */
-    public NodeList selectXpath(String xpath, Node contextNode) {
-        Validate.notEmptyParam(xpath, "xpath");
-        Validate.notNullParam(contextNode, "contextNode");
-
-        NodeList nodeList;
+    fun selectXpath(xpath: String?, contextNode: Node?): NodeList {
+        Validate.notEmptyParam(xpath, "xpath")
+        Validate.notNullParam(contextNode, "contextNode")
+        val nodeList: NodeList
         try {
             // if there is a configured XPath factory, use that instead of the Java base impl:
-            String property = System.getProperty(XPathFactoryProperty);
-            final XPathFactory xPathFactory = property != null ?
-                XPathFactory.newInstance("jsoup") :
-                XPathFactory.newInstance();
-
-            XPathExpression expression = xPathFactory.newXPath().compile(xpath);
-            nodeList = (NodeList) expression.evaluate(contextNode, XPathConstants.NODESET); // love the strong typing here /s
-            Validate.notNull(nodeList);
-        } catch (XPathExpressionException | XPathFactoryConfigurationException e) {
-            throw new Selector.SelectorParseException(
-                e, "Could not evaluate XPath query [%s]: %s", xpath, e.getMessage());
+            val property: String? = System.getProperty(XPathFactoryProperty)
+            val xPathFactory: XPathFactory =
+                if (property != null) XPathFactory.newInstance("jsoup") else XPathFactory.newInstance()
+            val expression: XPathExpression = xPathFactory.newXPath().compile(xpath)
+            nodeList =
+                expression.evaluate(contextNode, XPathConstants.NODESET) as NodeList // love the strong typing here /s
+            Validate.notNull(nodeList)
+        } catch (e: XPathExpressionException) {
+            throw Selector.SelectorParseException(
+                e, "Could not evaluate XPath query [%s]: %s", xpath, e.message
+            )
+        } catch (e: XPathFactoryConfigurationException) {
+            throw Selector.SelectorParseException(
+                e, "Could not evaluate XPath query [%s]: %s", xpath, e.message
+            )
         }
-        return nodeList;
+        return nodeList
     }
 
     /**
-     Retrieves the original jsoup DOM nodes from a nodelist created by this convertor.
-     @param nodeList the W3C nodes to get the original jsoup nodes from
-     @param nodeType the jsoup node type to retrieve (e.g. Element, DataNode, etc)
-     @param <T> node type
-     @return a list of the original nodes
-     */
-    public <T extends org.jsoup.nodes.Node> List<T> sourceNodes(NodeList nodeList, Class<T> nodeType) {
-        Validate.notNull(nodeList);
-        Validate.notNull(nodeType);
-        List<T> nodes = new ArrayList<>(nodeList.getLength());
-
-        for (int i = 0; i < nodeList.getLength(); i++) {
-            org.w3c.dom.Node node = nodeList.item(i);
-            Object source = node.getUserData(W3CDom.SourceProperty);
-            if (nodeType.isInstance(source))
-                nodes.add(nodeType.cast(source));
+     * Retrieves the original jsoup DOM nodes from a nodelist created by this convertor.
+     * @param nodeList the W3C nodes to get the original jsoup nodes from
+     * @param nodeType the jsoup node type to retrieve (e.g. Element, DataNode, etc)
+     * @param <T> node type
+     * @return a list of the original nodes
+    </T> */
+    fun <T : org.jsoup.nodes.Node?> sourceNodes(nodeList: NodeList?, nodeType: Class<T>): List<T> {
+        Validate.notNull(nodeList)
+        Validate.notNull(nodeType)
+        val nodes: MutableList<T> = ArrayList(nodeList!!.getLength())
+        for (i in 0 until nodeList.getLength()) {
+            val node: Node = nodeList.item(i)
+            val source: Any = node.getUserData(SourceProperty)
+            if (nodeType.isInstance(source)) nodes.add(nodeType.cast(source))
         }
-
-        return nodes;
+        return nodes
     }
 
     /**
-     For a Document created by {@link #fromJsoup(org.jsoup.nodes.Element)}, retrieves the W3C context node.
-     @param wDoc Document created by this class
-     @return the corresponding W3C Node to the jsoup Element that was used as the creating context.
+     * For a Document created by [.fromJsoup], retrieves the W3C context node.
+     * @param wDoc Document created by this class
+     * @return the corresponding W3C Node to the jsoup Element that was used as the creating context.
      */
-    public Node contextNode(Document wDoc) {
-        return (Node) wDoc.getUserData(ContextNodeProperty);
-    }
-
-    /**
-     * Serialize a W3C document to a String. The output format will be XML or HTML depending on the content of the doc.
-     *
-     * @param doc Document
-     * @return Document as string
-     * @see W3CDom#asString(Document, Map)
-     */
-    public String asString(Document doc) {
-        return asString(doc, null);
+    fun contextNode(wDoc: org.w3c.dom.Document?): Node {
+        return wDoc!!.getUserData(ContextNodeProperty) as Node
     }
 
     /**
      * Implements the conversion by walking the input.
      */
-    protected static class W3CBuilder implements NodeVisitor {
-        private static final String xmlnsKey = "xmlns";
-        private static final String xmlnsPrefix = "xmlns:";
-        private static final String xhtmlNs = "http://www.w3.org/1999/xhtml";
+    protected class W3CBuilder(private val doc: org.w3c.dom.Document) : NodeVisitor {
+        val namespaceAware: Boolean = true
+        private val namespacesStack: Stack<HashMap<String, String?>> = Stack() // stack of namespaces, prefix => urn
+        private var dest: Node
+        val syntax: Document.OutputSettings.Syntax? =
+            Document.OutputSettings.Syntax.xml // the syntax (to coerce attributes to). From the input doc if available.
+        private val contextElement: Element?
 
-        private final Document doc;
-        private boolean namespaceAware = true;
-        private final Stack<HashMap<String, String>> namespacesStack = new Stack<>(); // stack of namespaces, prefix => urn
-        private Node dest;
-        private Syntax syntax = Syntax.xml; // the syntax (to coerce attributes to). From the input doc if available.
-        @Nullable private final org.jsoup.nodes.Element contextElement;
-
-        public W3CBuilder(Document doc) {
-            this.doc = doc;
-            namespacesStack.push(new HashMap<>());
-            dest = doc;
-            contextElement = (org.jsoup.nodes.Element) doc.getUserData(ContextProperty); // Track the context jsoup Element, so we can save the corresponding w3c element
-            final org.jsoup.nodes.Document inDoc = contextElement.ownerDocument();
-            if (namespaceAware && inDoc != null && inDoc.parser().getTreeBuilder() instanceof HtmlTreeBuilder) {
-              // as per the WHATWG HTML5 spec § 2.1.3, elements are in the HTML namespace by default
-              namespacesStack.peek().put("", xhtmlNs);
+        init {
+            namespacesStack.push(HashMap())
+            dest = doc
+            contextElement =
+                doc.getUserData(ContextProperty) as Element? // Track the context jsoup Element, so we can save the corresponding w3c element
+            val inDoc: Document? = contextElement!!.ownerDocument()
+            if (namespaceAware && (inDoc != null) && inDoc.parser().getTreeBuilder() is HtmlTreeBuilder) {
+                // as per the WHATWG HTML5 spec § 2.1.3, elements are in the HTML namespace by default
+                namespacesStack.peek().put("", xhtmlNs)
             }
-          }
+        }
 
-        public void head(org.jsoup.nodes.Node source, int depth) {
-            namespacesStack.push(new HashMap<>(namespacesStack.peek())); // inherit from above on the stack
-            if (source instanceof org.jsoup.nodes.Element) {
-                org.jsoup.nodes.Element sourceEl = (org.jsoup.nodes.Element) source;
-
-                String prefix = updateNamespaces(sourceEl);
-                String namespace = namespaceAware ? namespacesStack.peek().get(prefix) : null;
-                String tagName = sourceEl.tagName();
+        public override fun head(source: org.jsoup.nodes.Node, depth: Int) {
+            namespacesStack.push(HashMap(namespacesStack.peek())) // inherit from above on the stack
+            if (source is Element) {
+                val sourceEl: Element = source
+                val prefix: String = updateNamespaces(sourceEl)
+                val namespace: String? = if (namespaceAware) namespacesStack.peek().get(prefix) else null
+                val tagName: String? = sourceEl.tagName()
 
                 /* Tag names in XML are quite permissive, but less permissive than HTML. Rather than reimplement the validation,
                 we just try to use it as-is. If it fails, insert as a text node instead. We don't try to normalize the
@@ -377,50 +252,50 @@ public class W3CDom {
                 how browsers handle the situation, also. https://github.com/jhy/jsoup/issues/1093 */
                 try {
                     // use an empty namespace if none is present but the tag name has a prefix
-                    String imputedNamespace = namespace == null && tagName.contains(":") ? "" : namespace;
-                    Element el = doc.createElementNS(imputedNamespace, tagName);
-                    copyAttributes(sourceEl, el);
-                    append(el, sourceEl);
-                    if (sourceEl == contextElement)
-                        doc.setUserData(ContextNodeProperty, el, null);
-                    dest = el; // descend
-                } catch (DOMException e) {
-                    append(doc.createTextNode("<" + tagName + ">"), sourceEl);
+                    val imputedNamespace: String =
+                        if (namespace == null && tagName!!.contains(":")) "" else (namespace)!!
+                    val el: org.w3c.dom.Element = doc.createElementNS(imputedNamespace, tagName)
+                    copyAttributes(sourceEl, el)
+                    append(el, sourceEl)
+                    if (sourceEl === contextElement) doc.setUserData(ContextNodeProperty, el, null)
+                    dest = el // descend
+                } catch (e: DOMException) {
+                    append(doc.createTextNode("<" + tagName + ">"), sourceEl)
                 }
-            } else if (source instanceof org.jsoup.nodes.TextNode) {
-                org.jsoup.nodes.TextNode sourceText = (org.jsoup.nodes.TextNode) source;
-                Text text = doc.createTextNode(sourceText.getWholeText());
-                append(text, sourceText);
-            } else if (source instanceof org.jsoup.nodes.Comment) {
-                org.jsoup.nodes.Comment sourceComment = (org.jsoup.nodes.Comment) source;
-                Comment comment = doc.createComment(sourceComment.getData());
-                append(comment, sourceComment);
-            } else if (source instanceof org.jsoup.nodes.DataNode) {
-                org.jsoup.nodes.DataNode sourceData = (org.jsoup.nodes.DataNode) source;
-                Text node = doc.createTextNode(sourceData.getWholeData());
-                append(node, sourceData);
+            } else if (source is TextNode) {
+                val sourceText: TextNode = source
+                val text: Text = doc.createTextNode(sourceText.getWholeText())
+                append(text, sourceText)
+            } else if (source is Comment) {
+                val sourceComment: Comment = source
+                val comment: org.w3c.dom.Comment = doc.createComment(sourceComment.getData())
+                append(comment, sourceComment)
+            } else if (source is DataNode) {
+                val sourceData: DataNode = source
+                val node: Text = doc.createTextNode(sourceData.getWholeData())
+                append(node, sourceData)
             } else {
                 // unhandled. note that doctype is not handled here - rather it is used in the initial doc creation
             }
         }
 
-        private void append(Node append, org.jsoup.nodes.Node source) {
-            append.setUserData(SourceProperty, source, null);
-            dest.appendChild(append);
+        private fun append(append: Node, source: org.jsoup.nodes.Node) {
+            append.setUserData(SourceProperty, source, null)
+            dest.appendChild(append)
         }
 
-        public void tail(org.jsoup.nodes.Node source, int depth) {
-            if (source instanceof org.jsoup.nodes.Element && dest.getParentNode() instanceof Element) {
-                dest = dest.getParentNode(); // undescend
+        public override fun tail(source: org.jsoup.nodes.Node?, depth: Int) {
+            if (source is Element && dest.getParentNode() is org.w3c.dom.Element) {
+                dest = dest.getParentNode() // undescend
             }
-            namespacesStack.pop();
+            namespacesStack.pop()
         }
 
-        private void copyAttributes(org.jsoup.nodes.Node source, Element el) {
-            for (Attribute attribute : source.attributes()) {
-                String key = Attribute.getValidKey(attribute.getKey(), syntax);
+        private fun copyAttributes(source: org.jsoup.nodes.Node, el: org.w3c.dom.Element) {
+            for (attribute: Attribute in source.attributes()) {
+                val key: String? = Attribute.Companion.getValidKey(attribute.key, syntax)
                 if (key != null) { // null if couldn't be coerced to validity
-                    el.setAttribute(key, attribute.getValue());
+                    el.setAttribute(key, attribute.value)
                 }
             }
         }
@@ -428,27 +303,146 @@ public class W3CDom {
         /**
          * Finds any namespaces defined in this element. Returns any tag prefix.
          */
-        private String updateNamespaces(org.jsoup.nodes.Element el) {
+        private fun updateNamespaces(el: Element): String {
             // scan the element for namespace declarations
             // like: xmlns="blah" or xmlns:prefix="blah"
-            Attributes attributes = el.attributes();
-            for (Attribute attr : attributes) {
-                String key = attr.getKey();
-                String prefix;
-                if (key.equals(xmlnsKey)) {
-                    prefix = "";
-                } else if (key.startsWith(xmlnsPrefix)) {
-                    prefix = key.substring(xmlnsPrefix.length());
+            val attributes: Attributes? = el.attributes()
+            for (attr: Attribute in attributes!!) {
+                val key: String? = attr.key
+                var prefix: String?
+                if ((key == xmlnsKey)) {
+                    prefix = ""
+                } else if (key!!.startsWith(xmlnsPrefix)) {
+                    prefix = key.substring(xmlnsPrefix.length)
                 } else {
-                    continue;
+                    continue
                 }
-                namespacesStack.peek().put(prefix, attr.getValue());
+                namespacesStack.peek().put(prefix, attr.value)
             }
 
             // get the element prefix if any
-            int pos = el.tagName().indexOf(':');
-            return pos > 0 ? el.tagName().substring(0, pos) : "";
+            val pos: Int = el.tagName()!!.indexOf(':')
+            return if (pos > 0) el.tagName()!!.substring(0, pos) else ""
         }
 
+        companion object {
+            private val xmlnsKey: String = "xmlns"
+            private val xmlnsPrefix: String = "xmlns:"
+            private val xhtmlNs: String = "http://www.w3.org/1999/xhtml"
+        }
+    }
+
+    companion object {
+        /** For W3C Documents created by this class, this property is set on each node to link back to the original jsoup node.  */
+        @JvmField
+        val SourceProperty: String = "jsoupSource"
+        private val ContextProperty: String = "jsoupContextSource" // tracks the jsoup context element on w3c doc
+        private val ContextNodeProperty: String = "jsoupContextNode" // the w3c node used as the creating context
+
+        /**
+         * To get support for XPath versions &gt; 1, set this property to the classname of an alternate XPathFactory
+         * implementation. (For e.g. `net.sf.saxon.xpath.XPathFactoryImpl`).
+         */
+        @JvmField
+        val XPathFactoryProperty: String = "javax.xml.xpath.XPathFactory:jsoup"
+
+        /**
+         * Converts a jsoup DOM to a W3C DOM.
+         *
+         * @param in jsoup Document
+         * @return W3C Document
+         */
+        @JvmStatic
+        fun convert(`in`: Document): org.w3c.dom.Document {
+            return (W3CDom().fromJsoup(`in`))
+        }
+        /**
+         * Serialize a W3C document to a String. Provide Properties to define output settings including if HTML or XML. If
+         * you don't provide the properties (`null`), the output will be auto-detected based on the content of the
+         * document.
+         *
+         * @param doc Document
+         * @param properties (optional/nullable) the output properties to use. See [     ][Transformer.setOutputProperties] and [OutputKeys]
+         * @return Document as string
+         * @see .OutputHtml
+         *
+         * @see .OutputXml
+         *
+         * @see OutputKeys.ENCODING
+         *
+         * @see OutputKeys.OMIT_XML_DECLARATION
+         *
+         * @see OutputKeys.STANDALONE
+         *
+         * @see OutputKeys.STANDALONE
+         *
+         * @see OutputKeys.DOCTYPE_PUBLIC
+         *
+         * @see OutputKeys.CDATA_SECTION_ELEMENTS
+         *
+         * @see OutputKeys.INDENT
+         *
+         * @see OutputKeys.MEDIA_TYPE
+         */
+        /**
+         * Serialize a W3C document to a String. The output format will be XML or HTML depending on the content of the doc.
+         *
+         * @param doc Document
+         * @return Document as string
+         * @see W3CDom.asString
+         */
+        @JvmOverloads
+        fun asString(doc: org.w3c.dom.Document, properties: Map<String?, String?>? = null): String {
+            try {
+                val domSource: DOMSource = DOMSource(doc)
+                val writer: StringWriter = StringWriter()
+                val result: StreamResult = StreamResult(writer)
+                val tf: TransformerFactory = TransformerFactory.newInstance()
+                val transformer: Transformer = tf.newTransformer()
+                if (properties != null) transformer.setOutputProperties(propertiesFromMap(properties))
+                if (doc.getDoctype() != null) {
+                    val doctype: org.w3c.dom.DocumentType = doc.getDoctype()
+                    if (!StringUtil.isBlank(doctype.getPublicId())) transformer.setOutputProperty(
+                        OutputKeys.DOCTYPE_PUBLIC,
+                        doctype.getPublicId()
+                    )
+                    if (!StringUtil.isBlank(doctype.getSystemId())) transformer.setOutputProperty(
+                        OutputKeys.DOCTYPE_SYSTEM,
+                        doctype.getSystemId()
+                    ) else if ((doctype.getName().equals("html", ignoreCase = true)
+                                && StringUtil.isBlank(doctype.getPublicId())
+                                && StringUtil.isBlank(doctype.getSystemId()))
+                    ) transformer.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, "about:legacy-compat")
+                }
+                transformer.transform(domSource, result)
+                return writer.toString()
+            } catch (e: TransformerException) {
+                throw IllegalStateException(e)
+            }
+        }
+
+        fun propertiesFromMap(map: Map<String?, String?>?): Properties {
+            val props: Properties = Properties()
+            props.putAll((map)!!)
+            return props
+        }
+
+        /** Canned default for HTML output.  */
+        @JvmStatic
+        fun OutputHtml(): HashMap<String, String> {
+            return methodMap("html")
+        }
+
+        /** Canned default for XML output.  */
+        @JvmStatic
+        fun OutputXml(): HashMap<String, String> {
+            return methodMap("xml")
+        }
+
+        private fun methodMap(method: String): HashMap<String, String> {
+            val map: HashMap<String, String> = HashMap()
+            map.put(OutputKeys.METHOD, method)
+            return map
+        }
     }
 }

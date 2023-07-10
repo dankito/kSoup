@@ -1,80 +1,64 @@
-package org.jsoup.select;
+package org.jsoup.select
 
-import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
-
-import javax.annotation.Nullable;
-
-import static org.jsoup.select.NodeFilter.FilterResult.CONTINUE;
-import static org.jsoup.select.NodeFilter.FilterResult.STOP;
+import org.jsoup.nodes.Element
+import org.jsoup.nodes.Node
 
 /**
  * Collects a list of elements that match the supplied criteria.
  *
  * @author Jonathan Hedley
  */
-public class Collector {
-
-    private Collector() {}
-
+object Collector {
     /**
-     Build a list of elements, by visiting root and every descendant of root, and testing it against the evaluator.
-     @param eval Evaluator to test elements against
-     @param root root of tree to descend
-     @return list of matches; empty if none
+     * Build a list of elements, by visiting root and every descendant of root, and testing it against the evaluator.
+     * @param eval Evaluator to test elements against
+     * @param root root of tree to descend
+     * @return list of matches; empty if none
      */
-    public static Elements collect (Evaluator eval, Element root) {
-        eval.reset();
-        Elements elements = new Elements();
-        NodeTraversor.traverse((node, depth) -> {
-            if (node instanceof Element) {
-                Element el = (Element) node;
-                if (eval.matches(root, el))
-                    elements.add(el);
+    fun collect(eval: Evaluator?, root: Element?): Elements {
+        eval.reset()
+        val elements: Elements = Elements()
+        NodeTraversor.traverse(NodeVisitor({ node: Node?, depth: Int ->
+            if (node is Element) {
+                val el: Element = node as Element
+                if (eval.matches(root, el)) elements.add(el)
             }
-        }, root);
-        return elements;
+        }), root)
+        return elements
     }
 
     /**
-     Finds the first Element that matches the Evaluator that descends from the root, and stops the query once that first
-     match is found.
-     @param eval Evaluator to test elements against
-     @param root root of tree to descend
-     @return the first match; {@code null} if none
+     * Finds the first Element that matches the Evaluator that descends from the root, and stops the query once that first
+     * match is found.
+     * @param eval Evaluator to test elements against
+     * @param root root of tree to descend
+     * @return the first match; `null` if none
      */
-    public static @Nullable Element findFirst(Evaluator eval, Element root) {
-        eval.reset();
-        FirstFinder finder = new FirstFinder(eval);
-        return finder.find(root, root);
+    fun findFirst(eval: Evaluator?, root: Element): Element? {
+        eval.reset()
+        val finder: FirstFinder = FirstFinder(eval)
+        return finder.find(root, root)
     }
 
-    static class FirstFinder implements NodeFilter {
-        private @Nullable Element evalRoot = null;
-        private @Nullable Element match = null;
-        private final Evaluator eval;
-
-        FirstFinder(Evaluator eval) {
-            this.eval = eval;
+    internal class FirstFinder(private val eval: Evaluator) : NodeFilter {
+        private var evalRoot: Element? = null
+        private var match: Element? = null
+        fun find(root: Element?, start: Element): Element? {
+            evalRoot = root
+            match = null
+            NodeTraversor.filter(this, start)
+            return match
         }
 
-        @Nullable Element find(Element root, Element start) {
-            evalRoot = root;
-            match = null;
-            NodeTraversor.filter(this, start);
-            return match;
-        }
-
-        @Override
-        public FilterResult head(Node node, int depth) {
-            if (node instanceof Element) {
-                Element el = (Element) node;
+        override fun head(node: Node, depth: Int): NodeFilter.FilterResult {
+            if (node is Element) {
+                val el: Element = node as Element
                 if (eval.matches(evalRoot, el)) {
-                    match = el;
-                    return STOP;
+                    match = el
+                    return NodeFilter.FilterResult.STOP
                 }
             }
-            return CONTINUE;
+            return NodeFilter.FilterResult.CONTINUE
         }
     }
 }

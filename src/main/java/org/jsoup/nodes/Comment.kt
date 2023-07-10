@@ -1,98 +1,97 @@
-package org.jsoup.nodes;
+package org.jsoup.nodes
 
-import org.jsoup.parser.ParseSettings;
-import org.jsoup.parser.Parser;
-
-import javax.annotation.Nullable;
-import java.io.IOException;
+import org.jsoup.parser.ParseSettings
+import org.jsoup.parser.Parser
+import java.io.IOException
 
 /**
- A comment node.
-
- @author Jonathan Hedley, jonathan@hedley.net */
-public class Comment extends LeafNode {
+ * A comment node.
+ *
+ * @author Jonathan Hedley, jonathan@hedley.net
+ */
+class Comment(data: String) : LeafNode() {
     /**
-     Create a new comment node.
-     @param data The contents of the comment
+     * Create a new comment node.
+     * @param data The contents of the comment
      */
-    public Comment(String data) {
-        value = data;
+    init {
+        value = data
     }
 
-    public String nodeName() {
-        return "#comment";
+    override fun nodeName(): String {
+        return "#comment"
     }
 
-    /**
-     Get the contents of the comment.
-     @return comment content
-     */
-    public String getData() {
-        return coreValue();
+    val data: String?
+        /**
+         * Get the contents of the comment.
+         * @return comment content
+         */
+        get() = coreValue()
+
+    fun setData(data: String?): Comment {
+        coreValue(data)
+        return this
     }
 
-    public Comment setData(String data) {
-        coreValue(data);
-        return this;
-    }
-
-    @Override
-	void outerHtmlHead(Appendable accum, int depth, Document.OutputSettings out) throws IOException {
-        if (out.prettyPrint() && ((isEffectivelyFirst() && parentNode instanceof Element && ((Element) parentNode).tag().formatAsBlock()) || (out.outline() )))
-            indent(accum, depth, out);
+    @Throws(IOException::class)
+    override fun outerHtmlHead(accum: Appendable, depth: Int, out: Document.OutputSettings) {
+        if (out.prettyPrint() && (isEffectivelyFirst && parentNode is Element && (parentNode as Element).tag()!!
+                .formatAsBlock() || out.outline())
+        ) indent(accum, depth, out)
         accum
-                .append("<!--")
-                .append(getData())
-                .append("-->");
+            .append("<!--")
+            .append(data)
+            .append("-->")
     }
 
-    @Override
-    void outerHtmlTail(Appendable accum, int depth, Document.OutputSettings out) {}
-
-    @Override
-    public String toString() {
-        return outerHtml();
+    public override fun outerHtmlTail(accum: Appendable?, depth: Int, out: Document.OutputSettings?) {}
+    override fun toString(): String {
+        return outerHtml()!!
     }
 
-    @Override
-    public Comment clone() {
-        return (Comment) super.clone();
+    override fun clone(): Comment {
+        return super.clone() as Comment
     }
 
-    /**
-     * Check if this comment looks like an XML Declaration.
-     * @return true if it looks like, maybe, it's an XML Declaration.
-     */
-    public boolean isXmlDeclaration() {
-        String data = getData();
-        return isXmlDeclarationData(data);
-    }
-
-    private static boolean isXmlDeclarationData(String data) {
-        return (data.length() > 1 && (data.startsWith("!") || data.startsWith("?")));
-    }
+    val isXmlDeclaration: Boolean
+        /**
+         * Check if this comment looks like an XML Declaration.
+         * @return true if it looks like, maybe, it's an XML Declaration.
+         */
+        get() {
+            val data = data
+            return isXmlDeclarationData(data)
+        }
 
     /**
      * Attempt to cast this comment to an XML Declaration node.
      * @return an XML declaration if it could be parsed as one, null otherwise.
      */
-    public @Nullable XmlDeclaration asXmlDeclaration() {
-        String data = getData();
-
-        XmlDeclaration decl = null;
-        String declContent = data.substring(1, data.length() - 1);
+    fun asXmlDeclaration(): XmlDeclaration? {
+        val data = data
+        var decl: XmlDeclaration? = null
+        val declContent = data!!.substring(1, data.length - 1)
         // make sure this bogus comment is not immediately followed by another, treat as comment if so
-        if (isXmlDeclarationData(declContent))
-            return null;
-
-        String fragment = "<" + declContent + ">";
+        if (isXmlDeclarationData(declContent)) return null
+        val fragment = "<$declContent>"
         // use the HTML parser not XML, so we don't get into a recursive XML Declaration on contrived data
-        Document doc = Parser.htmlParser().settings(ParseSettings.preserveCase).parseInput(fragment, baseUri());
-        if (doc.body().childrenSize() > 0) {
-            Element el = doc.body().child(0);
-            decl = new XmlDeclaration(NodeUtils.parser(doc).settings().normalizeTag(el.tagName()), data.startsWith("!"));
-            decl.attributes().addAll(el.attributes());
+        val doc: Document =
+            Parser.Companion.htmlParser().settings(ParseSettings.Companion.preserveCase).parseInput(fragment, baseUri())
+        if (doc.body()!!.childrenSize() > 0) {
+            val el = doc.body()!!.child(0)
+            decl = XmlDeclaration(
+                NodeUtils.parser(doc)!!.settings()!!.normalizeTag(el!!.tagName())!!,
+                data.startsWith("!")
+            )
+            decl.attributes().addAll(el.attributes())
         }
-        return decl;
+        return decl
+    }
+
+    companion object {
+        private fun isXmlDeclarationData(data: String?): Boolean {
+            return data!!.length > 1 && (data.startsWith("!") || data.startsWith("?"))
+        }
     }
 }

@@ -1,56 +1,49 @@
-package org.jsoup.examples;
+package org.jsoup.examples
 
-import org.jsoup.Jsoup;
-import org.jsoup.helper.Validate;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-
-import java.io.IOException;
+import org.jsoup.Jsoup
+import org.jsoup.helper.Validate
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
+import org.jsoup.select.Elements
+import java.io.IOException
 
 /**
  * Example program to list links from a URL.
  */
-public class ListLinks {
-    public static void main(String[] args) throws IOException {
-        Validate.isTrue(args.length == 1, "usage: supply url to fetch");
-        String url = args[0];
-        print("Fetching %s...", url);
-
-        Document doc = Jsoup.connect(url).get();
-        Elements links = doc.select("a[href]");
-        Elements media = doc.select("[src]");
-        Elements imports = doc.select("link[href]");
-
-        print("\nMedia: (%d)", media.size());
-        for (Element src : media) {
-            if (src.normalName().equals("img"))
-                print(" * %s: <%s> %sx%s (%s)",
-                        src.tagName(), src.attr("abs:src"), src.attr("width"), src.attr("height"),
-                        trim(src.attr("alt"), 20));
-            else
-                print(" * %s: <%s>", src.tagName(), src.attr("abs:src"));
+object ListLinks {
+    @Throws(IOException::class)
+    @JvmStatic
+    fun main(args: Array<String>) {
+        Validate.isTrue(args.size == 1, "usage: supply url to fetch")
+        val url: String = args.get(0)
+        print("Fetching %s...", url)
+        val doc: Document? = Jsoup.connect(url).get()
+        val links: Elements? = doc.select("a[href]")
+        val media: Elements? = doc.select("[src]")
+        val imports: Elements? = doc.select("link[href]")
+        print("\nMedia: (%d)", media.size)
+        for (src: Element in media) {
+            if ((src.normalName() == "img")) print(
+                " * %s: <%s> %sx%s (%s)",
+                src.tagName(), src.attr("abs:src"), src.attr("width"), src.attr("height"),
+                trim(src.attr("alt"), 20)
+            ) else print(" * %s: <%s>", src.tagName(), src.attr("abs:src"))
         }
-
-        print("\nImports: (%d)", imports.size());
-        for (Element link : imports) {
-            print(" * %s <%s> (%s)", link.tagName(),link.attr("abs:href"), link.attr("rel"));
+        print("\nImports: (%d)", imports.size)
+        for (link: Element in imports) {
+            print(" * %s <%s> (%s)", link.tagName(), link.attr("abs:href"), link.attr("rel"))
         }
-
-        print("\nLinks: (%d)", links.size());
-        for (Element link : links) {
-            print(" * a: <%s>  (%s)", link.attr("abs:href"), trim(link.text(), 35));
+        print("\nLinks: (%d)", links.size)
+        for (link: Element in links) {
+            print(" * a: <%s>  (%s)", link.attr("abs:href"), trim(link.text(), 35))
         }
     }
 
-    private static void print(String msg, Object... args) {
-        System.out.println(String.format(msg, args));
+    private fun print(msg: String, vararg args: Any) {
+        println(String.format(msg, *args))
     }
 
-    private static String trim(String s, int width) {
-        if (s.length() > width)
-            return s.substring(0, width-1) + ".";
-        else
-            return s;
+    private fun trim(s: String?, width: Int): String? {
+        if (s.length > width) return s.substring(0, width - 1) + "." else return s
     }
 }

@@ -1,337 +1,320 @@
-package org.jsoup.parser;
+package org.jsoup.parser
 
-import org.jsoup.helper.Validate;
-import org.jsoup.internal.StringUtil;
-import org.jsoup.nodes.Entities;
-
-import javax.annotation.Nullable;
-import java.util.Arrays;
+import org.jsoup.helper.Validate
+import org.jsoup.internal.StringUtil
+import org.jsoup.nodes.Entities
+import org.jsoup.parser.Token.Doctype
+import org.jsoup.parser.Token.StartTag
+import java.util.*
 
 /**
  * Readers the input stream into tokens.
  */
-final class Tokeniser {
-    static final char replacementChar = '\uFFFD'; // replaces null character
-    private static final char[] notCharRefCharsSorted = new char[]{'\t', '\n', '\r', '\f', ' ', '<', '&'};
+internal class Tokeniser(
+    private val reader: CharacterReader, // html input
+    private val errors: ParseErrorList // errors found while tokenising
+) {
 
-    // Some illegal character escapes are parsed by browsers as windows-1252 instead. See issue #1034
-    // https://html.spec.whatwg.org/multipage/parsing.html#numeric-character-reference-end-state
-    static final int win1252ExtensionsStart = 0x80;
-    static final int[] win1252Extensions = new int[] {
-            // we could build this manually, but Windows-1252 is not a standard java charset so that could break on
-            // some platforms - this table is verified with a test
-            0x20AC, 0x0081, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021,
-            0x02C6, 0x2030, 0x0160, 0x2039, 0x0152, 0x008D, 0x017D, 0x008F,
-            0x0090, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014,
-            0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0x009D, 0x017E, 0x0178,
-    };
+    private var state: TokeniserState = TokeniserState.Data // current tokenisation state
 
-    static {
-        Arrays.sort(notCharRefCharsSorted);
-    }
+    private var emitPending: Token? = null // the token we are about to emit on next read
+    private var isEmitPending = false
 
-    private final CharacterReader reader; // html input
-    private final ParseErrorList errors; // errors found while tokenising
+    private var charsString: String? = null // characters pending an emit. Will fall to charsBuilder if more than one
+    private val charsBuilder: StringBuilder =
+        StringBuilder(1024) // buffers characters to output as one token, if more than one emit per read
+    var dataBuffer: StringBuilder = StringBuilder(1024) // buffers data looking for </script>
+    var startPending: StartTag = StartTag()
+    var endPending = Token.EndTag()
+    var tagPending: Token.Tag = startPending // tag we are building up: start or end pending
+    var charPending = Token.Character()
+    var doctypePending: Doctype = Doctype() // doctype building up
+    var commentPending = Token.Comment() // comment building up
 
-    private TokeniserState state = TokeniserState.Data; // current tokenisation state
-    @Nullable private Token emitPending = null; // the token we are about to emit on next read
-    private boolean isEmitPending = false;
-    @Nullable private String charsString = null; // characters pending an emit. Will fall to charsBuilder if more than one
-    private final StringBuilder charsBuilder = new StringBuilder(1024); // buffers characters to output as one token, if more than one emit per read
-    StringBuilder dataBuffer = new StringBuilder(1024); // buffers data looking for </script>
+    private var lastStartTag: String? = null // the last start tag emitted, to test appropriate end tag
 
-    Token.StartTag startPending = new Token.StartTag();
-    Token.EndTag endPending = new Token.EndTag();
-    Token.Tag tagPending = startPending; // tag we are building up: start or end pending
-    Token.Character charPending = new Token.Character();
-    Token.Doctype doctypePending = new Token.Doctype(); // doctype building up
-    Token.Comment commentPending = new Token.Comment(); // comment building up
-    @Nullable private String lastStartTag; // the last start tag emitted, to test appropriate end tag
-    @Nullable private String lastStartCloseSeq; // "</" + lastStartTag, so we can quickly check for that in RCData
+    private var lastStartCloseSeq: String? = null // "</" + lastStartTag, so we can quickly check for that in RCData
+    private var markupStartPos = 0
+    private var charStartPos = Unset // reader pos at the start of markup / characters. updated on state transition
 
-    private static final int Unset = -1;
-    private int markupStartPos, charStartPos = Unset; // reader pos at the start of markup / characters. updated on state transition
+    private val codepointHolder = IntArray(1) // holder to not have to keep creating arrays
+    private val multipointHolder = IntArray(2)
 
-    Tokeniser(CharacterReader reader, ParseErrorList errors) {
-        this.reader = reader;
-        this.errors = errors;
-    }
-
-    Token read() {
+    fun read(): Token {
         while (!isEmitPending) {
-            state.read(this, reader);
+            state.read(this, reader)
         }
 
         // if emit is pending, a non-character token was found: return any chars in buffer, and leave token for next read:
-        final StringBuilder cb = this.charsBuilder;
-        if (cb.length() != 0) {
-            String str = cb.toString();
-            cb.delete(0, cb.length());
-            Token token = charPending.data(str);
-            charsString = null;
-            return token;
+        val cb: StringBuilder = charsBuilder
+        return if (cb.length != 0) {
+            val str: String = cb.toString()
+            cb.clear()
+            val token: Token = charPending.data(str)
+            charsString = null
+            token
         } else if (charsString != null) {
-            Token token = charPending.data(charsString);
-            charsString = null;
-            return token;
+            val token: Token = charPending.data(charsString)
+            charsString = null
+            token
         } else {
-            isEmitPending = false;
-            assert emitPending != null;
-            return emitPending;
+            isEmitPending = false
+            requireNotNull(emitPending)
+            emitPending!!
         }
     }
 
-    void emit(Token token) {
-        Validate.isFalse(isEmitPending);
-
-        emitPending = token;
-        isEmitPending = true;
-        token.startPos(markupStartPos);
-        token.endPos(reader.pos());
-        charStartPos = Unset;
-
+    fun emit(token: Token?) {
+        Validate.isFalse(isEmitPending)
+        emitPending = token
+        isEmitPending = true
+        token!!.startPos(markupStartPos)
+        token.endPos(reader.pos())
+        charStartPos = Unset
         if (token.type == Token.TokenType.StartTag) {
-            Token.StartTag startTag = (Token.StartTag) token;
-            lastStartTag = startTag.tagName;
-            lastStartCloseSeq = null; // only lazy inits
+            val startTag: StartTag? = token as StartTag?
+            lastStartTag = startTag!!.tagName
+            lastStartCloseSeq = null // only lazy inits
         } else if (token.type == Token.TokenType.EndTag) {
-            Token.EndTag endTag = (Token.EndTag) token;
-            if (endTag.hasAttributes())
-                error("Attributes incorrectly present on end tag [/%s]", endTag.normalName());
+            val endTag: Token.EndTag? = token as Token.EndTag?
+            if (endTag!!.hasAttributes()) error("Attributes incorrectly present on end tag [/%s]", endTag.normalName())
         }
     }
 
-    void emit(final String str) {
+    fun emit(str: String?) {
         // buffer strings up until last string token found, to emit only one token for a run of character refs etc.
         // does not set isEmitPending; read checks that
         if (charsString == null) {
-            charsString = str;
+            charsString = str
         } else {
-            if (charsBuilder.length() == 0) { // switching to string builder as more than one emit before read
-                charsBuilder.append(charsString);
+            if (charsBuilder.length == 0) { // switching to string builder as more than one emit before read
+                charsBuilder.append(charsString)
             }
-            charsBuilder.append(str);
+            charsBuilder.append(str)
         }
-        charPending.startPos(charStartPos);
-        charPending.endPos(reader.pos());
+        charPending.startPos(charStartPos)
+        charPending.endPos(reader.pos())
     }
 
     // variations to limit need to create temp strings
-    void emit(final StringBuilder str) {
+    fun emit(str: StringBuilder?) {
         if (charsString == null) {
-            charsString = str.toString();
+            charsString = str.toString()
         } else {
-            if (charsBuilder.length() == 0) {
-                charsBuilder.append(charsString);
+            if (charsBuilder.length == 0) {
+                charsBuilder.append(charsString)
             }
-            charsBuilder.append(str);
+            charsBuilder.append(str)
         }
-        charPending.startPos(charStartPos);
-        charPending.endPos(reader.pos());
+        charPending.startPos(charStartPos)
+        charPending.endPos(reader.pos())
     }
 
-    void emit(char c) {
+    fun emit(c: Char) {
         if (charsString == null) {
-            charsString = String.valueOf(c);
+            charsString = c.toString()
         } else {
-            if (charsBuilder.length() == 0) {
-                charsBuilder.append(charsString);
+            if (charsBuilder.length == 0) {
+                charsBuilder.append(charsString)
             }
-            charsBuilder.append(c);
+            charsBuilder.append(c)
         }
-        charPending.startPos(charStartPos);
-        charPending.endPos(reader.pos());
+        charPending.startPos(charStartPos)
+        charPending.endPos(reader.pos())
     }
 
-    void emit(char[] chars) {
-        emit(String.valueOf(chars));
+    fun emit(chars: CharArray?) {
+        emit(String((chars)!!))
     }
 
-    void emit(int[] codepoints) {
-        emit(new String(codepoints, 0, codepoints.length));
+    fun emit(codepoints: IntArray) {
+        emit(String(codepoints, 0, codepoints.size))
     }
 
-    TokeniserState getState() {
-        return state;
-    }
-
-    void transition(TokeniserState newState) {
+    fun transition(newState: TokeniserState) {
         // track markup / data position on state transitions
-        switch (newState) {
-            case TagOpen:
-                markupStartPos = reader.pos();
-                break;
-            case Data:
-                if (charStartPos == Unset) // don't reset when we are jumping between e.g data -> char ref -> data
-                    charStartPos = reader.pos();
+        when (newState) {
+            TokeniserState.TagOpen -> markupStartPos = reader.pos()
+            TokeniserState.Data -> if (charStartPos == Unset) // don't reset when we are jumping between e.g data -> char ref -> data
+                charStartPos = reader.pos()
+            else -> { }
         }
-
-        this.state = newState;
+        state = newState
     }
 
-    void advanceTransition(TokeniserState newState) {
-        transition(newState);
-        reader.advance();
+    fun advanceTransition(newState: TokeniserState) {
+        transition(newState)
+        reader.advance()
     }
 
-    final private int[] codepointHolder = new int[1]; // holder to not have to keep creating arrays
-    final private int[] multipointHolder = new int[2];
-    @Nullable int[] consumeCharacterReference(@Nullable Character additionalAllowedCharacter, boolean inAttribute) {
-        if (reader.isEmpty())
-            return null;
-        if (additionalAllowedCharacter != null && additionalAllowedCharacter == reader.current())
-            return null;
-        if (reader.matchesAnySorted(notCharRefCharsSorted))
-            return null;
-
-        final int[] codeRef = codepointHolder;
-        reader.mark();
+    fun consumeCharacterReference(additionalAllowedCharacter: Char?, inAttribute: Boolean): IntArray? {
+        if (reader.isEmpty) return null
+        if (additionalAllowedCharacter != null && additionalAllowedCharacter == reader.current()) return null
+        if (reader.matchesAnySorted(notCharRefCharsSorted)) return null
+        val codeRef: IntArray = codepointHolder
+        reader.mark()
         if (reader.matchConsume("#")) { // numbered
-            boolean isHexMode = reader.matchConsumeIgnoreCase("X");
-            String numRef = isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence();
-            if (numRef.length() == 0) { // didn't match anything
-                characterReferenceError("numeric reference with no numerals");
-                reader.rewindToMark();
-                return null;
+            val isHexMode: Boolean = reader.matchConsumeIgnoreCase("X")
+            val numRef: String? = if (isHexMode) reader.consumeHexSequence() else reader.consumeDigitSequence()
+            if (numRef!!.length == 0) { // didn't match anything
+                characterReferenceError("numeric reference with no numerals")
+                reader.rewindToMark()
+                return null
             }
-
-            reader.unmark();
-            if (!reader.matchConsume(";"))
-                characterReferenceError("missing semicolon on [&#%s]", numRef); // missing semi
-            int charval = -1;
+            reader.unmark()
+            if (!reader.matchConsume(";")) characterReferenceError(
+                "missing semicolon on [&#%s]",
+                (numRef)
+            ) // missing semi
+            var charval: Int = -1
             try {
-                int base = isHexMode ? 16 : 10;
-                charval = Integer.valueOf(numRef, base);
-            } catch (NumberFormatException ignored) {
+                val base: Int = if (isHexMode) 16 else 10
+                charval = Integer.valueOf(numRef, base)
+            } catch (ignored: NumberFormatException) {
             } // skip
-            if (charval == -1 || (charval >= 0xD800 && charval <= 0xDFFF) || charval > 0x10FFFF) {
-                characterReferenceError("character [%s] outside of valid range", charval);
-                codeRef[0] = replacementChar;
+            if ((charval == -1) || (charval >= 0xD800 && charval <= 0xDFFF) || (charval > 0x10FFFF)) {
+                characterReferenceError("character [%s] outside of valid range", charval)
+                codeRef[0] = replacementChar.code
             } else {
                 // fix illegal unicode characters to match browser behavior
-                if (charval >= win1252ExtensionsStart && charval < win1252ExtensionsStart + win1252Extensions.length) {
-                    characterReferenceError("character [%s] is not a valid unicode code point", charval);
-                    charval = win1252Extensions[charval - win1252ExtensionsStart];
+                if (charval >= win1252ExtensionsStart && charval < win1252ExtensionsStart + win1252Extensions.size) {
+                    characterReferenceError("character [%s] is not a valid unicode code point", charval)
+                    charval = win1252Extensions.get(charval - win1252ExtensionsStart)
                 }
 
                 // todo: implement number replacement table
                 // todo: check for extra illegal unicode points as parse errors
-                codeRef[0] = charval;
+                codeRef[0] = charval
             }
-            return codeRef;
+            return codeRef
         } else { // named
             // get as many letters as possible, and look for matching entities.
-            String nameRef = reader.consumeLetterThenDigitSequence();
-            boolean looksLegit = reader.matches(';');
+            val nameRef: String? = reader.consumeLetterThenDigitSequence()
+            val looksLegit: Boolean = reader.matches(';')
             // found if a base named entity without a ;, or an extended entity with the ;.
-            boolean found = (Entities.isBaseNamedEntity(nameRef) || (Entities.isNamedEntity(nameRef) && looksLegit));
-
+            val found: Boolean =
+                (Entities.isBaseNamedEntity(nameRef) || (Entities.isNamedEntity(nameRef) && looksLegit))
             if (!found) {
-                reader.rewindToMark();
+                reader.rewindToMark()
                 if (looksLegit) // named with semicolon
-                    characterReferenceError("invalid named reference [%s]", nameRef);
-                return null;
+                    characterReferenceError("invalid named reference [%s]", (nameRef)!!)
+                return null
             }
             if (inAttribute && (reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_'))) {
                 // don't want that to match
-                reader.rewindToMark();
-                return null;
+                reader.rewindToMark()
+                return null
             }
-
-            reader.unmark();
-            if (!reader.matchConsume(";"))
-                characterReferenceError("missing semicolon on [&%s]", nameRef); // missing semi
-            int numChars = Entities.codepointsForName(nameRef, multipointHolder);
+            reader.unmark()
+            if (!reader.matchConsume(";")) characterReferenceError(
+                "missing semicolon on [&%s]",
+                (nameRef)!!
+            ) // missing semi
+            val numChars: Int = Entities.codepointsForName(nameRef, multipointHolder)
             if (numChars == 1) {
-                codeRef[0] = multipointHolder[0];
-                return codeRef;
-            } else if (numChars ==2) {
-                return multipointHolder;
+                codeRef[0] = multipointHolder.get(0)
+                return codeRef
+            } else if (numChars == 2) {
+                return multipointHolder
             } else {
-                Validate.fail("Unexpected characters returned for " + nameRef);
-                return multipointHolder;
+                Validate.fail("Unexpected characters returned for " + nameRef)
+                return multipointHolder
             }
         }
     }
 
-    Token.Tag createTagPending(boolean start) {
-        tagPending = start ? startPending.reset() : endPending.reset();
-        return tagPending;
+    fun createTagPending(start: Boolean): Token.Tag? {
+        tagPending = if (start) startPending.reset() else endPending.reset()
+        return tagPending
     }
 
-    void emitTagPending() {
-        tagPending.finaliseTag();
-        emit(tagPending);
+    fun emitTagPending() {
+        tagPending.finaliseTag()
+        emit(tagPending)
     }
 
-    void createCommentPending() {
-        commentPending.reset();
+    fun createCommentPending() {
+        commentPending.reset()
     }
 
-    void emitCommentPending() {
-        emit(commentPending);
+    fun emitCommentPending() {
+        emit(commentPending)
     }
 
-    void createBogusCommentPending() {
-        commentPending.reset();
-        commentPending.bogus = true;
+    fun createBogusCommentPending() {
+        commentPending.reset()
+        commentPending.bogus = true
     }
 
-    void createDoctypePending() {
-        doctypePending.reset();
+    fun createDoctypePending() {
+        doctypePending.reset()
     }
 
-    void emitDoctypePending() {
-        emit(doctypePending);
+    fun emitDoctypePending() {
+        emit(doctypePending)
     }
 
-    void createTempBuffer() {
-        Token.reset(dataBuffer);
+    fun createTempBuffer() {
+        Token.Companion.reset(dataBuffer)
     }
 
-    boolean isAppropriateEndTagToken() {
-        return lastStartTag != null && tagPending.name().equalsIgnoreCase(lastStartTag);
+    val isAppropriateEndTagToken: Boolean
+        get() {
+            return lastStartTag != null && tagPending!!.name().equals(lastStartTag, ignoreCase = true)
+        }
+
+    fun appropriateEndTagName(): String? {
+        return lastStartTag // could be null
     }
 
-    @Nullable String appropriateEndTagName() {
-        return lastStartTag; // could be null
-    }
-
-    /** Returns the closer sequence {@code </lastStart} */
-    String appropriateEndTagSeq() {
+    /** Returns the closer sequence `</lastStart`  */
+    fun appropriateEndTagSeq(): String {
         if (lastStartCloseSeq == null) // reset on start tag emit
-            lastStartCloseSeq = "</" + lastStartTag;
-        return lastStartCloseSeq;
+            lastStartCloseSeq = "</" + lastStartTag
+        return lastStartCloseSeq!!
     }
 
-    void error(TokeniserState state) {
-        if (errors.canAddError())
-            errors.add(new ParseError(reader, "Unexpected character '%s' in input state [%s]", reader.current(), state));
+    fun error(state: TokeniserState?) {
+        if (errors!!.canAddError()) errors.add(
+            ParseError(
+                reader,
+                "Unexpected character '%s' in input state [%s]",
+                reader.current(),
+                state
+            )
+        )
     }
 
-    void eofError(TokeniserState state) {
-        if (errors.canAddError())
-            errors.add(new ParseError(reader, "Unexpectedly reached end of file (EOF) in input state [%s]", state));
+    fun eofError(state: TokeniserState?) {
+        if (errors!!.canAddError()) errors.add(
+            ParseError(
+                reader,
+                "Unexpectedly reached end of file (EOF) in input state [%s]",
+                state
+            )
+        )
     }
 
-    private void characterReferenceError(String message, Object... args) {
-        if (errors.canAddError())
-            errors.add(new ParseError(reader, String.format("Invalid character reference: " + message, args)));
+    private fun characterReferenceError(message: String, vararg args: Any) {
+        if (errors!!.canAddError()) errors.add(
+            ParseError(
+                reader,
+                String.format("Invalid character reference: " + message, *args)
+            )
+        )
     }
 
-    void error(String errorMsg) {
-        if (errors.canAddError())
-            errors.add(new ParseError(reader, errorMsg));
+    fun error(errorMsg: String) {
+        if (errors!!.canAddError()) errors.add(ParseError(reader, errorMsg))
     }
 
-    void error(String errorMsg, Object... args) {
-        if (errors.canAddError())
-            errors.add(new ParseError(reader, errorMsg, args));
+    fun error(errorMsg: String?, vararg args: Any?) {
+        if (errors!!.canAddError()) errors.add(ParseError(reader, errorMsg, *args))
     }
 
-    boolean currentNodeInHtmlNS() {
+    fun currentNodeInHtmlNS(): Boolean {
         // todo: implement namespaces correctly
-        return true;
+        return true
         // Element currentNode = currentNode();
         // return currentNode != null && currentNode.namespace().equals("HTML");
     }
@@ -341,23 +324,44 @@ final class Tokeniser {
      * @param inAttribute if the text to be unescaped is in an attribute
      * @return unescaped string from reader
      */
-    String unescapeEntities(boolean inAttribute) {
-        StringBuilder builder = StringUtil.borrowBuilder();
-        while (!reader.isEmpty()) {
-            builder.append(reader.consumeTo('&'));
+    fun unescapeEntities(inAttribute: Boolean): String? {
+        val builder: StringBuilder? = StringUtil.borrowBuilder()
+        while (!reader.isEmpty) {
+            builder!!.append(reader.consumeTo('&'))
             if (reader.matches('&')) {
-                reader.consume();
-                int[] c = consumeCharacterReference(null, inAttribute);
-                if (c == null || c.length==0)
-                    builder.append('&');
-                else {
-                    builder.appendCodePoint(c[0]);
-                    if (c.length == 2)
-                        builder.appendCodePoint(c[1]);
+                reader.consume()
+                val c: IntArray? = consumeCharacterReference(null, inAttribute)
+                if (c == null || c.size == 0) builder.append('&') else {
+                    builder.appendCodePoint(c.get(0))
+                    if (c.size == 2) builder.appendCodePoint(c.get(1))
                 }
-
             }
         }
-        return StringUtil.releaseBuilder(builder);
+        return StringUtil.releaseBuilder(builder)
+    }
+
+    companion object {
+        val replacementChar: Char = '\uFFFD' // replaces null character
+        private val notCharRefCharsSorted: CharArray = charArrayOf('\t', '\n', '\r', '\u000C', ' ', '<', '&')
+
+        // Some illegal character escapes are parsed by browsers as windows-1252 instead. See issue #1034
+        // https://html.spec.whatwg.org/multipage/parsing.html#numeric-character-reference-end-state
+        @JvmField
+        val win1252ExtensionsStart: Int = 0x80
+        @JvmField
+        val win1252Extensions: IntArray =
+            intArrayOf( // we could build this manually, but Windows-1252 is not a standard java charset so that could break on
+                // some platforms - this table is verified with a test
+                0x20AC, 0x0081, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021,
+                0x02C6, 0x2030, 0x0160, 0x2039, 0x0152, 0x008D, 0x017D, 0x008F,
+                0x0090, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014,
+                0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0x009D, 0x017E, 0x0178
+            )
+
+        init {
+            Arrays.sort(notCharRefCharsSorted)
+        }
+
+        private val Unset: Int = -1
     }
 }

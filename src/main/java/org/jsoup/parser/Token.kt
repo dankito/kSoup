@@ -1,509 +1,471 @@
-package org.jsoup.parser;
+package org.jsoup.parser
 
-import org.jsoup.helper.Validate;
-import org.jsoup.nodes.Attributes;
-
-import javax.annotation.Nullable;
+import org.jsoup.helper.Validate
+import org.jsoup.nodes.Attributes
 
 /**
  * Parse tokens for the Tokeniser.
  */
-abstract class Token {
-    TokenType type;
-    static final int Unset = -1;
-    private int startPos, endPos = Unset; // position in CharacterReader this token was read from
-
-    private Token() {
-    }
-    
-    String tokenType() {
-        return this.getClass().getSimpleName();
+abstract class Token private constructor() {
+    var type: TokenType? = null
+    private var startPos: Int = 0
+    private var endPos: Int = Unset // position in CharacterReader this token was read from
+    fun tokenType(): String {
+        return this.javaClass.getSimpleName()
     }
 
     /**
      * Reset the data represent by this token, for reuse. Prevents the need to create transfer objects for every
      * piece of data, which immediately get GCed.
      */
-    Token reset() {
-        startPos = Unset;
-        endPos = Unset;
-        return this;
+    open fun reset(): Token {
+        startPos = Unset
+        endPos = Unset
+        return this
     }
 
-    int startPos() {
-        return startPos;
+    fun startPos(): Int {
+        return startPos
     }
 
-    void startPos(int pos) {
-        startPos = pos;
+    fun startPos(pos: Int) {
+        startPos = pos
     }
 
-    int endPos() {
-        return endPos;
+    fun endPos(): Int {
+        return endPos
     }
 
-    void endPos(int pos) {
-        endPos = pos;
+    fun endPos(pos: Int) {
+        endPos = pos
     }
 
-    static void reset(StringBuilder sb) {
-        if (sb != null) {
-            sb.delete(0, sb.length());
-        }
-    }
+    class Doctype() : Token() {
+        val name: StringBuilder = StringBuilder()
+        var pubSysKey: String? = null
+        val publicIdentifier: StringBuilder = StringBuilder()
+        val systemIdentifier: StringBuilder = StringBuilder()
+        var isForceQuirks: Boolean = false
 
-    static final class Doctype extends Token {
-        final StringBuilder name = new StringBuilder();
-        String pubSysKey = null;
-        final StringBuilder publicIdentifier = new StringBuilder();
-        final StringBuilder systemIdentifier = new StringBuilder();
-        boolean forceQuirks = false;
-
-        Doctype() {
-            type = TokenType.Doctype;
+        init {
+            type = TokenType.Doctype
         }
 
-        @Override
-        Token reset() {
-            super.reset();
-            reset(name);
-            pubSysKey = null;
-            reset(publicIdentifier);
-            reset(systemIdentifier);
-            forceQuirks = false;
-            return this;
+        public override fun reset(): Token {
+            super.reset()
+            reset(name)
+            pubSysKey = null
+            reset(publicIdentifier)
+            reset(systemIdentifier)
+            isForceQuirks = false
+            return this
         }
 
-        String getName() {
-            return name.toString();
+        fun getName(): String {
+            return name.toString()
         }
 
-        String getPubSysKey() {
-            return pubSysKey;
+        fun getPublicIdentifier(): String {
+            return publicIdentifier.toString()
         }
 
-        String getPublicIdentifier() {
-            return publicIdentifier.toString();
+        fun getSystemIdentifier(): String {
+            return systemIdentifier.toString()
         }
 
-        public String getSystemIdentifier() {
-            return systemIdentifier.toString();
-        }
-
-        public boolean isForceQuirks() {
-            return forceQuirks;
-        }
-
-        @Override
-        public String toString() {
-            return "<!doctype " + getName() + ">";
+        public override fun toString(): String {
+            return "<!doctype " + getName() + ">"
         }
     }
 
-    static abstract class Tag extends Token {
-        @Nullable protected String tagName;
-        @Nullable protected String normalName; // lc version of tag name, for case insensitive tree build
+    internal abstract class Tag() : Token() {
+        var tagName: String? = null
+        var normalName: String? = null // lc version of tag name, for case insensitive tree build
+        private val attrName: StringBuilder = StringBuilder() // try to get attr names and vals in one shot, vs Builder
+        private var attrNameS: String? = null
+        private var hasAttrName: Boolean = false
+        private val attrValue: StringBuilder = StringBuilder()
+        private var attrValueS: String? = null
+        private var hasAttrValue: Boolean = false
+        private var hasEmptyAttrValue: Boolean = false // distinguish boolean attribute from empty string value
+        var isSelfClosing: Boolean = false
+        var attributes: Attributes? =
+            null // start tags get attributes on construction. End tags get attributes on first new attribute (but only for parser convenience, not used).
 
-        private final StringBuilder attrName = new StringBuilder(); // try to get attr names and vals in one shot, vs Builder
-        @Nullable private String attrNameS;
-        private boolean hasAttrName = false;
-
-        private final StringBuilder attrValue = new StringBuilder();
-        @Nullable private String attrValueS;
-        private boolean hasAttrValue = false;
-        private boolean hasEmptyAttrValue = false; // distinguish boolean attribute from empty string value
-
-        boolean selfClosing = false;
-        @Nullable Attributes attributes; // start tags get attributes on construction. End tags get attributes on first new attribute (but only for parser convenience, not used).
-
-        @Override
-        Tag reset() {
-            super.reset();
-            tagName = null;
-            normalName = null;
-            reset(attrName);
-            attrNameS = null;
-            hasAttrName = false;
-            reset(attrValue);
-            attrValueS = null;
-            hasEmptyAttrValue = false;
-            hasAttrValue = false;
-            selfClosing = false;
-            attributes = null;
-            return this;
+        public override fun reset(): Tag {
+            super.reset()
+            tagName = null
+            normalName = null
+            reset(attrName)
+            attrNameS = null
+            hasAttrName = false
+            reset(attrValue)
+            attrValueS = null
+            hasEmptyAttrValue = false
+            hasAttrValue = false
+            isSelfClosing = false
+            attributes = null
+            return this
         }
 
-        /* Limits runaway crafted HTML from spewing attributes and getting a little sluggish in ensureCapacity.
-        Real-world HTML will P99 around 8 attributes, so plenty of headroom. Implemented here and not in the Attributes
-        object so that API users can add more if ever required. */
-        private static final int MaxAttributes = 512;
-
-        final void newAttribute() {
-            if (attributes == null)
-                attributes = new Attributes();
-
-            if (hasAttrName && attributes.size() < MaxAttributes) {
+        fun newAttribute() {
+            if (attributes == null) attributes = Attributes()
+            if (hasAttrName && attributes!!.size() < MaxAttributes) {
                 // the tokeniser has skipped whitespace control chars, but trimming could collapse to empty for other control codes, so verify here
-                String name = attrName.length() > 0 ? attrName.toString() : attrNameS;
-                name = name.trim();
-                if (name.length() > 0) {
-                    String value;
-                    if (hasAttrValue)
-                        value = attrValue.length() > 0 ? attrValue.toString() : attrValueS;
-                    else if (hasEmptyAttrValue)
-                        value = "";
-                    else
-                        value = null;
+                var name: String = if (attrName.length > 0) attrName.toString() else (attrNameS)!!
+                name = name.trim({ it <= ' ' })
+                if (name.length > 0) {
+                    val value: String?
+                    if (hasAttrValue) value =
+                        if (attrValue.length > 0) attrValue.toString() else attrValueS else if (hasEmptyAttrValue) value =
+                        "" else value = null
                     // note that we add, not put. So that the first is kept, and rest are deduped, once in a context where case sensitivity is known (the appropriate tree builder).
-                    attributes.add(name, value);
+                    attributes!!.add(name, value)
                 }
             }
-            reset(attrName);
-            attrNameS = null;
-            hasAttrName = false;
-
-            reset(attrValue);
-            attrValueS = null;
-            hasAttrValue = false;
-            hasEmptyAttrValue = false;
+            reset(attrName)
+            attrNameS = null
+            hasAttrName = false
+            reset(attrValue)
+            attrValueS = null
+            hasAttrValue = false
+            hasEmptyAttrValue = false
         }
 
-        final boolean hasAttributes() {
-            return attributes != null;
+        fun hasAttributes(): Boolean {
+            return attributes != null
         }
 
-        final boolean hasAttribute(String key) {
-            return attributes != null && attributes.hasKey(key);
+        fun hasAttribute(key: String?): Boolean {
+            return attributes != null && attributes!!.hasKey(key)
         }
 
-        final void finaliseTag() {
+        fun finaliseTag() {
             // finalises for emit
             if (hasAttrName) {
-                newAttribute();
+                newAttribute()
             }
         }
 
-        /** Preserves case */
-        final String name() { // preserves case, for input into Tag.valueOf (which may drop case)
-            Validate.isFalse(tagName == null || tagName.length() == 0);
-            return tagName;
+        /** Preserves case  */
+        fun name(): String? { // preserves case, for input into Tag.valueOf (which may drop case)
+            Validate.isFalse(tagName == null || tagName!!.length == 0)
+            return tagName
         }
 
-        /** Lower case */
-        final String normalName() { // lower case, used in tree building for working out where in tree it should go
-            return normalName;
+        /** Lower case  */
+        fun normalName(): String? { // lower case, used in tree building for working out where in tree it should go
+            return normalName
         }
 
-        final String toStringName() {
-            return tagName != null ? tagName : "[unset]";
+        fun toStringName(): String {
+            return if (tagName != null) tagName!! else "[unset]"
         }
 
-        final Tag name(String name) {
-            tagName = name;
-            normalName = ParseSettings.normalName(tagName);
-            return this;
-        }
-
-        final boolean isSelfClosing() {
-            return selfClosing;
+        fun name(name: String?): Tag {
+            tagName = name
+            normalName = ParseSettings.Companion.normalName(tagName)
+            return this
         }
 
         // these appenders are rarely hit in not null state-- caused by null chars.
-        final void appendTagName(String append) {
+        fun appendTagName(append: String?) {
             // might have null chars - need to replace with null replacement character
-            append = append.replace(TokeniserState.nullChar, Tokeniser.replacementChar);
-            tagName = tagName == null ? append : tagName.concat(append);
-            normalName = ParseSettings.normalName(tagName);
+            var append: String? = append
+            append = append!!.replace(TokeniserState.Companion.nullChar, Tokeniser.Companion.replacementChar)
+            tagName = if (tagName == null) append else tagName + append
+            normalName = ParseSettings.Companion.normalName(tagName)
         }
 
-        final void appendTagName(char append) {
-            appendTagName(String.valueOf(append));
+        fun appendTagName(append: Char) {
+            appendTagName(append.toString())
         }
 
-        final void appendAttributeName(String append) {
+        fun appendAttributeName(append: String?) {
             // might have null chars because we eat in one pass - need to replace with null replacement character
-            append = append.replace(TokeniserState.nullChar, Tokeniser.replacementChar);
-
-            ensureAttrName();
-            if (attrName.length() == 0) {
-                attrNameS = append;
+            var append: String? = append
+            append = append!!.replace(TokeniserState.Companion.nullChar, Tokeniser.Companion.replacementChar)
+            ensureAttrName()
+            if (attrName.length == 0) {
+                attrNameS = append
             } else {
-                attrName.append(append);
+                attrName.append(append)
             }
         }
 
-        final void appendAttributeName(char append) {
-            ensureAttrName();
-            attrName.append(append);
+        fun appendAttributeName(append: Char) {
+            ensureAttrName()
+            attrName.append(append)
         }
 
-        final void appendAttributeValue(String append) {
-            ensureAttrValue();
-            if (attrValue.length() == 0) {
-                attrValueS = append;
+        fun appendAttributeValue(append: String?) {
+            ensureAttrValue()
+            if (attrValue.length == 0) {
+                attrValueS = append
             } else {
-                attrValue.append(append);
+                attrValue.append(append)
             }
         }
 
-        final void appendAttributeValue(char append) {
-            ensureAttrValue();
-            attrValue.append(append);
+        fun appendAttributeValue(append: Char) {
+            ensureAttrValue()
+            attrValue.append(append)
         }
 
-        final void appendAttributeValue(char[] append) {
-            ensureAttrValue();
-            attrValue.append(append);
+        fun appendAttributeValue(append: CharArray?) {
+            ensureAttrValue()
+            attrValue.append(append)
         }
 
-        final void appendAttributeValue(int[] appendCodepoints) {
-            ensureAttrValue();
-            for (int codepoint : appendCodepoints) {
-                attrValue.appendCodePoint(codepoint);
+        fun appendAttributeValue(appendCodepoints: IntArray) {
+            ensureAttrValue()
+            for (codepoint: Int in appendCodepoints) {
+                attrValue.appendCodePoint(codepoint)
             }
         }
-        
-        final void setEmptyAttributeValue() {
-            hasEmptyAttrValue = true;
+
+        fun setEmptyAttributeValue() {
+            hasEmptyAttrValue = true
         }
 
-        private void ensureAttrName() {
-            hasAttrName = true;
+        private fun ensureAttrName() {
+            hasAttrName = true
             // if on second hit, we'll need to move to the builder
             if (attrNameS != null) {
-                attrName.append(attrNameS);
-                attrNameS = null;
+                attrName.append(attrNameS)
+                attrNameS = null
             }
         }
 
-        private void ensureAttrValue() {
-            hasAttrValue = true;
+        private fun ensureAttrValue() {
+            hasAttrValue = true
             // if on second hit, we'll need to move to the builder
             if (attrValueS != null) {
-                attrValue.append(attrValueS);
-                attrValueS = null;
+                attrValue.append(attrValueS)
+                attrValueS = null
             }
         }
 
-        @Override
-        abstract public String toString();
-    }
+        abstract override fun toString(): String
 
-    final static class StartTag extends Tag {
-        StartTag() {
-            super();
-            type = TokenType.StartTag;
-        }
-
-        @Override
-        Tag reset() {
-            super.reset();
-            attributes = null;
-            return this;
-        }
-
-        StartTag nameAttr(String name, Attributes attributes) {
-            this.tagName = name;
-            this.attributes = attributes;
-            normalName = ParseSettings.normalName(tagName);
-            return this;
-        }
-
-        @Override
-        public String toString() {
-            if (hasAttributes() && attributes.size() > 0)
-                return "<" + toStringName() + " " + attributes.toString() + ">";
-            else
-                return "<" + toStringName() + ">";
+        companion object {
+            /* Limits runaway crafted HTML from spewing attributes and getting a little sluggish in ensureCapacity.
+        Real-world HTML will P99 around 8 attributes, so plenty of headroom. Implemented here and not in the Attributes
+        object so that API users can add more if ever required. */
+            private val MaxAttributes: Int = 512
         }
     }
 
-    final static class EndTag extends Tag{
-        EndTag() {
-            super();
-            type = TokenType.EndTag;
+    class StartTag() : Tag() {
+        init {
+            type = TokenType.StartTag
         }
 
-        @Override
-        public String toString() {
-            return "</" + toStringName() + ">";
+        public override fun reset(): Tag {
+            super.reset()
+            attributes = null
+            return this
+        }
+
+        fun nameAttr(name: String?, attributes: Attributes?): StartTag {
+            tagName = name
+            this.attributes = attributes
+            normalName = ParseSettings.Companion.normalName(tagName)
+            return this
+        }
+
+        public override fun toString(): String {
+            if (hasAttributes() && attributes!!.size() > 0) return "<" + toStringName() + " " + attributes.toString() + ">" else return "<" + toStringName() + ">"
         }
     }
 
-    final static class Comment extends Token {
-        private final StringBuilder data = new StringBuilder();
-        private String dataS; // try to get in one shot
-        boolean bogus = false;
-
-        @Override
-        Token reset() {
-            super.reset();
-            reset(data);
-            dataS = null;
-            bogus = false;
-            return this;
+    class EndTag() : Tag() {
+        init {
+            type = TokenType.EndTag
         }
 
-        Comment() {
-            type = TokenType.Comment;
+        public override fun toString(): String {
+            return "</" + toStringName() + ">"
+        }
+    }
+
+    class Comment() : Token() {
+        private val data: StringBuilder = StringBuilder()
+        private var dataS: String? = null // try to get in one shot
+        var bogus: Boolean = false
+        public override fun reset(): Token {
+            super.reset()
+            reset(data)
+            dataS = null
+            bogus = false
+            return this
         }
 
-        String getData() {
-            return dataS != null ? dataS : data.toString();
+        init {
+            type = TokenType.Comment
         }
 
-        final Comment append(String append) {
-            ensureData();
-            if (data.length() == 0) {
-                dataS = append;
+        fun getData(): String {
+            return if (dataS != null) dataS!! else data.toString()
+        }
+
+        fun append(append: String?): Comment {
+            ensureData()
+            if (data.length == 0) {
+                dataS = append
             } else {
-                data.append(append);
+                data.append(append)
             }
-            return this;
+            return this
         }
 
-        final Comment append(char append) {
-            ensureData();
-            data.append(append);
-            return this;
+        fun append(append: Char): Comment {
+            ensureData()
+            data.append(append)
+            return this
         }
 
-        private void ensureData() {
+        private fun ensureData() {
             // if on second hit, we'll need to move to the builder
             if (dataS != null) {
-                data.append(dataS);
-                dataS = null;
+                data.append(dataS)
+                dataS = null
             }
         }
 
-        @Override
-        public String toString() {
-            return "<!--" + getData() + "-->";
+        public override fun toString(): String {
+            return "<!--" + getData() + "-->"
         }
     }
 
-    static class Character extends Token implements Cloneable {
-        private String data;
+    open class Character() : Token(), Cloneable {
+        var data: String? = null
+            private set
 
-        Character() {
-            super();
-            type = TokenType.Character;
+        init {
+            type = TokenType.Character
         }
 
-        @Override
-        Token reset() {
-            super.reset();
-            data = null;
-            return this;
+        public override fun reset(): Token {
+            super.reset()
+            data = null
+            return this
         }
 
-        Character data(String data) {
-            this.data = data;
-            return this;
+        fun data(data: String?): Character {
+            this.data = data
+            return this
         }
 
-        String getData() {
-            return data;
+        public override fun toString(): String {
+            return (data)!!
         }
 
-        @Override
-        public String toString() {
-            return getData();
-        }
-
-        @Override protected Token.Character clone() {
+        public override fun clone(): Character {
             try {
-                return (Token.Character) super.clone();
-            } catch (CloneNotSupportedException e) {
-                throw new RuntimeException(e);
+                return super.clone() as Character
+            } catch (e: CloneNotSupportedException) {
+                throw RuntimeException(e)
             }
         }
     }
 
-    final static class CData extends Character {
-        CData(String data) {
-            super();
-            this.data(data);
+    internal class CData(data: String?) : Character() {
+        init {
+            data(data)
         }
 
-        @Override
-        public String toString() {
-            return "<![CDATA[" + getData() + "]]>";
-        }
-
-    }
-
-    final static class EOF extends Token {
-        EOF() {
-            type = Token.TokenType.EOF;
-        }
-
-        @Override
-        Token reset() {
-            super.reset();
-            return this;
-        }
-
-        @Override
-        public String toString() {
-            return "";
+        public override fun toString(): String {
+            return "<![CDATA[" + data + "]]>"
         }
     }
 
-    final boolean isDoctype() {
-        return type == TokenType.Doctype;
+    internal class EOF() : Token() {
+        init {
+            type = TokenType.EOF
+        }
+
+        public override fun reset(): Token {
+            super.reset()
+            return this
+        }
+
+        public override fun toString(): String {
+            return ""
+        }
     }
 
-    final Doctype asDoctype() {
-        return (Doctype) this;
+    val isDoctype: Boolean
+        get() {
+            return type == TokenType.Doctype
+        }
+
+    fun asDoctype(): Doctype {
+        return this as Doctype
     }
 
-    final boolean isStartTag() {
-        return type == TokenType.StartTag;
+    val isStartTag: Boolean
+        get() {
+            return type == TokenType.StartTag
+        }
+
+    fun asStartTag(): StartTag {
+        return this as StartTag
     }
 
-    final StartTag asStartTag() {
-        return (StartTag) this;
+    val isEndTag: Boolean
+        get() {
+            return type == TokenType.EndTag
+        }
+
+    fun asEndTag(): EndTag {
+        return this as EndTag
     }
 
-    final boolean isEndTag() {
-        return type == TokenType.EndTag;
+    val isComment: Boolean
+        get() {
+            return type == TokenType.Comment
+        }
+
+    fun asComment(): Comment {
+        return this as Comment
     }
 
-    final EndTag asEndTag() {
-        return (EndTag) this;
+    val isCharacter: Boolean
+        get() {
+            return type == TokenType.Character
+        }
+    val isCData: Boolean
+        get() {
+            return this is CData
+        }
+
+    fun asCharacter(): Character {
+        return this as Character
     }
 
-    final boolean isComment() {
-        return type == TokenType.Comment;
-    }
+    val isEOF: Boolean
+        get() {
+            return type == TokenType.EOF
+        }
 
-    final Comment asComment() {
-        return (Comment) this;
-    }
-
-    final boolean isCharacter() {
-        return type == TokenType.Character;
-    }
-
-    final boolean isCData() {
-        return this instanceof CData;
-    }
-
-    final Character asCharacter() {
-        return (Character) this;
-    }
-
-    final boolean isEOF() {
-        return type == TokenType.EOF;
-    }
-
-    public enum TokenType {
+    enum class TokenType {
         Doctype,
         StartTag,
         EndTag,
         Comment,
-        Character, // note no CData - treated in builder as an extension of Character
+        Character,
+
+        // note no CData - treated in builder as an extension of Character
         EOF
+    }
+
+    companion object {
+        val Unset: Int = -1
+        fun reset(sb: StringBuilder?) {
+            if (sb != null) {
+                sb.delete(0, sb.length)
+            }
+        }
     }
 }

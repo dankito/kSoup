@@ -1,17 +1,12 @@
-package org.jsoup;
+package org.jsoup
 
-import java.io.IOException;
+import java.io.IOException
 
-public class UncheckedIOException extends RuntimeException {
-    public UncheckedIOException(IOException cause) {
-        super(cause);
-    }
+class UncheckedIOException : RuntimeException {
+    constructor(cause: IOException?) : super(cause)
+    constructor(message: String?) : super(IOException(message))
 
-    public UncheckedIOException(String message) {
-        super(new IOException(message));
-    }
-
-    public IOException ioException() {
-        return (IOException) getCause();
+    fun ioException(): IOException {
+        return cause as IOException
     }
 }

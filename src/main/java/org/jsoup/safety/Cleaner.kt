@@ -1,215 +1,191 @@
-package org.jsoup.safety;
+package org.jsoup.safety
 
-import org.jsoup.helper.Validate;
-import org.jsoup.nodes.Attribute;
-import org.jsoup.nodes.Attributes;
-import org.jsoup.nodes.DataNode;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
-import org.jsoup.nodes.TextNode;
-import org.jsoup.parser.ParseErrorList;
-import org.jsoup.parser.Parser;
-import org.jsoup.parser.Tag;
-import org.jsoup.select.NodeTraversor;
-import org.jsoup.select.NodeVisitor;
-
-import java.util.List;
-
+import org.jsoup.helper.Validate
+import org.jsoup.nodes.*
+import org.jsoup.parser.ParseErrorList
+import org.jsoup.parser.Parser
+import org.jsoup.select.NodeTraversor
+import org.jsoup.select.NodeVisitor
 
 /**
- The safelist based HTML cleaner. Use to ensure that end-user provided HTML contains only the elements and attributes
- that you are expecting; no junk, and no cross-site scripting attacks!
- <p>
- The HTML cleaner parses the input as HTML and then runs it through a safe-list, so the output HTML can only contain
- HTML that is allowed by the safelist.
- </p>
- <p>
- It is assumed that the input HTML is a body fragment; the clean methods only pull from the source's body, and the
- canned safe-lists only allow body contained tags.
- </p>
- <p>
- Rather than interacting directly with a Cleaner object, generally see the {@code clean} methods in {@link org.jsoup.Jsoup}.
- </p>
+ * The safelist based HTML cleaner. Use to ensure that end-user provided HTML contains only the elements and attributes
+ * that you are expecting; no junk, and no cross-site scripting attacks!
+ *
+ *
+ * The HTML cleaner parses the input as HTML and then runs it through a safe-list, so the output HTML can only contain
+ * HTML that is allowed by the safelist.
+ *
+ *
+ *
+ * It is assumed that the input HTML is a body fragment; the clean methods only pull from the source's body, and the
+ * canned safe-lists only allow body contained tags.
+ *
+ *
+ *
+ * Rather than interacting directly with a Cleaner object, generally see the `clean` methods in [org.jsoup.Jsoup].
+ *
  */
-public class Cleaner {
-    private final Safelist safelist;
+class Cleaner(safelist: Safelist) {
+    private val safelist: Safelist
 
     /**
-     Create a new cleaner, that sanitizes documents using the supplied safelist.
-     @param safelist safe-list to clean with
+     * Create a new cleaner, that sanitizes documents using the supplied safelist.
+     * @param safelist safe-list to clean with
      */
-    public Cleaner(Safelist safelist) {
-        Validate.notNull(safelist);
-        this.safelist = safelist;
+    init {
+        Validate.notNull(safelist)
+        this.safelist = safelist
     }
 
     /**
-     Creates a new, clean document, from the original dirty document, containing only elements allowed by the safelist.
-     The original document is not modified. Only elements from the dirty document's <code>body</code> are used. The
-     OutputSettings of the original document are cloned into the clean document.
-     @param dirtyDocument Untrusted base document to clean.
-     @return cleaned document.
+     * Creates a new, clean document, from the original dirty document, containing only elements allowed by the safelist.
+     * The original document is not modified. Only elements from the dirty document's `body` are used. The
+     * OutputSettings of the original document are cloned into the clean document.
+     * @param dirtyDocument Untrusted base document to clean.
+     * @return cleaned document.
      */
-    public Document clean(Document dirtyDocument) {
-        Validate.notNull(dirtyDocument);
-
-        Document clean = Document.createShell(dirtyDocument.baseUri());
-        copySafeNodes(dirtyDocument.body(), clean.body());
-        clean.outputSettings(dirtyDocument.outputSettings().clone());
-
-        return clean;
+    fun clean(dirtyDocument: Document): Document {
+        Validate.notNull(dirtyDocument)
+        val clean: Document = Document.Companion.createShell(dirtyDocument.baseUri())
+        copySafeNodes(dirtyDocument.body(), clean.body())
+        clean.outputSettings(dirtyDocument.outputSettings().clone())
+        return clean
     }
 
     /**
-     Determines if the input document's <b>body</b> is valid, against the safelist. It is considered valid if all the
-     tags and attributes in the input HTML are allowed by the safelist, and that there is no content in the
-     <code>head</code>.
-     <p>
-     This method is intended to be used in a user interface as a validator for user input. Note that regardless of the
-     output of this method, the input document <b>must always</b> be normalized using a method such as
-     {@link #clean(Document)}, and the result of that method used to store or serialize the document before later reuse
-     such as presentation to end users. This ensures that enforced attributes are set correctly, and that any
-     differences between how a given browser and how jsoup parses the input HTML are normalized.
-     </p>
-     <p>Example:
-     <pre>{@code
-     Document inputDoc = Jsoup.parse(inputHtml);
-     Cleaner cleaner = new Cleaner(Safelist.relaxed());
-     boolean isValid = cleaner.isValid(inputDoc);
-     Document normalizedDoc = cleaner.clean(inputDoc);
-     }</pre>
-     </p>
-     @param dirtyDocument document to test
-     @return true if no tags or attributes need to be removed; false if they do
+     * Determines if the input document's **body** is valid, against the safelist. It is considered valid if all the
+     * tags and attributes in the input HTML are allowed by the safelist, and that there is no content in the
+     * `head`.
+     *
+     *
+     * This method is intended to be used in a user interface as a validator for user input. Note that regardless of the
+     * output of this method, the input document **must always** be normalized using a method such as
+     * [.clean], and the result of that method used to store or serialize the document before later reuse
+     * such as presentation to end users. This ensures that enforced attributes are set correctly, and that any
+     * differences between how a given browser and how jsoup parses the input HTML are normalized.
+     *
+     *
+     * Example:
+     * <pre>`Document inputDoc = Jsoup.parse(inputHtml);
+     * Cleaner cleaner = new Cleaner(Safelist.relaxed());
+     * boolean isValid = cleaner.isValid(inputDoc);
+     * Document normalizedDoc = cleaner.clean(inputDoc);
+    `</pre> *
+     *
+     * @param dirtyDocument document to test
+     * @return true if no tags or attributes need to be removed; false if they do
      */
-    public boolean isValid(Document dirtyDocument) {
-        Validate.notNull(dirtyDocument);
-
-        Document clean = Document.createShell(dirtyDocument.baseUri());
-        int numDiscarded = copySafeNodes(dirtyDocument.body(), clean.body());
-        return numDiscarded == 0
-            && dirtyDocument.head().childNodes().isEmpty(); // because we only look at the body, but we start from a shell, make sure there's nothing in the head
+    fun isValid(dirtyDocument: Document): Boolean {
+        Validate.notNull(dirtyDocument)
+        val clean: Document = Document.Companion.createShell(dirtyDocument.baseUri())
+        val numDiscarded: Int = copySafeNodes(dirtyDocument.body(), clean.body())
+        return (numDiscarded == 0
+                && dirtyDocument.head().childNodes()
+            .isEmpty() // because we only look at the body, but we start from a shell, make sure there's nothing in the head
+                )
     }
 
     /**
-     Determines if the input document's <b>body HTML</b> is valid, against the safelist. It is considered valid if all
-     the tags and attributes in the input HTML are allowed by the safelist.
-     <p>
-     This method is intended to be used in a user interface as a validator for user input. Note that regardless of the
-     output of this method, the input document <b>must always</b> be normalized using a method such as
-     {@link #clean(Document)}, and the result of that method used to store or serialize the document before later reuse
-     such as presentation to end users. This ensures that enforced attributes are set correctly, and that any
-     differences between how a given browser and how jsoup parses the input HTML are normalized.
-     </p>
-     <p>Example:
-     <pre>{@code
-     Document inputDoc = Jsoup.parse(inputHtml);
-     Cleaner cleaner = new Cleaner(Safelist.relaxed());
-     boolean isValid = cleaner.isValidBodyHtml(inputHtml);
-     Document normalizedDoc = cleaner.clean(inputDoc);
-     }</pre>
-     </p>
-     @param bodyHtml HTML fragment to test
-     @return true if no tags or attributes need to be removed; false if they do
+     * Determines if the input document's **body HTML** is valid, against the safelist. It is considered valid if all
+     * the tags and attributes in the input HTML are allowed by the safelist.
+     *
+     *
+     * This method is intended to be used in a user interface as a validator for user input. Note that regardless of the
+     * output of this method, the input document **must always** be normalized using a method such as
+     * [.clean], and the result of that method used to store or serialize the document before later reuse
+     * such as presentation to end users. This ensures that enforced attributes are set correctly, and that any
+     * differences between how a given browser and how jsoup parses the input HTML are normalized.
+     *
+     *
+     * Example:
+     * <pre>`Document inputDoc = Jsoup.parse(inputHtml);
+     * Cleaner cleaner = new Cleaner(Safelist.relaxed());
+     * boolean isValid = cleaner.isValidBodyHtml(inputHtml);
+     * Document normalizedDoc = cleaner.clean(inputDoc);
+    `</pre> *
+     *
+     * @param bodyHtml HTML fragment to test
+     * @return true if no tags or attributes need to be removed; false if they do
      */
-    public boolean isValidBodyHtml(String bodyHtml) {
-        Document clean = Document.createShell("");
-        Document dirty = Document.createShell("");
-        ParseErrorList errorList = ParseErrorList.tracking(1);
-        List<Node> nodes = Parser.parseFragment(bodyHtml, dirty.body(), "", errorList);
-        dirty.body().insertChildren(0, nodes);
-        int numDiscarded = copySafeNodes(dirty.body(), clean.body());
-        return numDiscarded == 0 && errorList.isEmpty();
+    fun isValidBodyHtml(bodyHtml: String?): Boolean {
+        val clean: Document = Document.Companion.createShell("")
+        val dirty: Document = Document.Companion.createShell("")
+        val errorList: ParseErrorList = ParseErrorList.Companion.tracking(1)
+        val nodes: List<Node?>? = Parser.Companion.parseFragment(bodyHtml, dirty.body(), "", errorList)
+        dirty.body().insertChildren(0, nodes)
+        val numDiscarded: Int = copySafeNodes(dirty.body(), clean.body())
+        return numDiscarded == 0 && errorList.isEmpty()
     }
 
     /**
-     Iterates the input and copies trusted nodes (tags, attributes, text) into the destination.
+     * Iterates the input and copies trusted nodes (tags, attributes, text) into the destination.
      */
-    private final class CleaningVisitor implements NodeVisitor {
-        private int numDiscarded = 0;
-        private final Element root;
-        private Element destination; // current element to append nodes to
+    private inner class CleaningVisitor private constructor(private val root: Element, destination: Element) :
+        NodeVisitor {
+        private var numDiscarded: Int = 0
+        private var destination // current element to append nodes to
+                : Element?
 
-        private CleaningVisitor(Element root, Element destination) {
-            this.root = root;
-            this.destination = destination;
+        init {
+            this.destination = destination
         }
 
-        public void head(Node source, int depth) {
-            if (source instanceof Element) {
-                Element sourceEl = (Element) source;
-
+        public override fun head(source: Node, depth: Int) {
+            if (source is Element) {
+                val sourceEl: Element = source as Element
                 if (safelist.isSafeTag(sourceEl.normalName())) { // safe, clone and copy safe attrs
-                    ElementMeta meta = createSafeElement(sourceEl);
-                    Element destChild = meta.el;
-                    destination.appendChild(destChild);
-
-                    numDiscarded += meta.numAttribsDiscarded;
-                    destination = destChild;
-                } else if (source != root) { // not a safe tag, so don't add. don't count root against discarded.
-                    numDiscarded++;
+                    val meta: ElementMeta = createSafeElement(sourceEl)
+                    val destChild: Element = meta.el
+                    destination.appendChild(destChild)
+                    numDiscarded += meta.numAttribsDiscarded
+                    destination = destChild
+                } else if (source !== root) { // not a safe tag, so don't add. don't count root against discarded.
+                    numDiscarded++
                 }
-            } else if (source instanceof TextNode) {
-                TextNode sourceText = (TextNode) source;
-                TextNode destText = new TextNode(sourceText.getWholeText());
-                destination.appendChild(destText);
-            } else if (source instanceof DataNode && safelist.isSafeTag(source.parent().nodeName())) {
-              DataNode sourceData = (DataNode) source;
-              DataNode destData = new DataNode(sourceData.getWholeData());
-              destination.appendChild(destData);
+            } else if (source is TextNode) {
+                val sourceText: TextNode = source as TextNode
+                val destText: TextNode = TextNode(sourceText.wholeText)
+                destination.appendChild(destText)
+            } else if (source is DataNode && safelist.isSafeTag(source.parent().nodeName())) {
+                val sourceData: DataNode = source as DataNode
+                val destData: DataNode = DataNode(sourceData.wholeData)
+                destination.appendChild(destData)
             } else { // else, we don't care about comments, xml proc instructions, etc
-                numDiscarded++;
+                numDiscarded++
             }
         }
 
-        public void tail(Node source, int depth) {
-            if (source instanceof Element && safelist.isSafeTag(source.nodeName())) {
-                destination = destination.parent(); // would have descended, so pop destination stack
+        public override fun tail(source: Node?, depth: Int) {
+            if (source is Element && safelist.isSafeTag(source.nodeName())) {
+                destination = destination.parent() // would have descended, so pop destination stack
             }
         }
     }
 
-    private int copySafeNodes(Element source, Element dest) {
-        CleaningVisitor cleaningVisitor = new CleaningVisitor(source, dest);
-        NodeTraversor.traverse(cleaningVisitor, source);
-        return cleaningVisitor.numDiscarded;
+    private fun copySafeNodes(source: Element?, dest: Element?): Int {
+        val cleaningVisitor: CleaningVisitor = CleaningVisitor(source, dest)
+        NodeTraversor.traverse(cleaningVisitor, source)
+        return cleaningVisitor.numDiscarded
     }
 
-    private ElementMeta createSafeElement(Element sourceEl) {
-        String sourceTag = sourceEl.tagName();
-        Attributes destAttrs = new Attributes();
-        Element dest = new Element(Tag.valueOf(sourceTag), sourceEl.baseUri(), destAttrs);
-        int numDiscarded = 0;
-
-        Attributes sourceAttrs = sourceEl.attributes();
-        for (Attribute sourceAttr : sourceAttrs) {
-            if (safelist.isSafeAttribute(sourceTag, sourceEl, sourceAttr))
-                destAttrs.put(sourceAttr);
-            else
-                numDiscarded++;
+    private fun createSafeElement(sourceEl: Element): ElementMeta {
+        val sourceTag: String? = sourceEl.tagName()
+        val destAttrs: Attributes = Attributes()
+        val dest: Element = Element(valueOf(sourceTag), sourceEl.baseUri(), destAttrs)
+        var numDiscarded: Int = 0
+        val sourceAttrs: Attributes? = sourceEl.attributes()
+        for (sourceAttr: Attribute in sourceAttrs) {
+            if (safelist.isSafeAttribute(sourceTag, sourceEl, sourceAttr)) destAttrs.put(sourceAttr) else numDiscarded++
         }
-        Attributes enforcedAttrs = safelist.getEnforcedAttributes(sourceTag);
-        destAttrs.addAll(enforcedAttrs);
+        val enforcedAttrs: Attributes? = safelist.getEnforcedAttributes(sourceTag)
+        destAttrs.addAll(enforcedAttrs)
 
         // Copy the original start and end range, if set
         // TODO - might be good to make a generic Element#userData set type interface, and copy those all over
-        if (sourceEl.sourceRange().isTracked())
-            sourceEl.sourceRange().track(dest, true);
-        if (sourceEl.endSourceRange().isTracked())
-            sourceEl.endSourceRange().track(dest, false);
-
-        return new ElementMeta(dest, numDiscarded);
+        if (sourceEl.sourceRange().isTracked()) sourceEl.sourceRange().track(dest, true)
+        if (sourceEl.endSourceRange().isTracked()) sourceEl.endSourceRange().track(dest, false)
+        return ElementMeta(dest, numDiscarded)
     }
 
-    private static class ElementMeta {
-        Element el;
-        int numAttribsDiscarded;
-
-        ElementMeta(Element el, int numAttribsDiscarded) {
-            this.el = el;
-            this.numAttribsDiscarded = numAttribsDiscarded;
-        }
-    }
-
+    private class ElementMeta internal constructor(var el: Element, var numAttribsDiscarded: Int)
 }

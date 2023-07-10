@@ -1,108 +1,90 @@
-package org.jsoup.nodes;
+package org.jsoup.nodes
 
-import java.util.List;
+abstract class LeafNode : Node() {
+    var value: Any? = null // either a string value, or an attribute map (in the rare case multiple attributes are set)
 
-abstract class LeafNode extends Node {
-    Object value; // either a string value, or an attribute map (in the rare case multiple attributes are set)
-
-    protected final boolean hasAttributes() {
-        return value instanceof Attributes;
+    override fun hasAttributes(): Boolean {
+        return value is Attributes
     }
 
-    @Override
-    public final Attributes attributes() {
-        ensureAttributes();
-        return (Attributes) value;
+    override fun attributes(): Attributes {
+        ensureAttributes()
+        return value as Attributes
     }
 
-    private void ensureAttributes() {
+    private fun ensureAttributes() {
         if (!hasAttributes()) {
-            Object coreValue = value;
-            Attributes attributes = new Attributes();
-            value = attributes;
-            if (coreValue != null)
-                attributes.put(nodeName(), (String) coreValue);
+            val coreValue = value
+            val attributes = Attributes()
+            value = attributes
+            if (coreValue != null) attributes.put(nodeName(), coreValue as String?)
         }
     }
 
-    String coreValue() {
-        return attr(nodeName());
+    fun coreValue(): String? {
+        return attr(nodeName())
     }
 
-    void coreValue(String value) {
-        attr(nodeName(), value);
+    fun coreValue(value: String?) {
+        attr(nodeName(), value)
     }
 
-    @Override
-    public String attr(String key) {
-        if (!hasAttributes()) {
-            return nodeName().equals(key) ? (String) value : EmptyString;
-        }
-        return super.attr(key);
+    override fun attr(key: String): String? {
+        return if (!hasAttributes()) {
+            if (nodeName() == key) value as String? else Node.Companion.EmptyString
+        } else super.attr(key)
     }
 
-    @Override
-    public Node attr(String key, String value) {
-        if (!hasAttributes() && key.equals(nodeName())) {
-            this.value = value;
+    override fun attr(key: String, value: String?): Node {
+        if (!hasAttributes() && key == nodeName()) {
+            this.value = value
         } else {
-            ensureAttributes();
-            super.attr(key, value);
+            ensureAttributes()
+            super.attr(key, value)
         }
-        return this;
+        return this
     }
 
-    @Override
-    public boolean hasAttr(String key) {
-        ensureAttributes();
-        return super.hasAttr(key);
+    override fun hasAttr(key: String): Boolean {
+        ensureAttributes()
+        return super.hasAttr(key)
     }
 
-    @Override
-    public Node removeAttr(String key) {
-        ensureAttributes();
-        return super.removeAttr(key);
+    override fun removeAttr(key: String?): Node? {
+        ensureAttributes()
+        return super.removeAttr(key)
     }
 
-    @Override
-    public String absUrl(String key) {
-        ensureAttributes();
-        return super.absUrl(key);
+    override fun absUrl(key: String?): String? {
+        ensureAttributes()
+        return super.absUrl(key)
     }
 
-    @Override
-    public String baseUri() {
-        return hasParent() ? parent().baseUri() : "";
+    override fun baseUri(): String? {
+        return if (hasParent()) parent()!!.baseUri() else ""
     }
 
-    @Override
-    protected void doSetBaseUri(String baseUri) {
+    override fun doSetBaseUri(baseUri: String?) {
         // noop
     }
 
-    @Override
-    public int childNodeSize() {
-        return 0;
+    override fun childNodeSize(): Int {
+        return 0
     }
 
-    @Override
-    public Node empty() {
-        return this;
+    override fun empty(): Node {
+        return this
     }
 
-    @Override
-    protected List<Node> ensureChildNodes() {
-        return EmptyNodes;
+    public override fun ensureChildNodes(): List<Node?> {
+        return Node.Companion.EmptyNodes
     }
 
-    @Override
-    protected LeafNode doClone(Node parent) {
-        LeafNode clone = (LeafNode) super.doClone(parent);
+    override fun doClone(parent: Node?): LeafNode {
+        val clone = super.doClone(parent) as LeafNode
 
         // Object value could be plain string or attributes - need to clone
-        if (hasAttributes())
-            clone.value = ((Attributes) value).clone();
-
-        return clone;
+        if (hasAttributes()) clone.value = (value as Attributes?)!!.clone()
+        return clone
     }
 }

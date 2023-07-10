@@ -1,34 +1,24 @@
-package org.jsoup.helper;
-
-import java.util.ArrayList;
-import java.util.List;
+package org.jsoup.helper
 
 /**
- Validation exceptions, as thrown by the methods in {@link Validate}.
+ * Validation exceptions, as thrown by the methods in [Validate].
  */
-public class ValidationException extends IllegalArgumentException {
-
-    public static final String Validator = Validate.class.getName();
-
-    public ValidationException(String msg) {
-        super(msg);
+class ValidationException(msg: String?) : IllegalArgumentException(msg) {
+    @Synchronized
+    public override fun fillInStackTrace(): Throwable {
+        // Filters out the Validate class from the stacktrace, to more clearly point at the root-cause.
+        super.fillInStackTrace()
+        val stackTrace: Array<StackTraceElement> = getStackTrace()
+        val filteredTrace: MutableList<StackTraceElement> = ArrayList()
+        for (trace: StackTraceElement in stackTrace) {
+            if ((trace.getClassName() == Validator)) continue
+            filteredTrace.add(trace)
+        }
+        setStackTrace(filteredTrace.toTypedArray<StackTraceElement>())
+        return this
     }
 
-    @Override
-    public synchronized Throwable fillInStackTrace() {
-        // Filters out the Validate class from the stacktrace, to more clearly point at the root-cause.
-
-        super.fillInStackTrace();
-
-        StackTraceElement[] stackTrace = getStackTrace();
-        List<StackTraceElement> filteredTrace = new ArrayList<>();
-        for (StackTraceElement trace : stackTrace) {
-            if (trace.getClassName().equals(Validator)) continue;
-            filteredTrace.add(trace);
-        }
-
-        setStackTrace(filteredTrace.toArray(new StackTraceElement[0]));
-
-        return this;
+    companion object {
+        val Validator: String = Validate::class.java.getName()
     }
 }

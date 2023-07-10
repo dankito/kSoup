@@ -1,300 +1,252 @@
-package org.jsoup.parser;
+package org.jsoup.parser
 
-import org.jsoup.UncheckedIOException;
-import org.jsoup.helper.Validate;
-
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Locale;
+import org.jsoup.UncheckedIOException
+import org.jsoup.helper.Validate
+import java.io.*
+import java.util.*
 
 /**
- CharacterReader consumes tokens off a string. Used internally by jsoup. API subject to changes.
+ * CharacterReader consumes tokens off a string. Used internally by jsoup. API subject to changes.
  */
-public final class CharacterReader {
-    static final char EOF = (char) -1;
-    private static final int maxStringCacheLen = 12;
-    static final int maxBufferLen = 1024 * 32; // visible for testing
-    static final int readAheadLimit = (int) (maxBufferLen * 0.75); // visible for testing
-    private static final int minReadAheadLen = 1024; // the minimum mark length supported. No HTML entities can be larger than this.
+class CharacterReader @JvmOverloads constructor(input: Reader, sz: Int = maxBufferLen) {
+    private var charBuf: CharArray?
+    private var reader: Reader?
+    private var bufLength: Int = 0
+    private var bufSplitPoint: Int = 0
+    private var bufPos: Int = 0
+    private var readerPos: Int = 0
+    private var bufMark: Int = -1
+    private var stringCache: Array<String?>? =
+        arrayOfNulls(stringCacheSize) // holds reused strings in this doc, to lessen garbage
+    private var newlinePositions: ArrayList<Int>? =
+        null // optionally track the pos() position of newlines - scans during bufferUp()
+    private var lineNumberOffset: Int = 1 // line numbers start at 1; += newlinePosition[indexof(pos)]
 
-    private char[] charBuf;
-    private Reader reader;
-    private int bufLength;
-    private int bufSplitPoint;
-    private int bufPos;
-    private int readerPos;
-    private int bufMark = -1;
-    private static final int stringCacheSize = 512;
-    private String[] stringCache = new String[stringCacheSize]; // holds reused strings in this doc, to lessen garbage
+    constructor(input: String?) : this(StringReader(input), input!!.length)
 
-    @Nullable private ArrayList<Integer> newlinePositions = null; // optionally track the pos() position of newlines - scans during bufferUp()
-    private int lineNumberOffset = 1; // line numbers start at 1; += newlinePosition[indexof(pos)]
-
-    public CharacterReader(Reader input, int sz) {
-        Validate.notNull(input);
-        Validate.isTrue(input.markSupported());
-        reader = input;
-        charBuf = new char[Math.min(sz, maxBufferLen)];
-        bufferUp();
-    }
-
-    public CharacterReader(Reader input) {
-        this(input, maxBufferLen);
-    }
-
-    public CharacterReader(String input) {
-        this(new StringReader(input), input.length());
-    }
-
-    public void close() {
-        if (reader == null)
-            return;
+    fun close() {
+        if (reader == null) return
         try {
-            reader.close();
-        } catch (IOException ignored) {
+            reader!!.close()
+        } catch (ignored: IOException) {
         } finally {
-            reader = null;
-            charBuf = null;
-            stringCache = null;
+            reader = null
+            charBuf = null
+            stringCache = null
         }
     }
 
-    private boolean readFully; // if the underlying stream has been completely read, no value in further buffering
-    private void bufferUp() {
-        if (readFully || bufPos < bufSplitPoint)
-            return;
+    private var readFully: Boolean =
+        false // if the underlying stream has been completely read, no value in further buffering
 
-        final int pos;
-        final int offset;
+    private fun bufferUp() {
+        if (readFully || bufPos < bufSplitPoint) return
+        val pos: Int
+        val offset: Int
         if (bufMark != -1) {
-            pos = bufMark;
-            offset = bufPos - bufMark;
+            pos = bufMark
+            offset = bufPos - bufMark
         } else {
-            pos = bufPos;
-            offset = 0;
+            pos = bufPos
+            offset = 0
         }
-
         try {
-            final long skipped = reader.skip(pos);
-            reader.mark(maxBufferLen);
-            int read = 0;
+            val skipped: Long = reader!!.skip(pos.toLong())
+            reader!!.mark(maxBufferLen)
+            var read: Int = 0
             while (read <= minReadAheadLen) {
-                int thisRead = reader.read(charBuf, read, charBuf.length - read);
-                if (thisRead == -1)
-                    readFully = true;
-                if (thisRead <= 0)
-                    break;
-                read += thisRead;
+                val thisRead: Int = reader!!.read(charBuf, read, charBuf!!.size - read)
+                if (thisRead == -1) readFully = true
+                if (thisRead <= 0) break
+                read += thisRead
             }
-            reader.reset();
+            reader!!.reset()
             if (read > 0) {
-                Validate.isTrue(skipped == pos); // Previously asserted that there is room in buf to skip, so this will be a WTF
-                bufLength = read;
-                readerPos += pos;
-                bufPos = offset;
-                if (bufMark != -1)
-                    bufMark = 0;
-                bufSplitPoint = Math.min(bufLength, readAheadLimit);
+                Validate.isTrue(skipped == pos.toLong()) // Previously asserted that there is room in buf to skip, so this will be a WTF
+                bufLength = read
+                readerPos += pos
+                bufPos = offset
+                if (bufMark != -1) bufMark = 0
+                bufSplitPoint = Math.min(bufLength, readAheadLimit)
             }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        } catch (e: IOException) {
+            throw UncheckedIOException(e)
         }
-        scanBufferForNewlines(); // if enabled, we index newline positions for line number tracking
-        lastIcSeq = null; // cache for last containsIgnoreCase(seq)
+        scanBufferForNewlines() // if enabled, we index newline positions for line number tracking
+        lastIcSeq = null // cache for last containsIgnoreCase(seq)
     }
 
     /**
      * Gets the position currently read to in the content. Starts at 0.
      * @return current position
      */
-    public int pos() {
-        return readerPos + bufPos;
+    fun pos(): Int {
+        return readerPos + bufPos
     }
 
-    /** Tests if the buffer has been fully read. */
-    boolean readFully() {
-        return readFully;
+    /** Tests if the buffer has been fully read.  */
+    fun readFully(): Boolean {
+        return readFully
     }
 
     /**
-     Enables or disables line number tracking. By default, will be <b>off</b>.Tracking line numbers improves the
-     legibility of parser error messages, for example. Tracking should be enabled before any content is read to be of
-     use.
-
-     @param track set tracking on|off
-     @since 1.14.3
+     * Enables or disables line number tracking. By default, will be **off**.Tracking line numbers improves the
+     * legibility of parser error messages, for example. Tracking should be enabled before any content is read to be of
+     * use.
+     *
+     * @param track set tracking on|off
+     * @since 1.14.3
      */
-    public void trackNewlines(boolean track) {
+    fun trackNewlines(track: Boolean) {
         if (track && newlinePositions == null) {
-            newlinePositions = new ArrayList<>(maxBufferLen / 80); // rough guess of likely count
-            scanBufferForNewlines(); // first pass when enabled; subsequently called during bufferUp
+            newlinePositions = ArrayList(maxBufferLen / 80) // rough guess of likely count
+            scanBufferForNewlines() // first pass when enabled; subsequently called during bufferUp
+        } else if (!track) newlinePositions = null
+    }
+
+    val isTrackNewlines: Boolean
+        /**
+         * Check if the tracking of newlines is enabled.
+         * @return the current newline tracking state
+         * @since 1.14.3
+         */
+        get() {
+            return newlinePositions != null
         }
-        else if (!track)
-            newlinePositions = null;
-    }
 
     /**
-     Check if the tracking of newlines is enabled.
-     @return the current newline tracking state
-     @since 1.14.3
+     * Get the current line number (that the reader has consumed to). Starts at line #1.
+     * @return the current line number, or 1 if line tracking is not enabled.
+     * @since 1.14.3
+     * @see .trackNewlines
      */
-    public boolean isTrackNewlines() {
-        return newlinePositions != null;
+    fun lineNumber(): Int {
+        return lineNumber(pos())
     }
 
-    /**
-     Get the current line number (that the reader has consumed to). Starts at line #1.
-     @return the current line number, or 1 if line tracking is not enabled.
-     @since 1.14.3
-     @see #trackNewlines(boolean)
-     */
-    public int lineNumber() {
-        return lineNumber(pos());
-    }
-
-    int lineNumber(int pos) {
+    fun lineNumber(pos: Int): Int {
         // note that this impl needs to be called before the next buffer up or line numberoffset will be wrong. if that
         // causes issues, can remove the reset of newlinepositions during buffer, at the cost of a larger tracking array
-        if (!isTrackNewlines())
-            return 1;
-
-        int i = lineNumIndex(pos);
-        if (i == -1)
-            return lineNumberOffset; // first line
-        return i + lineNumberOffset + 1;
+        if (!isTrackNewlines) return 1
+        val i: Int = lineNumIndex(pos)
+        if (i == -1) return lineNumberOffset // first line
+        return i + lineNumberOffset + 1
     }
 
     /**
-     Get the current column number (that the reader has consumed to). Starts at column #1.
-     @return the current column number
-     @since 1.14.3
-     @see #trackNewlines(boolean)
+     * Get the current column number (that the reader has consumed to). Starts at column #1.
+     * @return the current column number
+     * @since 1.14.3
+     * @see .trackNewlines
      */
-    public int columnNumber() {
-        return columnNumber(pos());
+    fun columnNumber(): Int {
+        return columnNumber(pos())
     }
 
-    int columnNumber(int pos) {
-        if (!isTrackNewlines())
-            return pos + 1;
-
-        int i = lineNumIndex(pos);
-        if (i == -1)
-          return pos + 1;
-        return pos - newlinePositions.get(i) + 1;
+    fun columnNumber(pos: Int): Int {
+        if (!isTrackNewlines) return pos + 1
+        val i: Int = lineNumIndex(pos)
+        if (i == -1) return pos + 1
+        return pos - newlinePositions!!.get(i) + 1
     }
 
     /**
-     Get a formatted string representing the current line and cursor positions. E.g. <code>5:10</code> indicating line
-     number 5 and column number 10.
-     @return line:col position
-     @since 1.14.3
-     @see #trackNewlines(boolean)
+     * Get a formatted string representing the current line and cursor positions. E.g. `5:10` indicating line
+     * number 5 and column number 10.
+     * @return line:col position
+     * @since 1.14.3
+     * @see .trackNewlines
      */
-    String cursorPos() {
-        return lineNumber() + ":" + columnNumber();
+    fun cursorPos(): String {
+        return lineNumber().toString() + ":" + columnNumber()
     }
 
-    private int lineNumIndex(int pos) {
-        if (!isTrackNewlines()) return 0;
-        int i = Collections.binarySearch(newlinePositions, pos);
-        if (i < -1) i = Math.abs(i) - 2;
-        return i;
+    private fun lineNumIndex(pos: Int): Int {
+        if (!isTrackNewlines) return 0
+        var i: Int = Collections.binarySearch(newlinePositions, pos)
+        if (i < -1) i = Math.abs(i) - 2
+        return i
     }
 
     /**
-     Scans the buffer for newline position, and tracks their location in newlinePositions.
+     * Scans the buffer for newline position, and tracks their location in newlinePositions.
      */
-    private void scanBufferForNewlines() {
-        if (!isTrackNewlines())
-            return;
-
-        if (newlinePositions.size() > 0) {
+    private fun scanBufferForNewlines() {
+        if (!isTrackNewlines) return
+        if (newlinePositions!!.size > 0) {
             // work out the line number that we have read up to (as we have likely scanned past this point)
-            int index = lineNumIndex(readerPos);
-            if (index == -1) index = 0; // first line
-            int linePos = newlinePositions.get(index);
-            lineNumberOffset += index; // the num lines we've read up to
-            newlinePositions.clear();
-            newlinePositions.add(linePos); // roll the last read pos to first, for cursor num after buffer
+            var index: Int = lineNumIndex(readerPos)
+            if (index == -1) index = 0 // first line
+            val linePos: Int = newlinePositions!!.get(index)
+            lineNumberOffset += index // the num lines we've read up to
+            newlinePositions!!.clear()
+            newlinePositions!!.add(linePos) // roll the last read pos to first, for cursor num after buffer
         }
-
-        for (int i = bufPos; i < bufLength; i++) {
-            if (charBuf[i] == '\n')
-                newlinePositions.add(1 + readerPos + i);
+        for (i in bufPos until bufLength) {
+            if (charBuf!!.get(i) == '\n') newlinePositions!!.add(1 + readerPos + i)
         }
     }
 
-    /**
-     * Tests if all the content has been read.
-     * @return true if nothing left to read.
-     */
-    public boolean isEmpty() {
-        bufferUp();
-        return bufPos >= bufLength;
-    }
-
-    private boolean isEmptyNoBufferUp() {
-        return bufPos >= bufLength;
-    }
+    val isEmpty: Boolean
+        /**
+         * Tests if all the content has been read.
+         * @return true if nothing left to read.
+         */
+        get() {
+            bufferUp()
+            return bufPos >= bufLength
+        }
+    private val isEmptyNoBufferUp: Boolean
+        private get() {
+            return bufPos >= bufLength
+        }
 
     /**
      * Get the char at the current position.
      * @return char
      */
-    public char current() {
-        bufferUp();
-        return isEmptyNoBufferUp() ? EOF : charBuf[bufPos];
+    fun current(): Char {
+        bufferUp()
+        return if (isEmptyNoBufferUp) EOF else charBuf!!.get(bufPos)
     }
 
-    char consume() {
-        bufferUp();
-        char val = isEmptyNoBufferUp() ? EOF : charBuf[bufPos];
-        bufPos++;
-        return val;
+    fun consume(): Char {
+        bufferUp()
+        val `val`: Char = if (isEmptyNoBufferUp) EOF else charBuf!!.get(bufPos)
+        bufPos++
+        return `val`
     }
 
     /**
-     Unconsume one character (bufPos--). MUST only be called directly after a consume(), and no chance of a bufferUp.
+     * Unconsume one character (bufPos--). MUST only be called directly after a consume(), and no chance of a bufferUp.
      */
-    void unconsume() {
-        if (bufPos < 1)
-            throw new UncheckedIOException(new IOException("WTF: No buffer left to unconsume.")); // a bug if this fires, need to trace it.
-
-        bufPos--;
+    fun unconsume() {
+        if (bufPos < 1) throw UncheckedIOException(IOException("WTF: No buffer left to unconsume.")) // a bug if this fires, need to trace it.
+        bufPos--
     }
 
     /**
      * Moves the current position by one.
      */
-    public void advance() {
-        bufPos++;
+    fun advance() {
+        bufPos++
     }
 
-    void mark() {
+    fun mark() {
         // make sure there is enough look ahead capacity
-        if (bufLength - bufPos < minReadAheadLen)
-            bufSplitPoint = 0;
-
-        bufferUp();
-        bufMark = bufPos;
+        if (bufLength - bufPos < minReadAheadLen) bufSplitPoint = 0
+        bufferUp()
+        bufMark = bufPos
     }
 
-    void unmark() {
-        bufMark = -1;
+    fun unmark() {
+        bufMark = -1
     }
 
-    void rewindToMark() {
-        if (bufMark == -1)
-            throw new UncheckedIOException(new IOException("Mark invalid"));
-
-        bufPos = bufMark;
-        unmark();
+    fun rewindToMark() {
+        if (bufMark == -1) throw UncheckedIOException(IOException("Mark invalid"))
+        bufPos = bufMark
+        unmark()
     }
 
     /**
@@ -302,14 +254,13 @@ public final class CharacterReader {
      * @param c scan target
      * @return offset between current position and next instance of target. -1 if not found.
      */
-    int nextIndexOf(char c) {
+    fun nextIndexOf(c: Char): Int {
         // doesn't handle scanning for surrogates
-        bufferUp();
-        for (int i = bufPos; i < bufLength; i++) {
-            if (c == charBuf[i])
-                return i - bufPos;
+        bufferUp()
+        for (i in bufPos until bufLength) {
+            if (c == charBuf!!.get(i)) return i - bufPos
         }
-        return -1;
+        return -1
     }
 
     /**
@@ -318,23 +269,30 @@ public final class CharacterReader {
      * @param seq scan target
      * @return offset between current position and next instance of target. -1 if not found.
      */
-    int nextIndexOf(CharSequence seq) {
-        bufferUp();
+    fun nextIndexOf(seq: CharSequence): Int {
+        bufferUp()
         // doesn't handle scanning for surrogates
-        char startChar = seq.charAt(0);
-        for (int offset = bufPos; offset < bufLength; offset++) {
+        val startChar: Char = seq.get(0)
+        var offset: Int = bufPos
+        while (offset < bufLength) {
+
             // scan to first instance of startchar:
-            if (startChar != charBuf[offset])
-                while(++offset < bufLength && startChar != charBuf[offset]) { /* empty */ }
-            int i = offset + 1;
-            int last = i + seq.length()-1;
-            if (offset < bufLength && last <= bufLength) {
-                for (int j = 1; i < last && seq.charAt(j) == charBuf[i]; i++, j++) { /* empty */ }
-                if (i == last) // found full sequence
-                    return offset - bufPos;
+            if (startChar != charBuf!!.get(offset)) while (++offset < bufLength && startChar != charBuf!!.get(offset)) { /* empty */
             }
+            var i: Int = offset + 1
+            val last: Int = i + seq.length - 1
+            if (offset < bufLength && last <= bufLength) {
+                var j: Int = 1
+                while (i < last && seq.get(j) == charBuf!!.get(i)) {
+                    i++
+                    j++
+                }
+                if (i == last) // found full sequence
+                    return offset - bufPos
+            }
+            offset++
         }
-        return -1;
+        return -1
     }
 
     /**
@@ -342,33 +300,33 @@ public final class CharacterReader {
      * @param c the delimiter
      * @return the chars read
      */
-    public String consumeTo(char c) {
-        int offset = nextIndexOf(c);
+    fun consumeTo(c: Char): String {
+        val offset: Int = nextIndexOf(c)
         if (offset != -1) {
-            String consumed = cacheString(charBuf, stringCache, bufPos, offset);
-            bufPos += offset;
-            return consumed;
+            val consumed: String = cacheString(charBuf, stringCache, bufPos, offset)
+            bufPos += offset
+            return consumed
         } else {
-            return consumeToEnd();
+            return consumeToEnd()
         }
     }
 
-    String consumeTo(String seq) {
-        int offset = nextIndexOf(seq);
+    fun consumeTo(seq: String): String {
+        val offset: Int = nextIndexOf(seq)
         if (offset != -1) {
-            String consumed = cacheString(charBuf, stringCache, bufPos, offset);
-            bufPos += offset;
-            return consumed;
-        } else if (bufLength - bufPos < seq.length()) {
+            val consumed: String = cacheString(charBuf, stringCache, bufPos, offset)
+            bufPos += offset
+            return consumed
+        } else if (bufLength - bufPos < seq.length) {
             // nextIndexOf() did a bufferUp(), so if the buffer is shorter than the search string, we must be at EOF
-            return consumeToEnd();
+            return consumeToEnd()
         } else {
             // the string we're looking for may be straddling a buffer boundary, so keep (length - 1) characters
             // unread in case they contain the beginning of the search string
-            int endPos = bufLength - seq.length() + 1;
-            String consumed = cacheString(charBuf, stringCache, bufPos, endPos - bufPos);
-            bufPos = endPos;
-            return consumed;
+            val endPos: Int = bufLength - seq.length + 1
+            val consumed: String = cacheString(charBuf, stringCache, bufPos, endPos - bufPos)
+            bufPos = endPos
+            return consumed
         }
     }
 
@@ -377,388 +335,352 @@ public final class CharacterReader {
      * @param chars delimiters to scan for
      * @return characters read up to the matched delimiter.
      */
-    public String consumeToAny(final char... chars) {
-        bufferUp();
-        int pos = bufPos;
-        final int start = pos;
-        final int remaining = bufLength;
-        final char[] val = charBuf;
-        final int charLen = chars.length;
-        int i;
-
-        OUTER: while (pos < remaining) {
-            for (i = 0; i < charLen; i++) {
-                if (val[pos] == chars[i])
-                    break OUTER;
+    fun consumeToAny(vararg chars: Char): String {
+        bufferUp()
+        var pos: Int = bufPos
+        val start: Int = pos
+        val remaining: Int = bufLength
+        val `val`: CharArray? = charBuf
+        val charLen: Int = chars.size
+        var i: Int
+        OUTER@ while (pos < remaining) {
+            i = 0
+            while (i < charLen) {
+                if (`val`!!.get(pos) == chars.get(i)) break@OUTER
+                i++
             }
-            pos++;
+            pos++
         }
-
-        bufPos = pos;
-        return pos > start ? cacheString(charBuf, stringCache, start, pos -start) : "";
+        bufPos = pos
+        return if (pos > start) cacheString(charBuf, stringCache, start, pos - start) else ""
     }
 
-    String consumeToAnySorted(final char... chars) {
-        bufferUp();
-        int pos = bufPos;
-        final int start = pos;
-        final int remaining = bufLength;
-        final char[] val = charBuf;
-
+    fun consumeToAnySorted(vararg chars: Char): String {
+        bufferUp()
+        var pos: Int = bufPos
+        val start: Int = pos
+        val remaining: Int = bufLength
+        val `val`: CharArray? = charBuf
         while (pos < remaining) {
-            if (Arrays.binarySearch(chars, val[pos]) >= 0)
-                break;
-            pos++;
+            if (Arrays.binarySearch(chars, `val`!!.get(pos)) >= 0) break
+            pos++
         }
-        bufPos = pos;
-        return bufPos > start ? cacheString(charBuf, stringCache, start, pos -start) : "";
+        bufPos = pos
+        return if (bufPos > start) cacheString(charBuf, stringCache, start, pos - start) else ""
     }
 
-    String consumeData() {
+    fun consumeData(): String {
         // &, <, null
         //bufferUp(); // no need to bufferUp, just called consume()
-        int pos = bufPos;
-        final int start = pos;
-        final int remaining = bufLength;
-        final char[] val = charBuf;
-
-        OUTER: while (pos < remaining) {
-            switch (val[pos]) {
-                case '&':
-                case '<':
-                case TokeniserState.nullChar:
-                    break OUTER;
-                default:
-                    pos++;
+        var pos: Int = bufPos
+        val start: Int = pos
+        val remaining: Int = bufLength
+        val `val`: CharArray? = charBuf
+        OUTER@ while (pos < remaining) {
+            when (`val`!!.get(pos)) {
+                '&', '<', TokeniserState.Companion.nullChar -> break@OUTER
+                else -> pos++
             }
         }
-        bufPos = pos;
-        return pos > start ? cacheString(charBuf, stringCache, start, pos -start) : "";
+        bufPos = pos
+        return if (pos > start) cacheString(charBuf, stringCache, start, pos - start) else ""
     }
 
-    String consumeAttributeQuoted(final boolean single) {
+    fun consumeAttributeQuoted(single: Boolean): String {
         // null, " or ', &
         //bufferUp(); // no need to bufferUp, just called consume()
-        int pos = bufPos;
-        final int start = pos;
-        final int remaining = bufLength;
-        final char[] val = charBuf;
+        var pos: Int = bufPos
+        val start: Int = pos
+        val remaining: Int = bufLength
+        val `val`: CharArray? = charBuf
+        OUTER@ while (pos < remaining) {
+            when (`val`!!.get(pos)) {
+                '&', TokeniserState.Companion.nullChar -> break@OUTER
+                '\'' -> {
+                    if (single) break@OUTER
+                    if (!single) break@OUTER
+                    pos++
+                }
 
-        OUTER: while (pos < remaining) {
-            switch (val[pos]) {
-                case '&':
-                case TokeniserState.nullChar:
-                    break OUTER;
-                case '\'':
-                    if (single) break OUTER;
-                case '"':
-                    if (!single) break OUTER;
-                default:
-                    pos++;
+                '"' -> {
+                    if (!single) break@OUTER
+                    pos++
+                }
+
+                else -> pos++
             }
         }
-        bufPos = pos;
-        return pos > start ? cacheString(charBuf, stringCache, start, pos -start) : "";
+        bufPos = pos
+        return if (pos > start) cacheString(charBuf, stringCache, start, pos - start) else ""
     }
 
-
-    String consumeRawData() {
+    fun consumeRawData(): String {
         // <, null
         //bufferUp(); // no need to bufferUp, just called consume()
-        int pos = bufPos;
-        final int start = pos;
-        final int remaining = bufLength;
-        final char[] val = charBuf;
-
-        OUTER: while (pos < remaining) {
-            switch (val[pos]) {
-                case '<':
-                case TokeniserState.nullChar:
-                    break OUTER;
-                default:
-                    pos++;
+        var pos: Int = bufPos
+        val start: Int = pos
+        val remaining: Int = bufLength
+        val `val`: CharArray? = charBuf
+        OUTER@ while (pos < remaining) {
+            when (`val`!!.get(pos)) {
+                '<', TokeniserState.Companion.nullChar -> break@OUTER
+                else -> pos++
             }
         }
-        bufPos = pos;
-        return pos > start ? cacheString(charBuf, stringCache, start, pos -start) : "";
+        bufPos = pos
+        return if (pos > start) cacheString(charBuf, stringCache, start, pos - start) else ""
     }
 
-    String consumeTagName() {
-        // '\t', '\n', '\r', '\f', ' ', '/', '>'
+    fun consumeTagName(): String {
+        // '\t', '\n', '\r', '\u000C', ' ', '/', '>'
         // NOTE: out of spec, added '<' to fix common author bugs; does not stop and append on nullChar but eats
-        bufferUp();
-        int pos = bufPos;
-        final int start = pos;
-        final int remaining = bufLength;
-        final char[] val = charBuf;
-
-        OUTER: while (pos < remaining) {
-            switch (val[pos]) {
-                case '\t':
-                case '\n':
-                case '\r':
-                case '\f':
-                case ' ':
-                case '/':
-                case '>':
-                case '<':
-                    break OUTER;
+        bufferUp()
+        var pos: Int = bufPos
+        val start: Int = pos
+        val remaining: Int = bufLength
+        val `val`: CharArray? = charBuf
+        OUTER@ while (pos < remaining) {
+            when (`val`!!.get(pos)) {
+                '\t', '\n', '\r', '\u000C', ' ', '/', '>', '<' -> break@OUTER
             }
-            pos++;
+            pos++
         }
-
-        bufPos = pos;
-        return pos > start ? cacheString(charBuf, stringCache, start, pos -start) : "";
+        bufPos = pos
+        return if (pos > start) cacheString(charBuf, stringCache, start, pos - start) else ""
     }
 
-    String consumeToEnd() {
-        bufferUp();
-        String data = cacheString(charBuf, stringCache, bufPos, bufLength - bufPos);
-        bufPos = bufLength;
-        return data;
+    fun consumeToEnd(): String {
+        bufferUp()
+        val data: String = cacheString(charBuf, stringCache, bufPos, bufLength - bufPos)
+        bufPos = bufLength
+        return data
     }
 
-    String consumeLetterSequence() {
-        bufferUp();
-        int start = bufPos;
+    fun consumeLetterSequence(): String {
+        bufferUp()
+        val start: Int = bufPos
         while (bufPos < bufLength) {
-            char c = charBuf[bufPos];
-            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || Character.isLetter(c))
-                bufPos++;
-            else
-                break;
+            val c: Char = charBuf!!.get(bufPos)
+            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || Character.isLetter(c)) bufPos++ else break
         }
-
-        return cacheString(charBuf, stringCache, start, bufPos - start);
+        return cacheString(charBuf, stringCache, start, bufPos - start)
     }
 
-    String consumeLetterThenDigitSequence() {
-        bufferUp();
-        int start = bufPos;
+    fun consumeLetterThenDigitSequence(): String {
+        bufferUp()
+        val start: Int = bufPos
         while (bufPos < bufLength) {
-            char c = charBuf[bufPos];
-            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || Character.isLetter(c))
-                bufPos++;
-            else
-                break;
+            val c: Char = charBuf!!.get(bufPos)
+            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || Character.isLetter(c)) bufPos++ else break
         }
-        while (!isEmptyNoBufferUp()) {
-            char c = charBuf[bufPos];
-            if (c >= '0' && c <= '9')
-                bufPos++;
-            else
-                break;
+        while (!isEmptyNoBufferUp) {
+            val c: Char = charBuf!!.get(bufPos)
+            if (c >= '0' && c <= '9') bufPos++ else break
         }
-
-        return cacheString(charBuf, stringCache, start, bufPos - start);
+        return cacheString(charBuf, stringCache, start, bufPos - start)
     }
 
-    String consumeHexSequence() {
-        bufferUp();
-        int start = bufPos;
+    fun consumeHexSequence(): String {
+        bufferUp()
+        val start: Int = bufPos
         while (bufPos < bufLength) {
-            char c = charBuf[bufPos];
-            if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f'))
-                bufPos++;
-            else
-                break;
+            val c: Char = charBuf!!.get(bufPos)
+            if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')) bufPos++ else break
         }
-        return cacheString(charBuf, stringCache, start, bufPos - start);
+        return cacheString(charBuf, stringCache, start, bufPos - start)
     }
 
-    String consumeDigitSequence() {
-        bufferUp();
-        int start = bufPos;
+    fun consumeDigitSequence(): String {
+        bufferUp()
+        val start: Int = bufPos
         while (bufPos < bufLength) {
-            char c = charBuf[bufPos];
-            if (c >= '0' && c <= '9')
-                bufPos++;
-            else
-                break;
+            val c: Char = charBuf!!.get(bufPos)
+            if (c >= '0' && c <= '9') bufPos++ else break
         }
-        return cacheString(charBuf, stringCache, start, bufPos - start);
+        return cacheString(charBuf, stringCache, start, bufPos - start)
     }
 
-    boolean matches(char c) {
-        return !isEmpty() && charBuf[bufPos] == c;
-
+    fun matches(c: Char): Boolean {
+        return !isEmpty && charBuf!!.get(bufPos) == c
     }
 
-    boolean matches(String seq) {
-        bufferUp();
-        int scanLength = seq.length();
-        if (scanLength > bufLength - bufPos)
-            return false;
-
-        for (int offset = 0; offset < scanLength; offset++)
-            if (seq.charAt(offset) != charBuf[bufPos +offset])
-                return false;
-        return true;
+    fun matches(seq: String): Boolean {
+        bufferUp()
+        val scanLength: Int = seq.length
+        if (scanLength > bufLength - bufPos) return false
+        for (offset in 0 until scanLength) if (seq.get(offset) != charBuf!!.get(bufPos + offset)) return false
+        return true
     }
 
-    boolean matchesIgnoreCase(String seq) {
-        bufferUp();
-        int scanLength = seq.length();
-        if (scanLength > bufLength - bufPos)
-            return false;
-
-        for (int offset = 0; offset < scanLength; offset++) {
-            char upScan = Character.toUpperCase(seq.charAt(offset));
-            char upTarget = Character.toUpperCase(charBuf[bufPos + offset]);
-            if (upScan != upTarget)
-                return false;
+    fun matchesIgnoreCase(seq: String): Boolean {
+        bufferUp()
+        val scanLength: Int = seq.length
+        if (scanLength > bufLength - bufPos) return false
+        for (offset in 0 until scanLength) {
+            val upScan: Char = seq.get(offset).uppercaseChar()
+            val upTarget: Char = charBuf!!.get(bufPos + offset).uppercaseChar()
+            if (upScan != upTarget) return false
         }
-        return true;
+        return true
     }
 
-    boolean matchesAny(char... seq) {
-        if (isEmpty())
-            return false;
-
-        bufferUp();
-        char c = charBuf[bufPos];
-        for (char seek : seq) {
-            if (seek == c)
-                return true;
+    fun matchesAny(vararg seq: Char): Boolean {
+        if (isEmpty) return false
+        bufferUp()
+        val c: Char = charBuf!!.get(bufPos)
+        for (seek: Char in seq) {
+            if (seek == c) return true
         }
-        return false;
+        return false
     }
 
-    boolean matchesAnySorted(char[] seq) {
-        bufferUp();
-        return !isEmpty() && Arrays.binarySearch(seq, charBuf[bufPos]) >= 0;
+    fun matchesAnySorted(seq: CharArray?): Boolean {
+        bufferUp()
+        return !isEmpty && Arrays.binarySearch(seq, charBuf!!.get(bufPos)) >= 0
     }
 
-    boolean matchesLetter() {
-        if (isEmpty())
-            return false;
-        char c = charBuf[bufPos];
-        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || Character.isLetter(c);
+    fun matchesLetter(): Boolean {
+        if (isEmpty) return false
+        val c: Char = charBuf!!.get(bufPos)
+        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || Character.isLetter(c)
     }
 
     /**
-     Checks if the current pos matches an ascii alpha (A-Z a-z) per https://infra.spec.whatwg.org/#ascii-alpha
-     @return if it matches or not
+     * Checks if the current pos matches an ascii alpha (A-Z a-z) per https://infra.spec.whatwg.org/#ascii-alpha
+     * @return if it matches or not
      */
-    boolean matchesAsciiAlpha() {
-        if (isEmpty())
-            return false;
-        char c = charBuf[bufPos];
-        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+    fun matchesAsciiAlpha(): Boolean {
+        if (isEmpty) return false
+        val c: Char = charBuf!!.get(bufPos)
+        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
     }
 
-    boolean matchesDigit() {
-        if (isEmpty())
-            return false;
-        char c = charBuf[bufPos];
-        return (c >= '0' && c <= '9');
+    fun matchesDigit(): Boolean {
+        if (isEmpty) return false
+        val c: Char = charBuf!!.get(bufPos)
+        return (c >= '0' && c <= '9')
     }
 
-    boolean matchConsume(String seq) {
-        bufferUp();
+    fun matchConsume(seq: String): Boolean {
+        bufferUp()
         if (matches(seq)) {
-            bufPos += seq.length();
-            return true;
+            bufPos += seq.length
+            return true
         } else {
-            return false;
+            return false
         }
     }
 
-    boolean matchConsumeIgnoreCase(String seq) {
+    fun matchConsumeIgnoreCase(seq: String): Boolean {
         if (matchesIgnoreCase(seq)) {
-            bufPos += seq.length();
-            return true;
+            bufPos += seq.length
+            return true
         } else {
-            return false;
+            return false
         }
     }
 
     // we maintain a cache of the previously scanned sequence, and return that if applicable on repeated scans.
     // that improves the situation where there is a sequence of <p<p<p<p<p<p<p...</title> and we're bashing on the <p
     // looking for the </title>. Resets in bufferUp()
-    @Nullable private String lastIcSeq; // scan cache
-    private int lastIcIndex; // nearest found indexOf
+    private var lastIcSeq: String? = null // scan cache
+    private var lastIcIndex: Int = 0 // nearest found indexOf
 
-    /** Used to check presence of </title>, </style> when we're in RCData and see a <xxx. Only finds consistent case. */
-    boolean containsIgnoreCase(String seq) {
-        if (seq.equals(lastIcSeq)) {
-            if (lastIcIndex == -1) return false;
-            if (lastIcIndex >= bufPos) return true;
+    init {
+        Validate.notNull(input)
+        Validate.isTrue(input.markSupported())
+        reader = input
+        charBuf = CharArray(Math.min(sz, maxBufferLen))
+        bufferUp()
+    }
+
+    /** Used to check presence of ,  when we're in RCData and see a <xxx. Only finds consistent case.></xxx.>  */
+    fun containsIgnoreCase(seq: String?): Boolean {
+        if ((seq == lastIcSeq)) {
+            if (lastIcIndex == -1) return false
+            if (lastIcIndex >= bufPos) return true
         }
-        lastIcSeq = seq;
-
-        String loScan = seq.toLowerCase(Locale.ENGLISH);
-        int lo = nextIndexOf(loScan);
+        lastIcSeq = seq
+        val loScan: String = seq!!.lowercase()
+        val lo: Int = nextIndexOf(loScan)
         if (lo > -1) {
-            lastIcIndex = bufPos + lo; return true;
+            lastIcIndex = bufPos + lo
+            return true
         }
-
-        String hiScan = seq.toUpperCase(Locale.ENGLISH);
-        int hi = nextIndexOf(hiScan);
-        boolean found = hi > -1;
-        lastIcIndex = found ? bufPos + hi : -1; // we don't care about finding the nearest, just that buf contains
-        return found;
+        val hiScan: String = seq.uppercase()
+        val hi: Int = nextIndexOf(hiScan)
+        val found: Boolean = hi > -1
+        lastIcIndex = if (found) bufPos + hi else -1 // we don't care about finding the nearest, just that buf contains
+        return found
     }
 
-    @Override
-    public String toString() {
-        if (bufLength - bufPos < 0)
-            return "";
-        return new String(charBuf, bufPos, bufLength - bufPos);
-    }
-
-    /**
-     * Caches short strings, as a flyweight pattern, to reduce GC load. Just for this doc, to prevent leaks.
-     * <p />
-     * Simplistic, and on hash collisions just falls back to creating a new string, vs a full HashMap with Entry list.
-     * That saves both having to create objects as hash keys, and running through the entry list, at the expense of
-     * some more duplicates.
-     */
-    private static String cacheString(final char[] charBuf, final String[] stringCache, final int start, final int count) {
-        // limit (no cache):
-        if (count > maxStringCacheLen)
-            return new String(charBuf, start, count);
-        if (count < 1)
-            return "";
-
-        // calculate hash:
-        int hash = 0;
-        for (int i = 0; i < count; i++) {
-            hash = 31 * hash + charBuf[start + i];
-        }
-
-        // get from cache
-        final int index = hash & stringCacheSize - 1;
-        String cached = stringCache[index];
-
-        if (cached != null && rangeEquals(charBuf, start, count, cached)) // positive hit
-            return cached;
-        else {
-            cached = new String(charBuf, start, count);
-            stringCache[index] = cached; // add or replace, assuming most recently used are most likely to recur next
-        }
-
-        return cached;
-    }
-
-    /**
-     * Check if the value of the provided range equals the string.
-     */
-    static boolean rangeEquals(final char[] charBuf, final int start, int count, final String cached) {
-        if (count == cached.length()) {
-            int i = start;
-            int j = 0;
-            while (count-- != 0) {
-                if (charBuf[i++] != cached.charAt(j++))
-                    return false;
-            }
-            return true;
-        }
-        return false;
+    public override fun toString(): String {
+        if (bufLength - bufPos < 0) return ""
+        return String((charBuf)!!, bufPos, bufLength - bufPos)
     }
 
     // just used for testing
-    boolean rangeEquals(final int start, final int count, final String cached) {
-        return rangeEquals(charBuf, start, count, cached);
+    fun rangeEquals(start: Int, count: Int, cached: String): Boolean {
+        return rangeEquals(charBuf, start, count, cached)
+    }
+
+    companion object {
+        @JvmField
+        val EOF: Char = -1.toChar()
+        private val maxStringCacheLen: Int = 12
+        @JvmField
+        val maxBufferLen: Int = 1024 * 32 // visible for testing
+        @JvmField
+        val readAheadLimit: Int = (maxBufferLen * 0.75).toInt() // visible for testing
+        private val minReadAheadLen: Int =
+            1024 // the minimum mark length supported. No HTML entities can be larger than this.
+        private val stringCacheSize: Int = 512
+
+        /**
+         * Caches short strings, as a flyweight pattern, to reduce GC load. Just for this doc, to prevent leaks.
+         *
+         *
+         * Simplistic, and on hash collisions just falls back to creating a new string, vs a full HashMap with Entry list.
+         * That saves both having to create objects as hash keys, and running through the entry list, at the expense of
+         * some more duplicates.
+         */
+        private fun cacheString(charBuf: CharArray?, stringCache: Array<String?>?, start: Int, count: Int): String {
+            // limit (no cache):
+            if (count > maxStringCacheLen) return String((charBuf)!!, start, count)
+            if (count < 1) return ""
+
+            // calculate hash:
+            var hash: Int = 0
+            for (i in 0 until count) {
+                hash = 31 * hash + charBuf!!.get(start + i).code
+            }
+
+            // get from cache
+            val index: Int = hash and (stringCacheSize - 1)
+            var cached: String? = stringCache!!.get(index)
+            if (cached != null && rangeEquals(charBuf, start, count, cached)) // positive hit
+                return cached else {
+                cached = String((charBuf)!!, start, count)
+                stringCache.get(index) =
+                    cached // add or replace, assuming most recently used are most likely to recur next
+            }
+            return cached
+        }
+
+        /**
+         * Check if the value of the provided range equals the string.
+         */
+        fun rangeEquals(charBuf: CharArray?, start: Int, count: Int, cached: String): Boolean {
+            var count: Int = count
+            if (count == cached.length) {
+                var i: Int = start
+                var j: Int = 0
+                while (count-- != 0) {
+                    if (charBuf!!.get(i++) != cached.get(j++)) return false
+                }
+                return true
+            }
+            return false
+        }
     }
 }

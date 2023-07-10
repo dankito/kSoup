@@ -1,20 +1,15 @@
-package org.jsoup.internal;
+package org.jsoup.internal
 
-import javax.annotation.Nonnull;
-import javax.annotation.meta.TypeQualifierDefault;
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.ElementType
+import javax.annotation.Nonnull
+import javax.annotation.meta.TypeQualifierDefault
 
-@Documented
+@MustBeDocumented
 @Nonnull
 @TypeQualifierDefault(ElementType.FIELD)
-@Retention(value = RetentionPolicy.CLASS)
-
+@Retention(AnnotationRetention.BINARY)
 /**
- Indicates that fields types are not nullable, unless otherwise specified by @Nullable.
- @see javax.annotation.ParametersAreNonnullByDefault
+ * Indicates that fields types are not nullable, unless otherwise specified by @Nullable.
+ * @see javax.annotation.ParametersAreNonnullByDefault
  */
-public @interface FieldsAreNonnullByDefault {
-}
+annotation class FieldsAreNonnullByDefault()

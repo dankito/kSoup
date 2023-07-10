@@ -1,32 +1,16 @@
-package org.jsoup.select;
+package org.jsoup.select
 
-import org.jsoup.helper.Validate;
-import org.jsoup.internal.StringUtil;
-import org.jsoup.nodes.Comment;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.DocumentType;
-import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
-import org.jsoup.nodes.PseudoTextElement;
-import org.jsoup.nodes.TextNode;
-import org.jsoup.nodes.XmlDeclaration;
-
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static org.jsoup.internal.Normalizer.lowerCase;
-import static org.jsoup.internal.Normalizer.normalize;
-import static org.jsoup.internal.StringUtil.normaliseWhitespace;
-
+import org.jsoup.helper.Validate
+import org.jsoup.internal.Normalizer
+import org.jsoup.internal.StringUtil
+import org.jsoup.nodes.*
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 /**
  * Evaluates that an element matches the selector.
  */
-public abstract class Evaluator {
-    protected Evaluator() {
-    }
-
+abstract class Evaluator protected constructor() {
     /**
      * Test if the element meets the evaluator's requirements.
      *
@@ -35,520 +19,380 @@ public abstract class Evaluator {
      * @return Returns <tt>true</tt> if the requirements are met or
      * <tt>false</tt> otherwise
      */
-    public abstract boolean matches(Element root, Element element);
+    abstract fun matches(root: Element?, element: Element?): Boolean
 
     /**
-     Reset any internal state in this Evaluator before executing a new Collector evaluation.
+     * Reset any internal state in this Evaluator before executing a new Collector evaluation.
      */
-    protected void reset() {
-    }
+    open fun reset() {}
 
     /**
-     A relative evaluator cost function. During evaluation, Evaluators are sorted by ascending cost as an optimization.
+     * A relative evaluator cost function. During evaluation, Evaluators are sorted by ascending cost as an optimization.
      * @return the relative cost of this Evaluator
      */
-    protected int cost() {
-        return 5; // a nominal default cost
+    open fun cost(): Int {
+        return 5 // a nominal default cost
     }
 
     /**
      * Evaluator for tag name
      */
-    public static final class Tag extends Evaluator {
-        private final String tagName;
-
-        public Tag(String tagName) {
-            this.tagName = tagName;
+    class Tag(private val tagName: String?) : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return ((element.normalName() == tagName))
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return (element.normalName().equals(tagName));
+        protected override fun cost(): Int {
+            return 1
         }
 
-        @Override protected int cost() {
-            return 1;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%s", tagName);
+        public override fun toString(): String {
+            return String.format("%s", tagName)
         }
     }
-
 
     /**
      * Evaluator for tag name that ends with
      */
-    public static final class TagEndsWith extends Evaluator {
-        private final String tagName;
-
-        public TagEndsWith(String tagName) {
-            this.tagName = tagName;
+    class TagEndsWith(private val tagName: String) : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return (element.normalName().endsWith(tagName))
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return (element.normalName().endsWith(tagName));
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%s", tagName);
+        public override fun toString(): String {
+            return String.format("%s", tagName)
         }
     }
 
     /**
      * Evaluator for element id
      */
-    public static final class Id extends Evaluator {
-        private final String id;
-
-        public Id(String id) {
-            this.id = id;
+    class Id(private val id: String?) : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return ((id == element.id()))
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return (id.equals(element.id()));
+        protected override fun cost(): Int {
+            return 2
         }
 
-        @Override protected int cost() {
-            return 2;
-        }
-        @Override
-        public String toString() {
-            return String.format("#%s", id);
+        public override fun toString(): String {
+            return String.format("#%s", id)
         }
     }
 
     /**
      * Evaluator for element class
      */
-    public static final class Class extends Evaluator {
-        private final String className;
-
-        public Class(String className) {
-            this.className = className;
+    class Class(private val className: String) : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return (element.hasClass(className))
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return (element.hasClass(className));
+        protected override fun cost(): Int {
+            return 6 // does whitespace scanning
         }
 
-        @Override protected int cost() {
-            return 6; // does whitespace scanning
+        public override fun toString(): String {
+            return String.format(".%s", className)
         }
-
-        @Override
-        public String toString() {
-            return String.format(".%s", className);
-        }
-
     }
 
     /**
      * Evaluator for attribute name matching
      */
-    public static final class Attribute extends Evaluator {
-        private final String key;
-
-        public Attribute(String key) {
-            this.key = key;
+    class Attribute(private val key: String?) : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return element.hasAttr(key)
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return element.hasAttr(key);
+        protected override fun cost(): Int {
+            return 2
         }
 
-        @Override protected int cost() {
-            return 2;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("[%s]", key);
+        public override fun toString(): String {
+            return String.format("[%s]", key)
         }
     }
 
     /**
      * Evaluator for attribute name prefix matching
      */
-    public static final class AttributeStarting extends Evaluator {
-        private final String keyPrefix;
+    class AttributeStarting(keyPrefix: String?) : Evaluator() {
+        private val keyPrefix: String?
 
-        public AttributeStarting(String keyPrefix) {
-            Validate.notEmpty(keyPrefix);
-            this.keyPrefix = lowerCase(keyPrefix);
+        init {
+            Validate.notEmpty(keyPrefix)
+            this.keyPrefix = Normalizer.lowerCase(keyPrefix)
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            List<org.jsoup.nodes.Attribute> values = element.attributes().asList();
-            for (org.jsoup.nodes.Attribute attribute : values) {
-                if (lowerCase(attribute.getKey()).startsWith(keyPrefix))
-                    return true;
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            val values: List<org.jsoup.nodes.Attribute?>? = element.attributes().asList()
+            for (attribute: org.jsoup.nodes.Attribute? in values) {
+                if (Normalizer.lowerCase(attribute.key).startsWith(keyPrefix)) return true
             }
-            return false;
+            return false
         }
 
-        @Override protected int cost() {
-            return 6;
+        protected override fun cost(): Int {
+            return 6
         }
 
-        @Override
-        public String toString() {
-            return String.format("[^%s]", keyPrefix);
+        public override fun toString(): String {
+            return String.format("[^%s]", keyPrefix)
         }
-
     }
 
     /**
      * Evaluator for attribute name/value matching
      */
-    public static final class AttributeWithValue extends AttributeKeyPair {
-        public AttributeWithValue(String key, String value) {
-            super(key, value);
+    class AttributeWithValue(key: String?, value: String?) : AttributeKeyPair(key, value) {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return element.hasAttr(key) && value.equals(element.attr(key).trim({ it <= ' ' }), ignoreCase = true)
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return element.hasAttr(key) && value.equalsIgnoreCase(element.attr(key).trim());
+        protected override fun cost(): Int {
+            return 3
         }
 
-        @Override protected int cost() {
-            return 3;
+        public override fun toString(): String {
+            return String.format("[%s=%s]", key, value)
         }
-
-        @Override
-        public String toString() {
-            return String.format("[%s=%s]", key, value);
-        }
-
     }
 
     /**
      * Evaluator for attribute name != value matching
      */
-    public static final class AttributeWithValueNot extends AttributeKeyPair {
-        public AttributeWithValueNot(String key, String value) {
-            super(key, value);
+    class AttributeWithValueNot(key: String?, value: String?) : AttributeKeyPair(key, value) {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return !value.equals(element.attr(key), ignoreCase = true)
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return !value.equalsIgnoreCase(element.attr(key));
+        protected override fun cost(): Int {
+            return 3
         }
 
-        @Override protected int cost() {
-            return 3;
+        public override fun toString(): String {
+            return String.format("[%s!=%s]", key, value)
         }
-
-        @Override
-        public String toString() {
-            return String.format("[%s!=%s]", key, value);
-        }
-
     }
 
     /**
      * Evaluator for attribute name/value matching (value prefix)
      */
-    public static final class AttributeWithValueStarting extends AttributeKeyPair {
-        public AttributeWithValueStarting(String key, String value) {
-            super(key, value, false);
+    class AttributeWithValueStarting(key: String?, value: String?) : AttributeKeyPair(key, value, false) {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return element.hasAttr(key) && Normalizer.lowerCase(element.attr(key))
+                .startsWith(value) // value is lower case already
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return element.hasAttr(key) && lowerCase(element.attr(key)).startsWith(value); // value is lower case already
+        protected override fun cost(): Int {
+            return 4
         }
 
-        @Override protected int cost() {
-            return 4;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("[%s^=%s]", key, value);
+        public override fun toString(): String {
+            return String.format("[%s^=%s]", key, value)
         }
     }
 
     /**
      * Evaluator for attribute name/value matching (value ending)
      */
-    public static final class AttributeWithValueEnding extends AttributeKeyPair {
-        public AttributeWithValueEnding(String key, String value) {
-            super(key, value, false);
+    class AttributeWithValueEnding(key: String?, value: String?) : AttributeKeyPair(key, value, false) {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return element.hasAttr(key) && Normalizer.lowerCase(element.attr(key))
+                .endsWith(value) // value is lower case
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return element.hasAttr(key) && lowerCase(element.attr(key)).endsWith(value); // value is lower case
+        protected override fun cost(): Int {
+            return 4
         }
 
-        @Override protected int cost() {
-            return 4;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("[%s$=%s]", key, value);
+        public override fun toString(): String {
+            return String.format("[%s$=%s]", key, value)
         }
     }
 
     /**
      * Evaluator for attribute name/value matching (value containing)
      */
-    public static final class AttributeWithValueContaining extends AttributeKeyPair {
-        public AttributeWithValueContaining(String key, String value) {
-            super(key, value);
+    class AttributeWithValueContaining(key: String?, value: String?) : AttributeKeyPair(key, value) {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return element.hasAttr(key) && Normalizer.lowerCase(element.attr(key))
+                .contains(value) // value is lower case
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return element.hasAttr(key) && lowerCase(element.attr(key)).contains(value); // value is lower case
+        protected override fun cost(): Int {
+            return 6
         }
 
-        @Override protected int cost() {
-            return 6;
+        public override fun toString(): String {
+            return String.format("[%s*=%s]", key, value)
         }
-
-        @Override
-        public String toString() {
-            return String.format("[%s*=%s]", key, value);
-        }
-
     }
 
     /**
      * Evaluator for attribute name/value matching (value regex matching)
      */
-    public static final class AttributeWithValueMatching extends Evaluator {
-        String key;
-        Pattern pattern;
+    class AttributeWithValueMatching(key: String?, var pattern: Pattern) : Evaluator() {
+        var key: String?
 
-        public AttributeWithValueMatching(String key, Pattern pattern) {
-            this.key = normalize(key);
-            this.pattern = pattern;
+        init {
+            this.key = Normalizer.normalize(key)
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return element.hasAttr(key) && pattern.matcher(element.attr(key)).find();
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return element.hasAttr(key) && pattern.matcher(element.attr(key)).find()
         }
 
-        @Override protected int cost() {
-            return 8;
+        protected override fun cost(): Int {
+            return 8
         }
 
-        @Override
-        public String toString() {
-            return String.format("[%s~=%s]", key, pattern.toString());
+        public override fun toString(): String {
+            return String.format("[%s~=%s]", key, pattern.toString())
         }
-
     }
 
     /**
      * Abstract evaluator for attribute name/value matching
      */
-    public abstract static class AttributeKeyPair extends Evaluator {
-        String key;
-        String value;
+    abstract class AttributeKeyPair @JvmOverloads constructor(key: String?, value: String?, trimValue: Boolean = true) :
+        Evaluator() {
+        var key: String?
+        var value: String?
 
-        public AttributeKeyPair(String key, String value) {
-            this(key, value, true);
-        }
-
-        public AttributeKeyPair(String key, String value, boolean trimValue) {
-            Validate.notEmpty(key);
-            Validate.notEmpty(value);
-
-            this.key = normalize(key);
-            boolean isStringLiteral = value.startsWith("'") && value.endsWith("'")
-                                        || value.startsWith("\"") && value.endsWith("\"");
+        init {
+            var value: String? = value
+            Validate.notEmpty(key)
+            Validate.notEmpty(value)
+            this.key = Normalizer.normalize(key)
+            val isStringLiteral: Boolean = (value.startsWith("'") && value.endsWith("'")
+                    || value.startsWith("\"") && value.endsWith("\""))
             if (isStringLiteral) {
-                value = value.substring(1, value.length()-1);
+                value = value.substring(1, value.length - 1)
             }
-
-            this.value = trimValue ? normalize(value) : normalize(value, isStringLiteral);
+            this.value = if (trimValue) Normalizer.normalize(value) else Normalizer.normalize(value, isStringLiteral)
         }
     }
 
     /**
      * Evaluator for any / all element matching
      */
-    public static final class AllElements extends Evaluator {
-
-        @Override
-        public boolean matches(Element root, Element element) {
-            return true;
+    class AllElements() : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return true
         }
 
-        @Override protected int cost() {
-            return 10;
+        protected override fun cost(): Int {
+            return 10
         }
 
-        @Override
-        public String toString() {
-            return "*";
+        public override fun toString(): String {
+            return "*"
         }
     }
 
     /**
-     * Evaluator for matching by sibling index number (e {@literal <} idx)
+     * Evaluator for matching by sibling index number (e &lt; idx)
      */
-    public static final class IndexLessThan extends IndexEvaluator {
-        public IndexLessThan(int index) {
-            super(index);
+    class IndexLessThan(index: Int) : IndexEvaluator(index) {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return root !== element && element.elementSiblingIndex() < index
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return root != element && element.elementSiblingIndex() < index;
+        public override fun toString(): String {
+            return String.format(":lt(%d)", index)
         }
-
-        @Override
-        public String toString() {
-            return String.format(":lt(%d)", index);
-        }
-
     }
 
     /**
-     * Evaluator for matching by sibling index number (e {@literal >} idx)
+     * Evaluator for matching by sibling index number (e &gt; idx)
      */
-    public static final class IndexGreaterThan extends IndexEvaluator {
-        public IndexGreaterThan(int index) {
-            super(index);
+    class IndexGreaterThan(index: Int) : IndexEvaluator(index) {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return element.elementSiblingIndex() > index
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return element.elementSiblingIndex() > index;
+        public override fun toString(): String {
+            return String.format(":gt(%d)", index)
         }
-
-        @Override
-        public String toString() {
-            return String.format(":gt(%d)", index);
-        }
-
     }
 
     /**
      * Evaluator for matching by sibling index number (e = idx)
      */
-    public static final class IndexEquals extends IndexEvaluator {
-        public IndexEquals(int index) {
-            super(index);
+    class IndexEquals(index: Int) : IndexEvaluator(index) {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return element.elementSiblingIndex() == index
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return element.elementSiblingIndex() == index;
+        public override fun toString(): String {
+            return String.format(":eq(%d)", index)
         }
-
-        @Override
-        public String toString() {
-            return String.format(":eq(%d)", index);
-        }
-
     }
 
     /**
      * Evaluator for matching the last sibling (css :last-child)
      */
-    public static final class IsLastChild extends Evaluator {
-		@Override
-		public boolean matches(Element root, Element element) {
-			final Element p = element.parent();
-			return p != null && !(p instanceof Document) && element == p.lastElementChild();
-		}
+    class IsLastChild() : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            val p: Element? = element.parent()
+            return (p != null) && !(p is Document) && (element === p.lastElementChild())
+        }
 
-		@Override
-		public String toString() {
-			return ":last-child";
-		}
+        public override fun toString(): String {
+            return ":last-child"
+        }
     }
 
-    public static final class IsFirstOfType extends IsNthOfType {
-		public IsFirstOfType() {
-			super(0,1);
-		}
-		@Override
-		public String toString() {
-			return ":first-of-type";
-		}
+    class IsFirstOfType() : IsNthOfType(0, 1) {
+        public override fun toString(): String {
+            return ":first-of-type"
+        }
     }
 
-    public static final class IsLastOfType extends IsNthLastOfType {
-		public IsLastOfType() {
-			super(0,1);
-		}
-		@Override
-		public String toString() {
-			return ":last-of-type";
-		}
+    class IsLastOfType() : IsNthLastOfType(0, 1) {
+        public override fun toString(): String {
+            return ":last-of-type"
+        }
     }
 
+    abstract class CssNthEvaluator(protected val a: Int, protected val b: Int) : Evaluator() {
+        constructor(b: Int) : this(0, b)
 
-    public static abstract class CssNthEvaluator extends Evaluator {
-    	protected final int a, b;
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            val p: Element? = element.parent()
+            if (p == null || (p is Document)) return false
+            val pos: Int = calculatePosition(root, element)
+            if (a == 0) return pos == b
+            return (pos - b) * a >= 0 && (pos - b) % a == 0
+        }
 
-    	public CssNthEvaluator(int a, int b) {
-    		this.a = a;
-    		this.b = b;
-    	}
-    	public CssNthEvaluator(int b) {
-    		this(0,b);
-    	}
+        public override fun toString(): String {
+            if (a == 0) return String.format(":%s(%d)", pseudoClass, b)
+            if (b == 0) return String.format(":%s(%dn)", pseudoClass, a)
+            return String.format(":%s(%dn%+d)", pseudoClass, a, b)
+        }
 
-    	@Override
-    	public boolean matches(Element root, Element element) {
-    		final Element p = element.parent();
-    		if (p == null || (p instanceof Document)) return false;
-
-    		final int pos = calculatePosition(root, element);
-    		if (a == 0) return pos == b;
-
-    		return (pos-b)*a >= 0 && (pos-b)%a==0;
-    	}
-
-		@Override
-		public String toString() {
-			if (a == 0)
-				return String.format(":%s(%d)",getPseudoClass(), b);
-			if (b == 0)
-				return String.format(":%s(%dn)",getPseudoClass(), a);
-			return String.format(":%s(%dn%+d)", getPseudoClass(),a, b);
-		}
-
-		protected abstract String getPseudoClass();
-		protected abstract int calculatePosition(Element root, Element element);
+        protected abstract val pseudoClass: String?
+        protected abstract fun calculatePosition(root: Element?, element: Element?): Int
     }
-
 
     /**
      * css-compatible Evaluator for :eq (css :nth-child)
      *
      * @see IndexEquals
      */
-    public static final class IsNthChild extends CssNthEvaluator {
+    class IsNthChild(a: Int, b: Int) : CssNthEvaluator(a, b) {
+        override fun calculatePosition(root: Element?, element: Element?): Int {
+            return element.elementSiblingIndex() + 1
+        }
 
-    	public IsNthChild(int a, int b) {
-    		super(a,b);
-		}
-
-		protected int calculatePosition(Element root, Element element) {
-			return element.elementSiblingIndex()+1;
-		}
-
-
-		protected String getPseudoClass() {
-			return "nth-child";
-		}
+        protected val pseudoClass: String?
+            protected get() {
+                return "nth-child"
+            }
     }
 
     /**
@@ -556,168 +400,136 @@ public abstract class Evaluator {
      *
      * @see IndexEquals
      */
-    public static final class IsNthLastChild extends CssNthEvaluator {
-    	public IsNthLastChild(int a, int b) {
-    		super(a,b);
-    	}
-
-        @Override
-        protected int calculatePosition(Element root, Element element) {
-    	    if (element.parent() == null)
-    	        return 0;
-        	return element.parent().childrenSize()- element.elementSiblingIndex();
+    class IsNthLastChild(a: Int, b: Int) : CssNthEvaluator(a, b) {
+        override fun calculatePosition(root: Element?, element: Element?): Int {
+            if (element.parent() == null) return 0
+            return element.parent().childrenSize() - element.elementSiblingIndex()
         }
 
-		@Override
-		protected String getPseudoClass() {
-			return "nth-last-child";
-		}
+        protected val pseudoClass: String?
+            protected get() {
+                return "nth-last-child"
+            }
     }
 
     /**
      * css pseudo class nth-of-type
      *
      */
-    public static class IsNthOfType extends CssNthEvaluator {
-        public IsNthOfType(int a, int b) {
-            super(a, b);
-        }
-
-        protected int calculatePosition(Element root, Element element) {
-            Element parent = element.parent();
-            if (parent == null)
-                return 0;
-
-            int pos = 0;
-            final int size = parent.childNodeSize();
-            for (int i = 0; i < size; i++) {
-                Node node = parent.childNode(i);
-                if (node.normalName().equals(element.normalName())) pos++;
-                if (node == element) break;
+    open class IsNthOfType(a: Int, b: Int) : CssNthEvaluator(a, b) {
+        override fun calculatePosition(root: Element?, element: Element?): Int {
+            val parent: Element? = element.parent()
+            if (parent == null) return 0
+            var pos: Int = 0
+            val size: Int = parent.childNodeSize()
+            for (i in 0 until size) {
+                val node: Node? = parent.childNode(i)
+                if ((node.normalName() == element.normalName())) pos++
+                if (node === element) break
             }
-            return pos;
+            return pos
         }
 
-        @Override
-        protected String getPseudoClass() {
-            return "nth-of-type";
-        }
+        protected val pseudoClass: String?
+            protected get() {
+                return "nth-of-type"
+            }
     }
 
-    public static class IsNthLastOfType extends CssNthEvaluator {
-
-        public IsNthLastOfType(int a, int b) {
-            super(a, b);
-        }
-
-        @Override
-        protected int calculatePosition(Element root, Element element) {
-            Element parent = element.parent();
-            if (parent == null)
-                return 0;
-
-            int pos = 0;
-            Element next = element;
+    open class IsNthLastOfType(a: Int, b: Int) : CssNthEvaluator(a, b) {
+        override fun calculatePosition(root: Element?, element: Element?): Int {
+            val parent: Element? = element.parent()
+            if (parent == null) return 0
+            var pos: Int = 0
+            var next: Element? = element
             while (next != null) {
-                if (next.normalName().equals(element.normalName()))
-                    pos++;
-                next = next.nextElementSibling();
+                if ((next.normalName() == element.normalName())) pos++
+                next = next.nextElementSibling()
             }
-            return pos;
+            return pos
         }
 
-        @Override
-        protected String getPseudoClass() {
-            return "nth-last-of-type";
-        }
+        protected val pseudoClass: String?
+            protected get() {
+                return "nth-last-of-type"
+            }
     }
 
     /**
      * Evaluator for matching the first sibling (css :first-child)
      */
-    public static final class IsFirstChild extends Evaluator {
-    	@Override
-    	public boolean matches(Element root, Element element) {
-    		final Element p = element.parent();
-    		return p != null && !(p instanceof Document) && element == p.firstElementChild();
-    	}
+    class IsFirstChild() : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            val p: Element? = element.parent()
+            return (p != null) && !(p is Document) && (element === p.firstElementChild())
+        }
 
-    	@Override
-    	public String toString() {
-    		return ":first-child";
-    	}
+        public override fun toString(): String {
+            return ":first-child"
+        }
     }
 
     /**
      * css3 pseudo-class :root
-     * @see <a href="http://www.w3.org/TR/selectors/#root-pseudo">:root selector</a>
-     *
+     * @see [:root selector](http://www.w3.org/TR/selectors/.root-pseudo)
      */
-    public static final class IsRoot extends Evaluator {
-    	@Override
-    	public boolean matches(Element root, Element element) {
-    		final Element r = root instanceof Document ? root.firstElementChild() : root;
-    		return element == r;
-    	}
-
-        @Override protected int cost() {
-            return 1;
+    class IsRoot() : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            val r: Element? = if (root is Document) root.firstElementChild() else root
+            return element === r
         }
 
-    	@Override
-    	public String toString() {
-    		return ":root";
-    	}
+        protected override fun cost(): Int {
+            return 1
+        }
+
+        public override fun toString(): String {
+            return ":root"
+        }
     }
 
-    public static final class IsOnlyChild extends Evaluator {
-		@Override
-		public boolean matches(Element root, Element element) {
-			final Element p = element.parent();
-			return p!=null && !(p instanceof Document) && element.siblingElements().isEmpty();
-		}
-    	@Override
-    	public String toString() {
-    		return ":only-child";
-    	}
+    class IsOnlyChild() : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            val p: Element? = element.parent()
+            return (p != null) && !(p is Document) && element.siblingElements().isEmpty()
+        }
+
+        public override fun toString(): String {
+            return ":only-child"
+        }
     }
 
-    public static final class IsOnlyOfType extends Evaluator {
-		@Override
-		public boolean matches(Element root, Element element) {
-			final Element p = element.parent();
-			if (p==null || p instanceof Document) return false;
-
-			int pos = 0;
-            Element next = p.firstElementChild();
+    class IsOnlyOfType() : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            val p: Element? = element.parent()
+            if (p == null || p is Document) return false
+            var pos: Int = 0
+            var next: Element? = p.firstElementChild()
             while (next != null) {
-                if (next.normalName().equals(element.normalName()))
-                    pos++;
-                if (pos > 1)
-                    break;
-                next = next.nextElementSibling();
+                if ((next.normalName() == element.normalName())) pos++
+                if (pos > 1) break
+                next = next.nextElementSibling()
             }
-        	return pos == 1;
-		}
-    	@Override
-    	public String toString() {
-    		return ":only-of-type";
-    	}
+            return pos == 1
+        }
+
+        public override fun toString(): String {
+            return ":only-of-type"
+        }
     }
 
-    public static final class IsEmpty extends Evaluator {
-		@Override
-		public boolean matches(Element root, Element element) {
-        	List<Node> family = element.childNodes();
-            for (Node n : family) {
-                if (!(n instanceof Comment || n instanceof XmlDeclaration || n instanceof DocumentType)) return false;
+    class IsEmpty() : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            val family: List<Node?>? = element.childNodes()
+            for (n: Node? in family) {
+                if (!(n is Comment || n is XmlDeclaration || n is DocumentType)) return false
             }
-        	return true;
-		}
-    	@Override
-    	public String toString() {
-    		return ":empty";
-    	}
+            return true
+        }
+
+        public override fun toString(): String {
+            return ":empty"
+        }
     }
 
     /**
@@ -725,180 +537,136 @@ public abstract class Evaluator {
      *
      * @author ant
      */
-    public abstract static class IndexEvaluator extends Evaluator {
-        int index;
-
-        public IndexEvaluator(int index) {
-            this.index = index;
-        }
-    }
+    abstract class IndexEvaluator(var index: Int) : Evaluator()
 
     /**
      * Evaluator for matching Element (and its descendants) text
      */
-    public static final class ContainsText extends Evaluator {
-        private final String searchText;
+    class ContainsText(searchText: String?) : Evaluator() {
+        private val searchText: String?
 
-        public ContainsText(String searchText) {
-            this.searchText = lowerCase(normaliseWhitespace(searchText));
+        init {
+            this.searchText = Normalizer.lowerCase(StringUtil.normaliseWhitespace(searchText))
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return lowerCase(element.text()).contains(searchText);
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return Normalizer.lowerCase(element.text()).contains(searchText)
         }
 
-        @Override protected int cost() {
-            return 10;
+        protected override fun cost(): Int {
+            return 10
         }
 
-        @Override
-        public String toString() {
-            return String.format(":contains(%s)", searchText);
+        public override fun toString(): String {
+            return String.format(":contains(%s)", searchText)
         }
     }
 
     /**
      * Evaluator for matching Element (and its descendants) wholeText. Neither the input nor the element text is
-     * normalized. <code>:containsWholeText()</code>
+     * normalized. `:containsWholeText()`
      * @since 1.15.1.
      */
-    public static final class ContainsWholeText extends Evaluator {
-        private final String searchText;
-
-        public ContainsWholeText(String searchText) {
-            this.searchText = searchText;
+    class ContainsWholeText(private val searchText: String?) : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return element.wholeText().contains(searchText)
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return element.wholeText().contains(searchText);
+        protected override fun cost(): Int {
+            return 10
         }
 
-        @Override protected int cost() {
-            return 10;
-        }
-
-        @Override
-        public String toString() {
-            return String.format(":containsWholeText(%s)", searchText);
+        public override fun toString(): String {
+            return String.format(":containsWholeText(%s)", searchText)
         }
     }
 
     /**
-     * Evaluator for matching Element (but <b>not</b> its descendants) wholeText. Neither the input nor the element text is
-     * normalized. <code>:containsWholeOwnText()</code>
+     * Evaluator for matching Element (but **not** its descendants) wholeText. Neither the input nor the element text is
+     * normalized. `:containsWholeOwnText()`
      * @since 1.15.1.
      */
-    public static final class ContainsWholeOwnText extends Evaluator {
-        private final String searchText;
-
-        public ContainsWholeOwnText(String searchText) {
-            this.searchText = searchText;
+    class ContainsWholeOwnText(private val searchText: String?) : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return element.wholeOwnText().contains(searchText)
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return element.wholeOwnText().contains(searchText);
-        }
-
-        @Override
-        public String toString() {
-            return String.format(":containsWholeOwnText(%s)", searchText);
+        public override fun toString(): String {
+            return String.format(":containsWholeOwnText(%s)", searchText)
         }
     }
 
     /**
      * Evaluator for matching Element (and its descendants) data
      */
-    public static final class ContainsData extends Evaluator {
-        private final String searchText;
+    class ContainsData(searchText: String?) : Evaluator() {
+        private val searchText: String?
 
-        public ContainsData(String searchText) {
-            this.searchText = lowerCase(searchText);
+        init {
+            this.searchText = Normalizer.lowerCase(searchText)
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return lowerCase(element.data()).contains(searchText); // not whitespace normalized
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return Normalizer.lowerCase(element.data()).contains(searchText) // not whitespace normalized
         }
 
-        @Override
-        public String toString() {
-            return String.format(":containsData(%s)", searchText);
+        public override fun toString(): String {
+            return String.format(":containsData(%s)", searchText)
         }
     }
 
     /**
      * Evaluator for matching Element's own text
      */
-    public static final class ContainsOwnText extends Evaluator {
-        private final String searchText;
+    class ContainsOwnText(searchText: String?) : Evaluator() {
+        private val searchText: String?
 
-        public ContainsOwnText(String searchText) {
-            this.searchText = lowerCase(normaliseWhitespace(searchText));
+        init {
+            this.searchText = Normalizer.lowerCase(StringUtil.normaliseWhitespace(searchText))
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            return lowerCase(element.ownText()).contains(searchText);
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            return Normalizer.lowerCase(element.ownText()).contains(searchText)
         }
 
-        @Override
-        public String toString() {
-            return String.format(":containsOwn(%s)", searchText);
+        public override fun toString(): String {
+            return String.format(":containsOwn(%s)", searchText)
         }
     }
 
     /**
      * Evaluator for matching Element (and its descendants) text with regex
      */
-    public static final class Matches extends Evaluator {
-        private final Pattern pattern;
-
-        public Matches(Pattern pattern) {
-            this.pattern = pattern;
+    class Matches(private val pattern: Pattern) : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            val m: Matcher = pattern.matcher(element.text())
+            return m.find()
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            Matcher m = pattern.matcher(element.text());
-            return m.find();
+        protected override fun cost(): Int {
+            return 8
         }
 
-        @Override protected int cost() {
-            return 8;
-        }
-
-        @Override
-        public String toString() {
-            return String.format(":matches(%s)", pattern);
+        public override fun toString(): String {
+            return String.format(":matches(%s)", pattern)
         }
     }
 
     /**
      * Evaluator for matching Element's own text with regex
      */
-    public static final class MatchesOwn extends Evaluator {
-        private final Pattern pattern;
-
-        public MatchesOwn(Pattern pattern) {
-            this.pattern = pattern;
+    class MatchesOwn(private val pattern: Pattern) : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            val m: Matcher = pattern.matcher(element.ownText())
+            return m.find()
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            Matcher m = pattern.matcher(element.ownText());
-            return m.find();
+        protected override fun cost(): Int {
+            return 7
         }
 
-        @Override protected int cost() {
-            return 7;
-        }
-
-        @Override
-        public String toString() {
-            return String.format(":matchesOwn(%s)", pattern);
+        public override fun toString(): String {
+            return String.format(":matchesOwn(%s)", pattern)
         }
     }
 
@@ -906,26 +674,18 @@ public abstract class Evaluator {
      * Evaluator for matching Element (and its descendants) whole text with regex.
      * @since 1.15.1.
      */
-    public static final class MatchesWholeText extends Evaluator {
-        private final Pattern pattern;
-
-        public MatchesWholeText(Pattern pattern) {
-            this.pattern = pattern;
+    class MatchesWholeText(private val pattern: Pattern) : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            val m: Matcher = pattern.matcher(element.wholeText())
+            return m.find()
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            Matcher m = pattern.matcher(element.wholeText());
-            return m.find();
+        protected override fun cost(): Int {
+            return 8
         }
 
-        @Override protected int cost() {
-            return 8;
-        }
-
-        @Override
-        public String toString() {
-            return String.format(":matchesWholeText(%s)", pattern);
+        public override fun toString(): String {
+            return String.format(":matchesWholeText(%s)", pattern)
         }
     }
 
@@ -933,53 +693,41 @@ public abstract class Evaluator {
      * Evaluator for matching Element's own whole text with regex.
      * @since 1.15.1.
      */
-    public static final class MatchesWholeOwnText extends Evaluator {
-        private final Pattern pattern;
-
-        public MatchesWholeOwnText(Pattern pattern) {
-            this.pattern = pattern;
+    class MatchesWholeOwnText(private val pattern: Pattern) : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            val m: Matcher = pattern.matcher(element.wholeOwnText())
+            return m.find()
         }
 
-        @Override
-        public boolean matches(Element root, Element element) {
-            Matcher m = pattern.matcher(element.wholeOwnText());
-            return m.find();
+        protected override fun cost(): Int {
+            return 7
         }
 
-        @Override protected int cost() {
-            return 7;
-        }
-
-        @Override
-        public String toString() {
-            return String.format(":matchesWholeOwnText(%s)", pattern);
+        public override fun toString(): String {
+            return String.format(":matchesWholeOwnText(%s)", pattern)
         }
     }
 
-    public static final class MatchText extends Evaluator {
-
-        @Override
-        public boolean matches(Element root, Element element) {
-            if (element instanceof PseudoTextElement)
-                return true;
-
-            List<TextNode> textNodes = element.textNodes();
-            for (TextNode textNode : textNodes) {
-                PseudoTextElement pel = new PseudoTextElement(
-                    org.jsoup.parser.Tag.valueOf(element.tagName()), element.baseUri(), element.attributes());
-                textNode.replaceWith(pel);
-                pel.appendChild(textNode);
+    class MatchText() : Evaluator() {
+        public override fun matches(root: Element?, element: Element?): Boolean {
+            if (element is PseudoTextElement) return true
+            val textNodes: List<TextNode?>? = element.textNodes()
+            for (textNode: TextNode? in textNodes) {
+                val pel: PseudoTextElement = PseudoTextElement(
+                    valueOf(element.tagName()), element.baseUri(), element.attributes()
+                )
+                textNode.replaceWith(pel)
+                pel.appendChild(textNode)
             }
-            return false;
+            return false
         }
 
-        @Override protected int cost() {
-            return -1; // forces first evaluation, which prepares the DOM for later evaluator matches
+        protected override fun cost(): Int {
+            return -1 // forces first evaluation, which prepares the DOM for later evaluator matches
         }
 
-        @Override
-        public String toString() {
-            return ":matchText";
+        public override fun toString(): String {
+            return ":matchText"
         }
     }
 }

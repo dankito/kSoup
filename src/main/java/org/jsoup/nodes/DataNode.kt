@@ -1,58 +1,54 @@
-package org.jsoup.nodes;
+package org.jsoup.nodes
 
-import java.io.IOException;
+import java.io.IOException
 
 /**
- A data node, for contents of style, script tags etc, where contents should not show in text().
-
- @author Jonathan Hedley, jonathan@hedley.net */
-public class DataNode extends LeafNode {
-
+ * A data node, for contents of style, script tags etc, where contents should not show in text().
+ *
+ * @author Jonathan Hedley, jonathan@hedley.net
+ */
+class DataNode(data: String) : LeafNode() {
     /**
-     Create a new DataNode.
-     @param data data contents
+     * Create a new DataNode.
+     * @param data data contents
      */
-    public DataNode(String data) {
-        value = data;
+    init {
+        value = data
     }
 
-    public String nodeName() {
-        return "#data";
+    override fun nodeName(): String {
+        return "#data"
     }
 
-    /**
-     Get the data contents of this node. Will be unescaped and with original new lines, space etc.
-     @return data
-     */
-    public String getWholeData() {
-        return coreValue();
-    }
+    val wholeData: String?
+        /**
+         * Get the data contents of this node. Will be unescaped and with original new lines, space etc.
+         * @return data
+         */
+        get() = coreValue()
 
     /**
      * Set the data contents of this node.
      * @param data unencoded data
      * @return this node, for chaining
      */
-    public DataNode setWholeData(String data) {
-        coreValue(data);
-        return this;
+    fun setWholeData(data: String?): DataNode {
+        coreValue(data)
+        return this
     }
 
-    @Override
-    void outerHtmlHead(Appendable accum, int depth, Document.OutputSettings out) throws IOException {
-        accum.append(getWholeData()); // data is not escaped in return from data nodes, so " in script, style is plain
+    @Throws(IOException::class)
+    override fun outerHtmlHead(accum: Appendable, depth: Int, out: Document.OutputSettings) {
+        accum.append(wholeData) // data is not escaped in return from data nodes, so " in script, style is plain
     }
 
-    @Override
-    void outerHtmlTail(Appendable accum, int depth, Document.OutputSettings out) {}
+    override fun outerHtmlTail(accum: Appendable, depth: Int, out: Document.OutputSettings) { }
 
-    @Override
-    public String toString() {
-        return outerHtml();
+    override fun toString(): String {
+        return outerHtml()!!
     }
 
-    @Override
-    public DataNode clone() {
-        return (DataNode) super.clone();
+    override fun clone(): DataNode {
+        return super.clone() as DataNode
     }
 }
