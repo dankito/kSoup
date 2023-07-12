@@ -2,7 +2,6 @@ package net.dankito.ksoup.nodes
 
 import net.dankito.ksoup.helper.ChangeNotifyingArrayList
 import net.dankito.ksoup.helper.Validate
-import net.dankito.ksoup.internal.NonnullByDefault
 import net.dankito.ksoup.internal.Normalizer
 import net.dankito.ksoup.internal.StringUtil
 import net.dankito.ksoup.parser.Tag
@@ -20,7 +19,6 @@ import kotlin.collections.LinkedHashSet
  *
  * From an Element, you can extract data, traverse the node graph, and manipulate the HTML.
  */
-@NonnullByDefault
 open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: String?, internal var attributes: Attributes? = null) : Node() {
 
     private var shadowChildrenRef: WeakReference<List<Element>>? =
