@@ -132,18 +132,21 @@ object Selector {
     fun select(query: String?, roots: Iterable<Element?>): Elements {
         Validate.notEmpty(query)
         Validate.notNull(roots)
-        val evaluator: Evaluator? = QueryParser.Companion.parse(query)
-        val elements: Elements = Elements()
+
+        val evaluator: Evaluator = QueryParser.parse(query)
+        val elements = Elements()
         val seenElements: IdentityHashMap<Element, Boolean?> = IdentityHashMap()
+
         // dedupe elements by identity, not equality
         for (root: Element? in roots) {
             val found = select(evaluator, root)
             for (el in found) {
-                if (seenElements.put(el, java.lang.Boolean.TRUE) == null) {
+                if (seenElements.put(el, true) == null) {
                     elements.add(el)
                 }
             }
         }
+
         return elements
     }
 

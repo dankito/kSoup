@@ -29,7 +29,7 @@ import javax.xml.xpath.*
  * Helper class to transform a [net.dankito.ksoup.nodes.Document] to a [org.w3c.dom.Document],
  * for integration with toolsets that use the W3C DOM.
  */
-class W3CDom() {
+class W3CDom {
     protected var factory: DocumentBuilderFactory
     private var namespaceAware: Boolean = true // false when using selectXpath, for user's query convenience
 

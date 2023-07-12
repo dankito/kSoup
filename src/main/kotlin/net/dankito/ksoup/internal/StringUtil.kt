@@ -226,8 +226,6 @@ object StringUtil {
         Char(codepoint)
 
     fun getCodePointAt(string: String, index: Int): Int {
-//        return string[index].code
-
         val chars = string.toCharArray()
         val char = chars[index]
         return if (char.isHighSurrogate()) {
@@ -240,21 +238,6 @@ object StringUtil {
         } else {
             char.code
         }
-
-//        val usedCharset = charset ?: Charset.defaultCharset()
-//        val value = string.toByteArray(usedCharset)
-//
-//        // TODO: this is JDK's codePointAt() implementation:
-////        return if (string.isLatin1()) {
-////            java.lang.String.checkIndex(index, string.value.size)
-////            string.value.get(index).toInt() and 255
-////        } else {
-////            val length: Int = string.value.size shr 1
-////            java.lang.String.checkIndex(index, length)
-////            StringUTF16.codePointAt(string.value, index, length)
-////        }
-//
-//        return value.get(index).toInt() and 255
     }
 
     const val MIN_SUPPLEMENTARY_CODE_POINT = 65536
