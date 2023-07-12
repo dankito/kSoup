@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 
 class DataUtilTest {
+
     @Test
     fun testCharset() {
         Assertions.assertEquals("utf-8", getCharsetFromContentType("text/html;charset=utf-8 "))
@@ -43,7 +44,6 @@ class DataUtilTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun discardsSpuriousByteOrderMark() {
         val html = "\uFEFF<html><head><title>One</title></head><body>Two</body></html>"
         val doc = parseInputStream(stream(html), "UTF-8", "http://foo.com/", htmlParser())
@@ -51,7 +51,6 @@ class DataUtilTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun discardsSpuriousByteOrderMarkWhenNoCharsetSet() {
         val html = "\uFEFF<html><head><title>One</title></head><body>Two</body></html>"
         val doc = parseInputStream(stream(html), null, "http://foo.com/", htmlParser())
@@ -90,7 +89,6 @@ class DataUtilTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun wrongMetaCharsetFallback() {
         val html = "<html><head><meta charset=iso-8></head><body></body></html>"
         val doc = parseInputStream(stream(html), null, "http://example.com", htmlParser())
@@ -104,7 +102,6 @@ class DataUtilTest {
     }
 
     @Test
-    @Throws(Exception::class)
     fun secondMetaElementWithContentTypeContainsCharsetParameter() {
         val html = "<html><head>" +
                 "<meta http-equiv=\"Content-Type\" content=\"text/html\">" +
@@ -115,7 +112,6 @@ class DataUtilTest {
     }
 
     @Test
-    @Throws(Exception::class)
     fun firstMetaElementWithCharsetShouldBeUsedForDecoding() {
         val html = "<html><head>" +
                 "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\">" +
@@ -126,7 +122,6 @@ class DataUtilTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun parseSequenceInputStream() {
         // https://github.com/jhy/jsoup/pull/1671
         val `in`: File = ParseTest.Companion.getFile("/htmltests/medium.html")
@@ -143,7 +138,6 @@ class DataUtilTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun supportsBOMinFiles() {
         // test files from http://www.i18nl10n.com/korean/utftest/
         var `in`: File = ParseTest.Companion.getFile("/bomtests/bom_utf16be.html")
@@ -165,7 +159,6 @@ class DataUtilTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun supportsUTF8BOM() {
         val `in`: File = ParseTest.Companion.getFile("/bomtests/bom_utf8.html")
         val doc = parse(`in`, null, "http://example.com")
@@ -173,7 +166,6 @@ class DataUtilTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun noExtraNULLBytes() {
         val b = "<html><head><meta charset=\"UTF-8\"></head><body><div><u>ü</u>ü</div></body></html>".toByteArray(
             StandardCharsets.UTF_8
@@ -183,7 +175,6 @@ class DataUtilTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun supportsZippedUTF8BOM() {
         val `in`: File = ParseTest.Companion.getFile("/bomtests/bom_utf8.html.gz")
         val doc = parse(`in`, null, "http://example.com")
@@ -195,7 +186,6 @@ class DataUtilTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun supportsXmlCharsetDeclaration() {
         val encoding = "iso-8859-1"
         val soup: InputStream = ByteArrayInputStream(
@@ -210,28 +200,25 @@ class DataUtilTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun lLoadsGzipFile() {
-        val `in`: File = ParseTest.Companion.getFile("/htmltests/gzip.html.gz")
+        val `in`: File = ParseTest.getFile("/htmltests/gzip.html.gz")
         val doc = parse(`in`, null)
         Assertions.assertEquals("Gzip test", doc.title())
         Assertions.assertEquals("This is a gzipped HTML file.", doc.selectFirst("p")!!.text())
     }
 
     @Test
-    @Throws(IOException::class)
     fun loadsZGzipFile() {
         // compressed on win, with z suffix
-        val `in`: File = ParseTest.Companion.getFile("/htmltests/gzip.html.z")
+        val `in`: File = ParseTest.getFile("/htmltests/gzip.html.z")
         val doc = parse(`in`, null)
         Assertions.assertEquals("Gzip test", doc.title())
         Assertions.assertEquals("This is a gzipped HTML file.", doc.selectFirst("p")!!.text())
     }
 
     @Test
-    @Throws(IOException::class)
     fun handlesFakeGzipFile() {
-        val `in`: File = ParseTest.Companion.getFile("/htmltests/fake-gzip.html.gz")
+        val `in`: File = ParseTest.getFile("/htmltests/fake-gzip.html.gz")
         val doc = parse(`in`, null)
         Assertions.assertEquals("This is not gzipped", doc.title())
         Assertions.assertEquals("And should still be readable.", doc.selectFirst("p")!!.text())
@@ -240,24 +227,21 @@ class DataUtilTest {
     // an input stream to give a range of output sizes, that changes on each read
     internal class VaryingReadInputStream(val `in`: InputStream) : InputStream() {
         var stride = 0
-        @Throws(IOException::class)
+
         override fun read(): Int {
             return `in`.read()
         }
 
-        @Throws(IOException::class)
         override fun read(b: ByteArray): Int {
             return `in`.read(b, 0, Math.min(b.size, ++stride))
         }
 
-        @Throws(IOException::class)
         override fun read(b: ByteArray, off: Int, len: Int): Int {
             return `in`.read(b, off, Math.min(len, ++stride))
         }
     }
 
     @Test
-    @Throws(IOException::class)
     fun handlesChunkedInputStream() {
         val inputFile: File = ParseTest.getFile("/htmltests/large.html")
         val input: String = ParseTest.getFileAsString(inputFile)
@@ -268,7 +252,6 @@ class DataUtilTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun handlesUnlimitedRead() {
         val inputFile: File = ParseTest.getFile("/htmltests/large.html")
         val input: String = ParseTest.getFileAsString(inputFile)

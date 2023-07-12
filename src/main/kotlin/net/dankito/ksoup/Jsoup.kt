@@ -2,6 +2,7 @@ package net.dankito.ksoup
 
 import net.dankito.ksoup.helper.DataUtil
 import net.dankito.ksoup.helper.HttpConnection
+import net.dankito.ksoup.jvm.IOException
 import net.dankito.ksoup.nodes.Document
 import net.dankito.ksoup.parser.Parser
 import net.dankito.ksoup.safety.Cleaner
@@ -130,7 +131,6 @@ object Jsoup {
      * @throws IOException if the file could not be found, or read, or if the charsetName is invalid.
      */
     @JvmStatic
-    @Throws(IOException::class)
     fun parse(file: File, charsetName: String?, baseUri: String): Document {
         return DataUtil.load(file, charsetName, baseUri)
     }
@@ -146,7 +146,6 @@ object Jsoup {
      * @see .parse
      */
     @JvmStatic
-    @Throws(IOException::class)
     fun parse(file: File, charsetName: String?): Document {
         return DataUtil.load(file, charsetName, file.absolutePath)
     }
@@ -166,7 +165,6 @@ object Jsoup {
      * @since 1.15.1
      */
     @JvmStatic
-    @Throws(IOException::class)
     fun parse(file: File): Document {
         return DataUtil.load(file, null, file.absolutePath)
     }
@@ -184,7 +182,6 @@ object Jsoup {
      * @since 1.14.2
      */
     @JvmStatic
-    @Throws(IOException::class)
     fun parse(file: File, charsetName: String?, baseUri: String, parser: Parser): Document {
         return DataUtil.load(file, charsetName, baseUri, parser)
     }
@@ -200,7 +197,6 @@ object Jsoup {
      * @throws IOException if the file could not be found, or read, or if the charsetName is invalid.
      */
     @JvmStatic
-    @Throws(IOException::class)
     fun parse(@WillClose `in`: InputStream, charsetName: String?, baseUri: String): Document {
         return DataUtil.load(`in`, charsetName, baseUri)
     }
@@ -218,7 +214,6 @@ object Jsoup {
      * @throws IOException if the file could not be found, or read, or if the charsetName is invalid.
      */
     @JvmStatic
-    @Throws(IOException::class)
     fun parse(`in`: InputStream, charsetName: String?, baseUri: String, parser: Parser): Document {
         return DataUtil.load(`in`, charsetName, baseUri, parser)
     }
@@ -265,7 +260,6 @@ object Jsoup {
      * @see .connect
      */
     @JvmStatic
-    @Throws(IOException::class)
     fun parse(url: URL, timeoutMillis: Int): Document {
         val con: Connection = HttpConnection.connect(url)
         con.timeout(timeoutMillis)

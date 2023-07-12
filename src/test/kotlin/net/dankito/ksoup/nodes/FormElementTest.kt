@@ -10,7 +10,6 @@ import net.dankito.ksoup.integration.servlets.FileServlet
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import java.io.IOException
 
 /**
  * Tests for FormElement
@@ -181,7 +180,6 @@ class FormElementTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun formSubmissionCarriesCookiesFromSession() {
         val echoUrl: String = EchoServlet.Companion.Url // this is a dirty hack to initialize the EchoServlet(!)
         val cookieDoc = Jsoup.connect(CookieServlet.Companion.Url)

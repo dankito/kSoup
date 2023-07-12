@@ -4,7 +4,7 @@ import net.dankito.ksoup.UncheckedIOException
 import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.jvm.Reader
 import net.dankito.ksoup.jvm.StringReader
-import java.io.IOException
+import net.dankito.ksoup.jvm.IOException
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -42,7 +42,7 @@ class CharacterReader @JvmOverloads constructor(private val reader: Reader, sz: 
     fun close() {
         try {
             reader.close()
-        } catch (ignored: IOException) {
+        } catch (ignored: Exception) {
         } finally {
             stringCache = arrayOfNulls(stringCacheSize)
         }

@@ -7,7 +7,7 @@ import net.dankito.ksoup.integration.servlets.SlowRider
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import java.io.IOException
+import net.dankito.ksoup.jvm.IOException
 import java.util.concurrent.atomic.AtomicInteger
 
 /** Integration tests to test longer running Connection  */
@@ -17,11 +17,11 @@ class SessionIT {
     fun multiThread() {
         val numThreads = 20
         val numThreadLoops = 5
-        val urls = arrayOf<String>(
-            FileServlet.Companion.urlTo("/htmltests/medium.html"),
-            FileServlet.Companion.urlTo("/htmltests/upload-form.html"),
-            FileServlet.Companion.urlTo("/htmltests/comments.html"),
-            FileServlet.Companion.urlTo("/htmltests/large.html")
+        val urls = arrayOf(
+            FileServlet.urlTo("/htmltests/medium.html"),
+            FileServlet.urlTo("/htmltests/upload-form.html"),
+            FileServlet.urlTo("/htmltests/comments.html"),
+            FileServlet.urlTo("/htmltests/large.html")
         )
         val titles = arrayOf(
             "Medium HTML",

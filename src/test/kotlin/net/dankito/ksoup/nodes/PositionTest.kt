@@ -9,7 +9,6 @@ import net.dankito.ksoup.select.GenericNodeVisitor.Companion.jvmNodeVisitor
 import net.dankito.ksoup.select.NodeTraversor.traverse
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.io.IOException
 
 /**
  * Functional tests for the Position tracking behavior (across nodes, treebuilder, etc.)
@@ -130,7 +129,6 @@ internal class PositionTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun tracksFromFetch() {
         val url: String = FileServlet.Companion.urlTo("/htmltests/large.html") // 280 K
         val doc = Jsoup.connect(url).parser(TrackingParser).get()
@@ -147,7 +145,6 @@ internal class PositionTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun tracksFromXmlFetch() {
         val url: String = FileServlet.Companion.urlTo("/htmltests/test-rss.xml")
         val doc = Jsoup.connect(url).parser(xmlParser().setTrackPosition(true)).get()

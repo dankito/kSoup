@@ -19,8 +19,8 @@ import java.net.*
 // todo: rebuild these into a local Jetty test server, so not reliant on the vagaries of the internet.
 
 class UrlConnectTest {
+
     @Test
-    @Throws(IOException::class)
     fun fetchBaidu() {
         val res = Jsoup.connect("http://www.baidu.com/").timeout(10 * 1000).execute()
         val doc = res.parse()
@@ -44,20 +44,18 @@ class UrlConnectTest {
             )
             Assertions.assertEquals(url, e.url)
             Assertions.assertEquals("image/png", e.mimeType)
-        } catch (e: IOException) {
-        }
+        } catch (ignored: Exception) { }
+
         Assertions.assertTrue(threw)
     }
 
     @Test
-    @Throws(IOException::class)
     fun ignoresContentTypeIfSoConfigured() {
         val doc = Jsoup.connect("https://jsoup.org/rez/osi_logo.png").ignoreContentType(true).get()
         Assertions.assertEquals("", doc.title()) // this will cause an ugly parse tree
     }
 
     @Test
-    @Throws(IOException::class)
     fun followsTempRedirect() {
         val con = Jsoup.connect("http://direct.infohound.net/tools/302.pl") // http://jsoup.org
         val doc = con.get()
@@ -65,7 +63,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun followsNewTempRedirect() {
         val con = Jsoup.connect("http://direct.infohound.net/tools/307.pl") // http://jsoup.org
         val doc = con.get()
@@ -74,7 +71,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun postRedirectsFetchWithGet() {
         val con = Jsoup.connect("http://direct.infohound.net/tools/302.pl")
             .data("Argument", "Riposte")
@@ -85,7 +81,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun followsRedirectToHttps() {
         val con = Jsoup.connect("http://direct.infohound.net/tools/302-secure.pl") // https://www.google.com
         con.data("id", "5")
@@ -94,7 +89,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun followsRelativeRedirect() {
         val con = Jsoup.connect("http://direct.infohound.net/tools/302-rel.pl") // to /tidy/
         val doc = con.post()
@@ -102,7 +96,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun followsRelativeDotRedirect() {
         // redirects to "./ok.html", should resolve to http://direct.infohound.net/tools/ok.html
         val con = Jsoup.connect("http://direct.infohound.net/tools/302-rel-dot.pl") // to ./ok.html
@@ -112,7 +105,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun followsRelativeDotRedirect2() {
         //redirects to "esportspenedes.cat/./ep/index.php", should resolve to "esportspenedes.cat/ep/index.php"
         val con =
@@ -123,7 +115,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun followsRedirectsWithWithespaces() {
         val con = Jsoup.connect("http://tinyurl.com/kgofxl8") // to http://www.google.com/?q=white spaces
         val doc = con.get()
@@ -131,7 +122,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun gracefullyHandleBrokenLocationRedirect() {
         val con = Jsoup.connect("http://aag-ye.com") // has Location: http:/temp/AAG_New/en/index.php
         con.get() // would throw exception on error
@@ -139,7 +129,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun ignores500tExceptionIfSoConfigured() {
         val con = Jsoup.connect("http://direct.infohound.net/tools/500.pl").ignoreHttpErrors(true)
         val res = con.execute()
@@ -150,7 +139,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun ignores500WithNoContentExceptionIfSoConfigured() {
         val con = Jsoup.connect("http://direct.infohound.net/tools/500-no-content.pl").ignoreHttpErrors(true)
         val res = con.execute()
@@ -160,7 +148,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun ignores200WithNoContentExceptionIfSoConfigured() {
         val con = Jsoup.connect("http://direct.infohound.net/tools/200-no-content.pl").ignoreHttpErrors(true)
         val res = con.execute()
@@ -170,7 +157,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun handles200WithNoContent() {
         var con = Jsoup
             .connect("http://direct.infohound.net/tools/200-no-content.pl")
@@ -188,7 +174,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun doesntRedirectIfSoConfigured() {
         val con = Jsoup.connect("http://direct.infohound.net/tools/302.pl").followRedirects(false)
         val res = con.execute()
@@ -197,7 +182,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun redirectsResponseCookieToNextResponse() {
         val con = Jsoup.connect("http://direct.infohound.net/tools/302-cookie.pl")
         val res = con.execute()
@@ -217,7 +201,7 @@ class UrlConnectTest {
         var threw = false
         try {
             val doc = Jsoup.connect("http://direct.infohound.net/tools/loop.pl").get()
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             Assertions.assertTrue(e.message!!.contains("Too many redirects"))
             threw = true
         }
@@ -225,7 +209,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun handlesDodgyCharset() {
         // tests that when we get back "UFT8", that it is recognised as unsupported, and falls back to default instead
         val url = "http://direct.infohound.net/tools/bad-charset.pl"
@@ -246,7 +229,6 @@ class UrlConnectTest {
      * @throws Exception
      */
     @Test
-    @Throws(Exception::class)
     fun testUnsafeFail() {
         val url: String = WEBSITE_WITH_INVALID_CERTIFICATE
         Assertions.assertThrows(IOException::class.java) { Jsoup.connect(url).execute() }
@@ -263,15 +245,13 @@ class UrlConnectTest {
      * @throws Exception
      */
     @Test
-    @Throws(Exception::class)
     fun testSNIFail() {
-        Assertions.assertThrows<IOException>(IOException::class.java) {
+        Assertions.assertThrows(IOException::class.java) {
             Jsoup.connect(WEBSITE_WITH_SNI).execute()
         }
     }
 
     @Test
-    @Throws(IOException::class)
     fun shouldWorkForCharsetInExtraAttribute() {
         val res = Jsoup.connect("https://www.creditmutuel.com/groupe/fr/").execute()
         val doc = res.parse() // would throw an error if charset unsupported
@@ -282,7 +262,6 @@ class UrlConnectTest {
     // which make the following test green are tested in other unit or integration tests, so the following lines
     // could be deleted
     @Test
-    @Throws(IOException::class)
     fun shouldSelectFirstCharsetOnWeirdMultileCharsetsInMetaTags() {
         val res = Jsoup.connect("http://aamo.info/").execute()
         res.parse() // would throw an error if charset unsupported
@@ -290,7 +269,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun shouldParseBrokenHtml5MetaCharsetTagCorrectly() {
         val res = Jsoup.connect("http://9kuhkep.net").execute()
         res.parse() // would throw an error if charset unsupported
@@ -298,7 +276,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun shouldEmptyMetaCharsetCorrectly() {
         val res = Jsoup.connect("http://aastmultimedia.com").execute()
         res.parse() // would throw an error if charset unsupported
@@ -306,7 +283,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun shouldWorkForDuplicateCharsetInTag() {
         val res = Jsoup.connect("http://aaptsdassn.org").execute()
         val doc = res.parse() // would throw an error if charset unsupported
@@ -314,7 +290,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun handles201Created() {
         val doc = Jsoup.connect("http://direct.infohound.net/tools/201.pl").get() // 201, location=jsoup
         Assertions.assertEquals("https://jsoup.org/", doc.location())
@@ -324,7 +299,6 @@ class UrlConnectTest {
      Proxy tests. Assumes local proxy running on 8888, without system propery set (so that specifying it is required).
      */
     @Test
-    @Throws(IOException::class)
     fun fetchViaHttpProxy() {
         val url = "https://jsoup.org"
         val proxy = Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved("localhost", 8888))
@@ -333,7 +307,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun fetchViaHttpProxySetByArgument() {
         val url = "https://jsoup.org"
         val doc = Jsoup.connect(url).proxy("localhost", 8888).get()
@@ -353,7 +326,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun proxyGetAndSet() {
         val url = "https://jsoup.org"
         val proxy = Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved("localhost", 8889)) // invalid
@@ -365,7 +337,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun throwsIfRequestBodyForGet() {
         var caught = false
         val url = "https://jsoup.org"
@@ -378,7 +349,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun canSpecifyResponseCharset() {
         // both these docs have <80> in there as euro/control char depending on charset
         val noCharsetUrl = "http://direct.infohound.net/tools/Windows-1252-nocharset.html"
@@ -412,7 +382,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun handlesUnescapedRedirects() {
         // URL locations should be url safe (ascii) but are often not, so we should try to guess
         // in this case the location header is utf-8, but defined in spec as iso8859, so detect, convert, encode
@@ -428,7 +397,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun handlesEscapesInRedirecct() {
         var doc = Jsoup.connect("http://infohound.net/tools/302-escaped.pl").get()
         Assertions.assertEquals("http://infohound.net/tools/q.pl?q=one%20two", doc.location())
@@ -437,7 +405,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun handlesUt8fInUrl() {
         val url = "http://direct.infohound.net/tools/test\uD83D\uDCA9.html"
         val urlEscaped = "http://direct.infohound.net/tools/test%F0%9F%92%A9.html"
@@ -448,7 +415,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun inWildUtfRedirect() {
         val res = Jsoup.connect("http://brabantn.ws/Q4F").execute()
         val doc = res.parse()
@@ -459,7 +425,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun inWildUtfRedirect2() {
         val res = Jsoup.connect("https://ssl.souq.com/sa-en/2724288604627/s").execute()
         val doc = res.parse()
@@ -470,7 +435,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun handlesEscapedRedirectUrls() {
         val url =
             "http://www.altalex.com/documents/news/2016/12/06/questioni-civilistiche-conseguenti-alla-depenalizzazione"
@@ -489,7 +453,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun handlesUnicodeInQuery() {
         var doc = Jsoup.connect("https://www.google.pl/search?q=gąska").get()
         Assertions.assertEquals("gąska - Szukaj w Google", doc.title())
@@ -498,7 +461,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun handlesSuperDeepPage() {
         // https://github.com/jhy/jsoup/issues/955
         val start = System.currentTimeMillis()
@@ -511,7 +473,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun handles966() {
         // http://szshb.nxszs.gov.cn/
         // https://github.com/jhy/jsoup/issues/966
@@ -520,7 +481,6 @@ class UrlConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun canRequestIdn() {
         val url = "https://räksmörgås.josefsson.org/"
         val doc = Jsoup.connect(url).get()

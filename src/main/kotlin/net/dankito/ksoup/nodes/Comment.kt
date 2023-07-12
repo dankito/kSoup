@@ -2,7 +2,6 @@ package net.dankito.ksoup.nodes
 
 import net.dankito.ksoup.parser.ParseSettings
 import net.dankito.ksoup.parser.Parser
-import java.io.IOException
 
 /**
  * A comment node.
@@ -34,7 +33,6 @@ class Comment(data: String) : LeafNode() {
         return this
     }
 
-    @Throws(IOException::class)
     override fun outerHtmlHead(accum: Appendable, depth: Int, out: Document.OutputSettings) {
         if (out.prettyPrint() && (isEffectivelyFirst && parentNode is Element && (parentNode as Element).tag().formatAsBlock || out.outline())) {
             indent(accum, depth, out)

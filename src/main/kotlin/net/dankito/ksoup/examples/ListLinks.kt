@@ -4,13 +4,12 @@ import net.dankito.ksoup.Jsoup
 import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.nodes.Element
 import net.dankito.ksoup.select.Elements
-import java.io.IOException
 
 /**
  * Example program to list links from a URL.
  */
 object ListLinks {
-    @Throws(IOException::class)
+
     @JvmStatic
     fun main(args: Array<String>) {
         Validate.isTrue(args.size == 1, "usage: supply url to fetch")

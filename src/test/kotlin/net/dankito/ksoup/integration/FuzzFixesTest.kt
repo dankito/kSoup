@@ -35,7 +35,6 @@ class FuzzFixesTest {
 
     @ParameterizedTest
     @MethodSource("testFiles")
-    @Throws(IOException::class)
     fun testHtmlParse(file: File?) {
         val doc = parse(file!!, "UTF-8", "https://example.com/")
         Assertions.assertNotNull(doc)
@@ -43,7 +42,6 @@ class FuzzFixesTest {
 
     @ParameterizedTest
     @MethodSource("testFiles")
-    @Throws(IOException::class)
     fun testXmlParse(file: File?) {
         val doc = parse(file!!, "UTF-8", "https://example.com/", xmlParser())
         Assertions.assertNotNull(doc)

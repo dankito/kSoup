@@ -6,37 +6,32 @@ import net.dankito.ksoup.integration.TestServer
 import net.dankito.ksoup.internal.StringUtil.isBlank
 import net.dankito.ksoup.internal.StringUtil.join
 import net.dankito.ksoup.nodes.Entities.escape
-import java.io.IOException
 import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 import javax.servlet.MultipartConfigElement
-import javax.servlet.ServletException
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 class EchoServlet : BaseServlet() {
-    @Throws(ServletException::class, IOException::class)
+
     override fun doGet(req: HttpServletRequest, res: HttpServletResponse) {
         doIt(req, res)
     }
 
-    @Throws(ServletException::class, IOException::class)
     override fun doPost(req: HttpServletRequest, res: HttpServletResponse) {
         doIt(req, res)
     }
 
-    @Throws(ServletException::class, IOException::class)
     override fun doPut(req: HttpServletRequest, res: HttpServletResponse) {
         doIt(req, res)
     }
 
-    @Throws(IOException::class, ServletException::class)
     private fun doIt(req: HttpServletRequest, res: HttpServletResponse) {
         var intCode: Int = DefaultCode
         val code = req.getHeader(CodeParam)
         if (code != null) intCode = code.toInt()
         val isMulti: Boolean = maybeEnableMultipart(req)
-        res.contentType = BaseServlet.Companion.TextHtml
+        res.contentType = BaseServlet.TextHtml
         res.status = intCode
         // no-cache headers for test
         res.addHeader("Cache-Control", "no-cache")

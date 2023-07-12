@@ -5,7 +5,6 @@ import com.google.gson.reflect.TypeToken
 import net.dankito.ksoup.Jsoup
 import net.dankito.ksoup.integration.UrlConnectTest
 import java.io.FileWriter
-import java.io.IOException
 import java.nio.file.Files
 
 /**
@@ -14,7 +13,7 @@ import java.nio.file.Files
  * only to be complete.
  */
 internal object BuildEntities {
-    @Throws(IOException::class)
+
     @JvmStatic
     fun main(args: Array<String>) {
         val url = "https://www.w3.org/TR/2012/WD-html5-20121025/entities.json"
@@ -65,7 +64,6 @@ internal object BuildEntities {
         println("Full size: " + full.size + ", base size: " + base.size)
     }
 
-    @Throws(IOException::class)
     private fun persist(name: String, refs: ArrayList<CharacterRef>) {
         val file = Files.createTempFile(name, ".txt").toFile()
         val writer = FileWriter(file, false)

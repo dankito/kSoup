@@ -2,7 +2,6 @@ package net.dankito.ksoup.nodes
 
 import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.internal.StringUtil
-import java.io.IOException
 
 /**
  * A `<!DOCTYPE>` node.
@@ -63,7 +62,6 @@ class DocumentType(name: String?, publicId: String?, systemId: String?) : LeafNo
         return "#doctype"
     }
 
-    @Throws(IOException::class)
     override fun outerHtmlHead(accum: Appendable, depth: Int, out: Document.OutputSettings) {
         // add a newline if the doctype has a preceding node (which must be a comment)
         if (siblingIndex > 0 && out.prettyPrint()) accum.append('\n')

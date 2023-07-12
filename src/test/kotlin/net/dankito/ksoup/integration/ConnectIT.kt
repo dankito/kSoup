@@ -6,7 +6,6 @@ import net.dankito.ksoup.integration.servlets.SlowRider
 import net.dankito.ksoup.internal.ConstrainableInputStream
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.io.IOException
 import java.net.SocketTimeoutException
 import java.nio.charset.StandardCharsets
 
@@ -26,7 +25,7 @@ class ConnectIT {
                     .timeout(15 * 1000)
                     .execute()
                 body[0] = res.body()
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 throw RuntimeException(e)
             }
         }
@@ -50,7 +49,7 @@ class ConnectIT {
                     .timeout(15 * 1000)
                     .execute()
                 body[0] = res.parse().text()
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 throw RuntimeException(e)
             }
         }
@@ -63,7 +62,6 @@ class ConnectIT {
     }
 
     @Test
-    @Throws(IOException::class)
     fun totalTimeout() {
         val timeout = 3 * 1000
         val start = System.currentTimeMillis()
@@ -81,7 +79,6 @@ class ConnectIT {
     }
 
     @Test
-    @Throws(IOException::class)
     fun slowReadOk() {
         // make sure that a slow read that is under the request timeout is still OK
         val doc = Jsoup.connect(SlowRider.Url)
@@ -92,7 +89,6 @@ class ConnectIT {
     }
 
     @Test
-    @Throws(IOException::class)
     fun infiniteReadSupported() {
         val doc = Jsoup.connect(SlowRider.Companion.Url)
             .timeout(0)
@@ -103,7 +99,6 @@ class ConnectIT {
     }
 
     @Test
-    @Throws(IOException::class)
     fun remainingAfterFirstRead() {
         val bufferSize = 5 * 1024
         val capSize = 100 * 1024
@@ -135,7 +130,6 @@ class ConnectIT {
     }
 
     @Test
-    @Throws(IOException::class)
     fun noLimitAfterFirstRead() {
         val bufferSize = 5 * 1024
         val url: String = FileServlet.urlTo("/htmltests/large.html") // 280 K

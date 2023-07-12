@@ -238,7 +238,6 @@ class HttpConnection : Connection {
         return this
     }
 
-    @Throws(IOException::class)
     override fun get(): Document {
         req.method(Connection.Method.GET)
         execute()
@@ -246,7 +245,6 @@ class HttpConnection : Connection {
         return res!!.parse()
     }
 
-    @Throws(IOException::class)
     override fun post(): Document {
         req.method(Connection.Method.POST)
         execute()
@@ -256,7 +254,6 @@ class HttpConnection : Connection {
         return response.parse()
     }
 
-    @Throws(IOException::class)
     override fun execute(): Connection.Response {
         return Response.execute(req).also {
             res = it
@@ -722,7 +719,6 @@ class HttpConnection : Connection {
             return contentType
         }
 
-        @Throws(IOException::class)
         override fun parse(): Document {
             Validate.isTrue(
                 executed,
@@ -862,8 +858,8 @@ class HttpConnection : Connection {
          * Matches XML content types (like text/xml, application/xhtml+xml;charset=UTF8, etc)
          */
             private val xmlContentTypeRxp: Pattern = Pattern.compile("(application|text)/\\w*\\+?xml.*")
+
             @JvmOverloads
-            @Throws(IOException::class)
             fun execute(req: Request, previousResponse: Response? = null): Response {
                 synchronized(req, {
                     Validate.isFalse(
@@ -976,11 +972,10 @@ class HttpConnection : Connection {
             }
 
             // set up connection defaults, and details from request
-            @Throws(IOException::class)
             private fun createConnection(req: Request): HttpURLConnection {
                 val proxy: Proxy? = req.proxy()
-                val conn: HttpURLConnection = (if (proxy == null) req.url()!!
-                    .openConnection() else req.url()!!.openConnection(proxy)) as HttpURLConnection
+                val conn: HttpURLConnection = (if (proxy == null) req.url()
+                    .openConnection() else req.url().openConnection(proxy)) as HttpURLConnection
                 conn.setRequestMethod(req.method().name)
                 conn.setInstanceFollowRedirects(false) // don't rely on native redirection support
                 conn.setConnectTimeout(req.timeout())
@@ -1035,8 +1030,6 @@ class HttpConnection : Connection {
                 }
                 return bound
             }
-
-            @Throws(IOException::class)
             private fun writePost(req: Connection.Request, outputStream: OutputStream, boundary: String?) {
                 val data: Collection<Connection.KeyVal?>? = req.data()
                 val w: BufferedWriter =
@@ -1090,7 +1083,6 @@ class HttpConnection : Connection {
             }
 
             // for get url reqs, serialise the data map into the url
-            @Throws(IOException::class)
             private fun serialiseRequestUrl(req: Connection.Request) {
                 val `in` = UrlBuilder(req.url())
                 for (keyVal: Connection.KeyVal? in req.data()) {

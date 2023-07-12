@@ -1,7 +1,6 @@
 package net.dankito.ksoup.helper
 
 import net.dankito.ksoup.internal.StringUtil
-import java.io.IOException
 import java.net.*
 import java.util.*
 
@@ -21,7 +20,6 @@ internal object CookieUtil {
      * Pre-request, get any applicable headers out of the Request cookies and the Cookie Store, and add them to the request
      * headers. If the Cookie Store duplicates any Request cookies (same name and value), they will be discarded.
      */
-    @Throws(IOException::class)
     fun applyCookiesToRequest(req: HttpConnection.Request, con: HttpURLConnection) {
         // Request key/val cookies. LinkedHashSet used to preserve order, as cookie store will return most specific path first
         val cookieSet: MutableSet<String> = requestCookieSet(req)
@@ -57,18 +55,16 @@ internal object CookieUtil {
         return set
     }
 
-    @Throws(IOException::class)
     fun asUri(url: URL?): URI {
         try {
             return url!!.toURI()
         } catch (e: URISyntaxException) {  // this would be a WTF because we construct the URL
-            val ue: MalformedURLException = MalformedURLException(e.message)
+            val ue = MalformedURLException(e.message)
             ue.initCause(e)
             throw ue
         }
     }
 
-    @Throws(IOException::class)
     fun storeCookies(req: HttpConnection.Request, url: URL?, resHeaders: Map<String, MutableList<String?>>) {
         req.cookieManager().put(asUri(url), resHeaders) // stores cookies for session
     }

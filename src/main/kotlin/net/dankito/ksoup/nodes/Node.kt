@@ -7,7 +7,6 @@ import net.dankito.ksoup.select.GenericNodeVisitor
 import net.dankito.ksoup.select.NodeFilter
 import net.dankito.ksoup.select.NodeTraversor
 import net.dankito.ksoup.select.NodeVisitor
-import java.io.IOException
 import java.util.*
 
 /**
@@ -675,11 +674,10 @@ protected constructor() : java.lang.Cloneable {
     /**
      * Get the outer HTML of this node.
      * @param accum accumulator to place HTML into
-     * @throws IOException if appending to the given accumulator fails.
+     * @throws net.dankito.ksoup.jvm.IOException if appending to the given accumulator fails.
      */
-    @Throws(IOException::class)
     abstract fun outerHtmlHead(accum: Appendable, depth: Int, out: Document.OutputSettings)
-    @Throws(IOException::class)
+
     abstract fun outerHtmlTail(accum: Appendable, depth: Int, out: Document.OutputSettings)
 
     /**
@@ -735,7 +733,6 @@ protected constructor() : java.lang.Cloneable {
         return outerHtml()
     }
 
-    @Throws(IOException::class)
     protected fun indent(accum: Appendable, depth: Int, out: Document.OutputSettings) {
         accum.append('\n').append(StringUtil.padding(depth * out.indentAmount(), out.maxPaddingWidth()))
     }
@@ -829,7 +826,7 @@ protected constructor() : java.lang.Cloneable {
         override fun head(node: Node, depth: Int) {
             try {
                 node.outerHtmlHead(accum, depth, out)
-            } catch (exception: IOException) {
+            } catch (exception: Exception) {
                 throw SerializationException(exception)
             }
         }
@@ -838,7 +835,7 @@ protected constructor() : java.lang.Cloneable {
             if (node.nodeName() != "#text") { // saves a void hit.
                 try {
                     node.outerHtmlTail(accum, depth, out)
-                } catch (exception: IOException) {
+                } catch (exception: Exception) {
                     throw SerializationException(exception)
                 }
             }

@@ -8,7 +8,6 @@ import net.dankito.ksoup.parser.Parser.Companion.htmlParser
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
-import java.io.IOException
 import java.io.StringWriter
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
@@ -143,7 +142,6 @@ class DocumentTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun testLocation() {
         // tests location vs base href
         val `in` = ParseTest.getFile("/htmltests/basehref.html")

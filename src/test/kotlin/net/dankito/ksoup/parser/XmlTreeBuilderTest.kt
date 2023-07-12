@@ -67,7 +67,6 @@ class XmlTreeBuilderTest {
 
     @Disabled
     @Test
-    @Throws(IOException::class)
     fun testSupplyParserToConnection() {
         val xmlUrl = "http://direct.infohound.net/tools/jsoup-xml-test.xml"
 
@@ -87,7 +86,6 @@ class XmlTreeBuilderTest {
     }
 
     @Test
-    @Throws(IOException::class, URISyntaxException::class)
     fun testSupplyParserToDataStream() {
         val xmlFile = File(XmlTreeBuilder::class.java.getResource("/htmltests/xml-test.xml").toURI())
         val inStream: InputStream = FileInputStream(xmlFile)
@@ -140,7 +138,6 @@ class XmlTreeBuilderTest {
     }
 
     @Test
-    @Throws(IOException::class, URISyntaxException::class)
     fun testDetectCharsetEncodingDeclaration() {
         val xmlFile = File(XmlTreeBuilder::class.java.getResource("/htmltests/xml-charset.xml").toURI())
         val inStream: InputStream = FileInputStream(xmlFile)

@@ -1,7 +1,5 @@
 package net.dankito.ksoup.nodes
 
-import java.io.IOException
-
 /**
  * A data node, for contents of style, script tags etc, where contents should not show in text().
  *
@@ -30,7 +28,6 @@ class DataNode(data: String?) : LeafNode(data) {
         return this
     }
 
-    @Throws(IOException::class)
     override fun outerHtmlHead(accum: Appendable, depth: Int, out: Document.OutputSettings) {
         accum.append(wholeData) // data is not escaped in return from data nodes, so " in script, style is plain
     }
@@ -38,7 +35,7 @@ class DataNode(data: String?) : LeafNode(data) {
     override fun outerHtmlTail(accum: Appendable, depth: Int, out: Document.OutputSettings) { }
 
     override fun toString(): String {
-        return outerHtml()!!
+        return outerHtml()
     }
 
     override fun clone(): DataNode {

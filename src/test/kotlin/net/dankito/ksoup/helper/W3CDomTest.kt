@@ -53,7 +53,6 @@ class W3CDomTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun namespacePreservation() {
         val `in`: File = ParseTest.getFile("/htmltests/namespaces.xhtml")
         val jsoupDoc = Jsoup.parse(`in`, "UTF-8")

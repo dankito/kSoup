@@ -66,7 +66,6 @@ object DataUtil {
      * @throws IOException on IO error
      */
     @JvmOverloads
-    @Throws(IOException::class)
     fun load(
         file: File,
         charsetName: String?,
@@ -98,7 +97,6 @@ object DataUtil {
      * @return Document
      * @throws IOException on IO error
      */
-    @Throws(IOException::class)
     fun load(@WillClose `in`: InputStream?, charsetName: String?, baseUri: String): Document {
         return parseInputStream(`in`, charsetName, baseUri, Parser.htmlParser())
     }
@@ -112,7 +110,6 @@ object DataUtil {
      * @return Document
      * @throws IOException on IO error
      */
-    @Throws(IOException::class)
     fun load(@WillClose `in`: InputStream?, charsetName: String?, baseUri: String, parser: Parser): Document {
         return parseInputStream(`in`, charsetName, baseUri, parser)
     }
@@ -123,7 +120,6 @@ object DataUtil {
      * @param out output stream to write to
      * @throws IOException on IO error
      */
-    @Throws(IOException::class)
     fun crossStreams(`in`: InputStream, out: OutputStream) {
         val buffer: ByteArray = ByteArray(bufferSize)
         var len: Int
@@ -133,7 +129,6 @@ object DataUtil {
     }
 
     @JvmStatic
-    @Throws(IOException::class)
     fun parseInputStream(@WillClose input: InputStream?, charsetName: String?, baseUri: String, parser: Parser): Document {
         if (input == null) { // empty body
             return Document(baseUri)
@@ -240,7 +235,6 @@ object DataUtil {
      * @throws IOException if an exception occurs whilst reading from the input stream.
      */
     @JvmStatic
-    @Throws(IOException::class)
     fun readToByteBuffer(inStream: InputStream?, maxSize: Int): ByteBuffer? {
         Validate.isTrue(maxSize >= 0, "maxSize must be 0 (unlimited) or larger")
         val input: ConstrainableInputStream = ConstrainableInputStream.Companion.wrap(inStream, bufferSize, maxSize)

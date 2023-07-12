@@ -1,7 +1,6 @@
 package net.dankito.ksoup.integration.servlets
 
 import net.dankito.ksoup.integration.TestServer
-import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.util.zip.Deflater
 import java.util.zip.DeflaterOutputStream
@@ -9,7 +8,7 @@ import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 class Deflateservlet : BaseServlet() {
-    @Throws(IOException::class)
+
     override fun doGet(req: HttpServletRequest, res: HttpServletResponse) {
         res.contentType = BaseServlet.Companion.TextHtml
         res.status = HttpServletResponse.SC_OK
@@ -30,7 +29,7 @@ class Deflateservlet : BaseServlet() {
         @JvmStatic
         fun main(args: Array<String>) {
             TestServer.start()
-            println(Deflateservlet.Companion.Url)
+            println(Url)
         }
     }
 }

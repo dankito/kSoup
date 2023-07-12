@@ -8,7 +8,6 @@ import net.dankito.ksoup.internal.StringUtil
 import net.dankito.ksoup.parser.Tag
 import net.dankito.ksoup.parser.TokenQueue
 import net.dankito.ksoup.select.*
-import java.io.IOException
 import java.lang.ref.WeakReference
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
@@ -1565,8 +1564,6 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
     fun shouldIndent(out: Document.OutputSettings?): Boolean {
         return out!!.prettyPrint() && isFormatAsBlock(out) && !isInlineable(out) && !preserveWhitespace(parentNode)
     }
-
-    @Throws(IOException::class)
     override fun outerHtmlHead(accum: Appendable, depth: Int, out: Document.OutputSettings) {
         if (shouldIndent(out)) {
             if (accum is StringBuilder) {
@@ -1585,8 +1582,6 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
             ) // <img> in html, <img /> in xml
         } else accum.append('>')
     }
-
-    @Throws(IOException::class)
     override fun outerHtmlTail(accum: Appendable, depth: Int, out: Document.OutputSettings) {
         if (!(childNodes.isEmpty() && tag.isSelfClosing)) {
             if (out.prettyPrint() && !childNodes.isEmpty() &&

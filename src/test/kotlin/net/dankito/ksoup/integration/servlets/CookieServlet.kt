@@ -1,29 +1,23 @@
 package net.dankito.ksoup.integration.servlets
 
 import net.dankito.ksoup.integration.TestServer
-import java.io.IOException
-import javax.servlet.ServletException
 import javax.servlet.http.Cookie
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 class CookieServlet : BaseServlet() {
-    @Throws(ServletException::class, IOException::class)
+
     override fun doGet(req: HttpServletRequest, res: HttpServletResponse) {
         doIt(req, res)
     }
 
-    @Throws(ServletException::class, IOException::class)
     override fun doPost(req: HttpServletRequest, res: HttpServletResponse) {
         doIt(req, res)
     }
 
-    @Throws(ServletException::class, IOException::class)
     override fun doPut(req: HttpServletRequest, res: HttpServletResponse) {
         doIt(req, res)
     }
-
-    @Throws(IOException::class)
     private fun doIt(req: HttpServletRequest, res: HttpServletResponse) {
         // Do we want to set cookies?
         if (req.getParameter(SetCookiesParam) != null) setCookies(res)

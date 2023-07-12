@@ -4,7 +4,6 @@ import net.dankito.ksoup.Jsoup
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
-import java.io.IOException
 import java.nio.charset.StandardCharsets
 
 class ParserTest {
@@ -25,7 +24,6 @@ class ParserTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun testUtf8() {
         // testcase for https://github.com/jhy/jsoup/issues/1557. no repro.
         val parsed = Jsoup.parse(ByteArrayInputStream("<p>H\u00E9llo, w\u00F6rld!".toByteArray(StandardCharsets.UTF_8)), null, "")

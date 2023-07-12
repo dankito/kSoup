@@ -480,7 +480,6 @@ class CharacterReaderTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun linenumbersAgreeWithEditor() {
         val content: String = ParseTest.Companion.getFileAsString(ParseTest.Companion.getFile("/htmltests/large.html"))
         val reader = CharacterReader(content)

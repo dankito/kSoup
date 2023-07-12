@@ -3,13 +3,12 @@ package net.dankito.ksoup.examples
 import net.dankito.ksoup.Jsoup
 import net.dankito.ksoup.nodes.Element
 import net.dankito.ksoup.select.Elements
-import java.io.IOException
 
 /**
  * A simple example, used on the jsoup website.
  */
 object Wikipedia {
-    @Throws(IOException::class)
+
     @JvmStatic
     fun main(args: Array<String>) {
         val doc = Jsoup.connect("http://en.wikipedia.org/").get()

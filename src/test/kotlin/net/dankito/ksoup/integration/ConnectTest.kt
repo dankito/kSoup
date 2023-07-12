@@ -23,8 +23,8 @@ import java.net.*
  * Tests Jsoup.connect against a local server.
  */
 class ConnectTest {
+
     @Test
-    @Throws(IOException::class)
     fun canConnectToLocalServer() {
         val url: String = HelloServlet.Url
         val doc = Jsoup.connect(url).get()
@@ -33,14 +33,12 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun fetchURl() {
         val doc = parse(URL(echoUrl), 10 * 1000)
         Assertions.assertTrue(doc.title().contains("Environment Variables"))
     }
 
     @Test
-    @Throws(IOException::class)
     fun fetchURIWithWhitespace() {
         val con = Jsoup.connect(echoUrl + "#with whitespaces")
         val doc = con.get()
@@ -59,7 +57,7 @@ class ConnectTest {
                 "java.net.MalformedURLException: Only http & https protocols supported",
                 e.toString()
             )
-        } catch (e: IOException) {
+        } catch (e: Exception) {
         }
         Assertions.assertTrue(threw)
     }
@@ -79,13 +77,12 @@ class ConnectTest {
             )
             Assertions.assertTrue(e.url.startsWith(url))
             Assertions.assertEquals(404, e.statusCode)
-        } catch (e: IOException) {
-        }
+        } catch (e: Exception) { }
+
         Assertions.assertTrue(threw)
     }
 
     @Test
-    @Throws(IOException::class)
     fun ignoresExceptionIfSoConfigured() {
         val url: String = EchoServlet.Companion.Url
         val con = Jsoup.connect(url)
@@ -98,7 +95,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun doesPost() {
         val doc = Jsoup.connect(echoUrl)
             .data("uname", "Jsoup", "uname", "Jonathan", "百", "度一下")
@@ -116,7 +112,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun doesPostMultipartWithoutInputstream() {
         val doc = Jsoup.connect(echoUrl)
             .header(HttpConnection.CONTENT_TYPE, HttpConnection.MULTIPART_FORM_DATA)
@@ -130,7 +125,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun canSendSecFetchHeaders() {
         // https://github.com/jhy/jsoup/issues/1461
         val doc = Jsoup.connect(echoUrl)
@@ -144,7 +138,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun secFetchHeadersSurviveRedirect() {
         val doc = Jsoup
             .connect(RedirectServlet.Companion.Url)
@@ -159,7 +152,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun sendsRequestBodyJsonWithData() {
         val body = "{key:value}"
         val doc = Jsoup.connect(echoUrl)
@@ -175,7 +167,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun sendsRequestBodyJsonWithoutData() {
         val body = "{key:value}"
         val doc = Jsoup.connect(echoUrl)
@@ -189,7 +180,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun sendsRequestBody() {
         val body = "{key:value}"
         val doc = Jsoup.connect(echoUrl)
@@ -203,7 +193,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun sendsRequestBodyWithUrlParams() {
         val body = "{key:value}"
         val doc = Jsoup.connect(echoUrl)
@@ -221,7 +210,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun doesGet() {
         val con = Jsoup.connect(echoUrl + "?what=the")
             .userAgent("Mozilla")
@@ -235,7 +223,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun doesPut() {
         val res = Jsoup.connect(echoUrl)
             .data("uname", "Jsoup", "uname", "Jonathan", "百", "度一下")
@@ -252,7 +239,6 @@ class ConnectTest {
      * Tests upload of content to a remote service.
      */
     @Test
-    @Throws(IOException::class)
     fun postFiles() {
         val thumb: File = ParseTest.getFile("/htmltests/thumb.jpg")
         val html: File = ParseTest.getFile("/htmltests/large.html")
@@ -291,7 +277,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun multipleParsesOkAfterBufferUp() {
         val res = Jsoup.connect(echoUrl).execute().bufferUp()
         val doc = res.parse()
@@ -310,7 +295,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun bodyAndBytesAvailableBeforeParse() {
         val res = Jsoup.connect(echoUrl).execute()
         val body = res.body()
@@ -323,7 +307,7 @@ class ConnectTest {
 
     @Test
     fun parseParseThrowsValidates() {
-        Assertions.assertThrows<IllegalArgumentException>(IllegalArgumentException::class.java) {
+        Assertions.assertThrows(IllegalArgumentException::class.java) {
             val res = Jsoup.connect(echoUrl).execute()
             val doc = res.parse()
             Assertions.assertTrue(doc.title().contains("Environment"))
@@ -332,13 +316,12 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun multiCookieSet() {
         val con = Jsoup
-            .connect(RedirectServlet.Companion.Url)
-            .data(RedirectServlet.Companion.CodeParam, "302")
-            .data(RedirectServlet.Companion.SetCookiesParam, "true")
-            .data(RedirectServlet.Companion.LocationParam, echoUrl)
+            .connect(RedirectServlet.Url)
+            .data(RedirectServlet.CodeParam, "302")
+            .data(RedirectServlet.SetCookiesParam, "true")
+            .data(RedirectServlet.LocationParam, echoUrl)
         val res = con.execute()
 
         // test cookies set by redirect:
@@ -352,12 +335,11 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun requestCookiesSurviveRedirect() {
         // this test makes sure that Request keyval cookies (not in the cookie store) are sent on subsequent redirections,
         // when not using the session method
         val con = Jsoup.connect(RedirectServlet.Companion.Url)
-            .data(RedirectServlet.Companion.LocationParam, echoUrl)
+            .data(RedirectServlet.LocationParam, echoUrl)
             .cookie("LetMeIn", "True")
             .cookie("DoesItWork", "Yes")
         val res = con.execute()
@@ -369,20 +351,18 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun supportsDeflate() {
-        val res = Jsoup.connect(Deflateservlet.Companion.Url).execute()
+        val res = Jsoup.connect(Deflateservlet.Url).execute()
         Assertions.assertEquals("deflate", res.header("Content-Encoding"))
         val doc = res.parse()
         Assertions.assertEquals("Hello, World!", doc.selectFirst("p")!!.text())
     }
 
     @Test
-    @Throws(IOException::class)
     fun handlesLargerContentLengthParseRead() {
         // this handles situations where the remote server sets a content length greater than it actually writes
-        val res = Jsoup.connect(InterruptedServlet.Companion.Url)
-            .data(InterruptedServlet.Companion.Magnitude, InterruptedServlet.Companion.Larger)
+        val res = Jsoup.connect(InterruptedServlet.Url)
+            .data(InterruptedServlet.Magnitude, InterruptedServlet.Larger)
             .timeout(400)
             .execute()
         val document = res.parse()
@@ -393,9 +373,8 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun handlesWrongContentLengthDuringBufferedRead() {
-        val res = Jsoup.connect(InterruptedServlet.Companion.Url)
+        val res = Jsoup.connect(InterruptedServlet.Url)
             .timeout(400)
             .execute()
         // this servlet writes max_buffer data, but sets content length to max_buffer/2. So will read up to that.
@@ -406,58 +385,55 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun handlesRedirect() {
-        val doc = Jsoup.connect(RedirectServlet.Companion.Url)
-            .data(RedirectServlet.Companion.LocationParam, HelloServlet.Companion.Url)
+        val doc = Jsoup.connect(RedirectServlet.Url)
+            .data(RedirectServlet.LocationParam, HelloServlet.Url)
             .get()
         val p = doc.selectFirst("p")
         Assertions.assertEquals("Hello, World!", p!!.text())
-        Assertions.assertEquals(HelloServlet.Companion.Url, doc.location())
+        Assertions.assertEquals(HelloServlet.Url, doc.location())
     }
 
     @Test
     fun handlesEmptyRedirect() {
         var threw = false
         try {
-            val res = Jsoup.connect(RedirectServlet.Companion.Url)
+            val res = Jsoup.connect(RedirectServlet.Url)
                 .execute()
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             Assertions.assertTrue(e.message!!.contains("Too many redirects"))
             threw = true
         }
+
         Assertions.assertTrue(threw)
     }
 
     @Test
-    @Throws(IOException::class)
     fun doesNotPostFor302() {
-        val doc = Jsoup.connect(RedirectServlet.Companion.Url)
+        val doc = Jsoup.connect(RedirectServlet.Url)
             .data("Hello", "there")
-            .data(RedirectServlet.Companion.LocationParam, EchoServlet.Companion.Url)
+            .data(RedirectServlet.LocationParam, EchoServlet.Url)
             .post()
-        Assertions.assertEquals(EchoServlet.Companion.Url, doc.location())
+        Assertions.assertEquals(EchoServlet.Url, doc.location())
         Assertions.assertEquals("GET", ihVal("Method", doc))
         Assertions.assertNull(ihVal("Hello", doc)) // data not sent
     }
 
     @Test
-    @Throws(IOException::class)
     fun doesPostFor307() {
-        val doc = Jsoup.connect(RedirectServlet.Companion.Url)
+        val doc = Jsoup.connect(RedirectServlet.Url)
             .data("Hello", "there")
-            .data(RedirectServlet.Companion.LocationParam, EchoServlet.Companion.Url)
-            .data(RedirectServlet.Companion.CodeParam, "307")
+            .data(RedirectServlet.LocationParam, EchoServlet.Url)
+            .data(RedirectServlet.CodeParam, "307")
             .post()
-        Assertions.assertEquals(EchoServlet.Companion.Url, doc.location())
+        Assertions.assertEquals(EchoServlet.Url, doc.location())
         Assertions.assertEquals("POST", ihVal("Method", doc))
         Assertions.assertEquals("there", ihVal("Hello", doc))
     }
 
-    @Throws(IOException::class)
     @Test
     fun utf8Bom() {
-        val con = Jsoup.connect(FileServlet.Companion.urlTo("/bomtests/bom_utf8.html"))
+        val con = Jsoup.connect(FileServlet.urlTo("/bomtests/bom_utf8.html"))
         val doc = con.get()
         Assertions.assertEquals("UTF-8", con.response().charset())
         Assertions.assertEquals("OK", doc.title())
@@ -465,27 +441,23 @@ class ConnectTest {
 
     @Test
     fun testBinaryContentTypeThrowsException() {
-        val con = Jsoup.connect(FileServlet.Companion.urlTo("/htmltests/thumb.jpg"))
-        con.data(FileServlet.Companion.ContentTypeParam, "image/jpeg")
+        val con = Jsoup.connect(FileServlet.urlTo("/htmltests/thumb.jpg"))
+        con.data(FileServlet.ContentTypeParam, "image/jpeg")
         var threw = false
         try {
             con.execute()
             val doc = con.response().parse()
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             threw = true
-            Assertions.assertEquals(
-                "Unhandled content type. Must be text/*, application/xml, or application/*+xml",
-                e.message
-            )
+            Assertions.assertEquals("Unhandled content type. Must be text/*, application/xml, or application/*+xml", e.message)
         }
         Assertions.assertTrue(threw)
     }
 
     @Test
-    @Throws(IOException::class)
     fun testParseRss() {
         // test that we switch automatically to xml, and we support application/rss+xml
-        val con = Jsoup.connect(FileServlet.Companion.urlTo("/htmltests/test-rss.xml"))
+        val con = Jsoup.connect(FileServlet.urlTo("/htmltests/test-rss.xml"))
         con.data(FileServlet.Companion.ContentTypeParam, "application/rss+xml")
         val doc = con.get()
         val title = doc.selectFirst("title")
@@ -503,10 +475,9 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun canFetchBinaryAsBytes() {
-        val res = Jsoup.connect(FileServlet.Companion.urlTo("/htmltests/thumb.jpg"))
-            .data(FileServlet.Companion.ContentTypeParam, "image/jpeg")
+        val res = Jsoup.connect(FileServlet.urlTo("/htmltests/thumb.jpg"))
+            .data(FileServlet.ContentTypeParam, "image/jpeg")
             .ignoreContentType(true)
             .execute()
         val bytes = res.bodyAsBytes()
@@ -514,10 +485,9 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun handlesUnknownEscapesAcrossBuffer() {
         val localPath = "/htmltests/escapes-across-buffer.html"
-        val localUrl: String = FileServlet.Companion.urlTo(localPath)
+        val localUrl: String = FileServlet.urlTo(localPath)
         val docFromLocalServer = Jsoup.connect(localUrl).get()
         val docFromFileRead: Document = parse(ParseTest.getFile(localPath), "UTF-8")
         val text = docFromLocalServer.body().text()
@@ -530,9 +500,8 @@ class ConnectTest {
      * Test fetching a form, and submitting it with a file attached.
      */
     @Test
-    @Throws(IOException::class)
     fun postHtmlFile() {
-        val index = Jsoup.connect(FileServlet.Companion.urlTo("/htmltests/upload-form.html")).get()
+        val index = Jsoup.connect(FileServlet.urlTo("/htmltests/upload-form.html")).get()
         val forms = index.select("[name=tidy]").forms()
         Assertions.assertEquals(1, forms.size)
         val form = forms[0]
@@ -557,7 +526,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun fetchHandlesXml() {
         val types = arrayOf("text/xml", "application/xml", "application/rss+xml", "application/xhtml+xml")
         for (type in types) {
@@ -565,12 +533,11 @@ class ConnectTest {
         }
     }
 
-    @Throws(IOException::class)
     fun fetchHandlesXml(contentType: String?) {
         // should auto-detect xml and use XML parser, unless explicitly requested the html parser
-        val xmlUrl: String = FileServlet.Companion.urlTo("/htmltests/xml-test.xml")
+        val xmlUrl: String = FileServlet.urlTo("/htmltests/xml-test.xml")
         val con = Jsoup.connect(xmlUrl)
-        con.data(FileServlet.Companion.ContentTypeParam, contentType!!)
+        con.data(FileServlet.ContentTypeParam, contentType!!)
         val doc = con.get()
         val req = con.request()
         Assertions.assertTrue(req.parser().treeBuilder is XmlTreeBuilder)
@@ -579,12 +546,11 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun fetchHandlesXmlAsHtmlWhenParserSet() {
         // should auto-detect xml and use XML parser, unless explicitly requested the html parser
-        val xmlUrl: String = FileServlet.Companion.urlTo("/htmltests/xml-test.xml")
+        val xmlUrl: String = FileServlet.urlTo("/htmltests/xml-test.xml")
         val con = Jsoup.connect(xmlUrl).parser(htmlParser())
-        con.data(FileServlet.Companion.ContentTypeParam, "application/xml")
+        con.data(FileServlet.ContentTypeParam, "application/xml")
         val doc = con.get()
         val req = con.request()
         Assertions.assertTrue(req.parser().treeBuilder is HtmlTreeBuilder)
@@ -595,7 +561,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun combinesSameHeadersWithComma() {
         // http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2
         val con = Jsoup.connect(echoUrl)
@@ -610,7 +575,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun sendHeadRequest() {
         val url: String = FileServlet.Companion.urlTo("/htmltests/xml-test.xml")
         val con = Jsoup.connect(url)
@@ -624,7 +588,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun fetchToW3c() {
         val url: String = FileServlet.Companion.urlTo("/htmltests/upload-form.html")
         val doc = Jsoup.connect(url).get()
@@ -636,18 +599,16 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun baseHrefCorrectAfterHttpEquiv() {
         // https://github.com/jhy/jsoup/issues/440
-        val res = Jsoup.connect(FileServlet.Companion.urlTo("/htmltests/charset-base.html")).execute()
+        val res = Jsoup.connect(FileServlet.urlTo("/htmltests/charset-base.html")).execute()
         val doc = res.parse()
         Assertions.assertEquals("http://example.com/foo.jpg", doc.select("img").first()!!.absUrl("src"))
     }
 
     @Test
-    @Throws(IOException::class)
     fun maxBodySize() {
-        val url: String = FileServlet.Companion.urlTo("/htmltests/large.html") // 280 K
+        val url: String = FileServlet.urlTo("/htmltests/large.html") // 280 K
         val defaultRes = Jsoup.connect(url).execute()
         val smallRes = Jsoup.connect(url).maxBodySize(50 * 1024).execute() // crops
         val mediumRes = Jsoup.connect(url).maxBodySize(200 * 1024).execute() // crops
@@ -662,9 +623,8 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun repeatable() {
-        val url: String = FileServlet.Companion.urlTo("/htmltests/large.html") // 280 K
+        val url: String = FileServlet.urlTo("/htmltests/large.html") // 280 K
         val con = Jsoup.connect(url).parser(xmlParser())
         val doc1 = con.get()
         val doc2 = con.get()
@@ -673,11 +633,10 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun maxBodySizeInReadToByteBuffer() {
         // https://github.com/jhy/jsoup/issues/1774
         // when calling readToByteBuffer, contents were not buffered up
-        val url: String = FileServlet.Companion.urlTo("/htmltests/large.html") // 280 K
+        val url: String = FileServlet.urlTo("/htmltests/large.html") // 280 K
         val defaultRes = Jsoup.connect(url).execute()
         val smallRes = Jsoup.connect(url).maxBodySize(50 * 1024).execute() // crops
         val mediumRes = Jsoup.connect(url).maxBodySize(200 * 1024).execute() // crops
@@ -692,7 +651,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun formLoginFlow() {
         val echoUrl: String = EchoServlet.Companion.Url
         val cookieUrl: String = CookieServlet.Companion.Url
@@ -723,7 +681,6 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun formLoginFlow2() {
         val echoUrl: String = EchoServlet.Companion.Url
         val cookieUrl: String = CookieServlet.Companion.Url
@@ -749,18 +706,16 @@ class ConnectTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun preservesUrlFragment() {
         // confirms https://github.com/jhy/jsoup/issues/1686
-        val url: String = EchoServlet.Companion.Url + "#fragment"
+        val url: String = EchoServlet.Url + "#fragment"
         val doc = Jsoup.connect(url).get()
         Assertions.assertEquals(url, doc.location())
     }
 
     @Test
-    @Throws(IOException::class)
     fun fetchUnicodeUrl() {
-        val url: String = EchoServlet.Companion.Url + "/✔/?鍵=値"
+        val url: String = EchoServlet.Url + "/✔/?鍵=値"
         val doc = Jsoup.connect(url).get()
         Assertions.assertEquals("/✔/", ihVal("Path Info", doc))
         Assertions.assertEquals("%E9%8D%B5=%E5%80%A4", ihVal("Query String", doc))
@@ -771,7 +726,7 @@ class ConnectTest {
     }
 
     companion object {
-        private val echoUrl = EchoServlet.Companion.Url
+        private val echoUrl = EchoServlet.Url
 
         @BeforeAll
         fun setUp() {

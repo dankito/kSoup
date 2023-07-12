@@ -9,7 +9,6 @@ import net.dankito.ksoup.nodes.TextNode
 import net.dankito.ksoup.select.Elements
 import net.dankito.ksoup.select.NodeTraversor
 import net.dankito.ksoup.select.NodeVisitor
-import java.io.IOException
 
 /**
  * HTML to plain-text. This example program demonstrates the use of jsoup to convert HTML input to lightly-formatted
@@ -124,7 +123,7 @@ class HtmlToPlainText {
     companion object {
         private val userAgent: String = "Mozilla/5.0 (jsoup)"
         private val timeout: Int = 5 * 1000
-        @Throws(IOException::class)
+
         @JvmStatic
         fun main(args: Array<String>) {
             Validate.isTrue(

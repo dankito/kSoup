@@ -11,11 +11,10 @@ import net.dankito.ksoup.select.Elements
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import java.io.IOException
 
 class SessionTest {
+
     @Test
-    @Throws(IOException::class)
     fun testPathScopedCookies() {
         val session = newSession()
         val userAgent = "Jsoup Testalot v0.1"
@@ -76,7 +75,6 @@ class SessionTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun testPathScopedCookiesOnRedirect() {
         val session = newSession()
         val doc1: Document = session.newRequest()
@@ -99,7 +97,6 @@ class SessionTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun testCanChangeParsers() {
         val session = newSession().parser(xmlParser())
         val xmlUrl: String = FileServlet.Companion.urlTo("/htmltests/xml-test.xml")

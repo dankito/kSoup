@@ -5,7 +5,7 @@ import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.internal.Normalizer
 import net.dankito.ksoup.internal.StringUtil
 import net.dankito.ksoup.parser.ParseSettings
-import java.io.IOException
+import net.dankito.ksoup.jvm.IOException
 import java.util.*
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -372,7 +372,6 @@ class Attributes : Iterable<Attribute>, java.lang.Cloneable {
         return StringUtil.releaseBuilder(sb)
     }
 
-    @Throws(IOException::class)
     fun html(accum: Appendable, out: Document.OutputSettings) {
         val sz = size
         for (i in 0 until sz) {

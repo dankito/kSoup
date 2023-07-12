@@ -26,8 +26,7 @@ class ConstrainableInputStream private constructor(`in`: InputStream?, bufferSiz
         startTime = System.nanoTime()
     }
 
-    @Throws(IOException::class)
-    public override fun read(b: ByteArray, off: Int, len: Int): Int {
+    override fun read(b: ByteArray, off: Int, len: Int): Int {
         var len: Int = len
         if (interrupted || capped && remaining <= 0) return -1
         if (Thread.interrupted()) {
@@ -50,7 +49,6 @@ class ConstrainableInputStream private constructor(`in`: InputStream?, bufferSiz
      * Reads this inputstream to a ByteBuffer. The supplied max may be less than the inputstream's max, to support
      * reading just the first bytes.
      */
-    @Throws(IOException::class)
     fun readToByteBuffer(max: Int): ByteBuffer {
         Validate.isTrue(max >= 0, "maxSize must be 0 (unlimited) or larger")
         val localCapped: Boolean = max > 0 // still possibly capped in total stream
@@ -74,7 +72,6 @@ class ConstrainableInputStream private constructor(`in`: InputStream?, bufferSiz
         return ByteBuffer.wrap(outStream.toByteArray())
     }
 
-    @Throws(IOException::class)
     override fun reset() {
         super.reset()
         remaining = maxSize - markpos

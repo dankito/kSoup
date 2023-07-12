@@ -13,9 +13,9 @@ import java.util.stream.Stream
  * some of these are timeout tests - run each file 100 times and ensure under time.
  */
 class FuzzFixesIT {
+
     @ParameterizedTest
     @MethodSource("testFiles")
-    @Throws(IOException::class)
     fun testHtmlParse(file: File) {
         val startTime = System.currentTimeMillis()
         val completeBy: Long = startTime + timeout * 1000L
@@ -30,7 +30,6 @@ class FuzzFixesIT {
 
     @ParameterizedTest
     @MethodSource("testFiles")
-    @Throws(IOException::class)
     fun testXmlParse(file: File) {
         val startTime = System.currentTimeMillis()
         val completeBy: Long = startTime + timeout * 1000L

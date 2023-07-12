@@ -1,7 +1,6 @@
 package net.dankito.ksoup.integration.servlets
 
 import net.dankito.ksoup.integration.TestServer
-import java.io.IOException
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
@@ -9,7 +8,7 @@ import javax.servlet.http.HttpServletResponse
  * Slowly, interminably writes output. For the purposes of testing timeouts and interrupts.
  */
 class SlowRider : BaseServlet() {
-    @Throws(IOException::class)
+
     override fun doGet(req: HttpServletRequest, res: HttpServletResponse) {
         pause(1000)
         res.contentType = BaseServlet.Companion.TextHtml

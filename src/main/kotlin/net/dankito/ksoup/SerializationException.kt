@@ -2,7 +2,7 @@ package net.dankito.ksoup
 
 /**
  * A SerializationException is raised whenever serialization of a DOM element fails. This exception usually wraps an
- * [java.io.IOException] that may be thrown due to an inaccessible output stream.
+ * [net.dankito.ksoup.jvm.IOException] that may be thrown due to an inaccessible output stream.
  */
 class SerializationException : RuntimeException {
     /**

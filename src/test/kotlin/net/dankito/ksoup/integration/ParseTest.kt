@@ -18,8 +18,8 @@ import java.util.zip.GZIPInputStream
  * @author Jonathan Hedley, jonathan@hedley.net
  */
 class ParseTest {
+
     @Test
-    @Throws(IOException::class)
     fun testHtml5Charset() {
         // test that <meta charset="gb2312"> works
         var `in`: File = getFile("/htmltests/meta-charset-1.html")
@@ -41,7 +41,6 @@ class ParseTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun testBrokenHtml5CharsetWithASingleDoubleQuote() {
         val `in`: InputStream = inputStreamFrom(
             """
@@ -56,7 +55,6 @@ class ParseTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun testLowercaseUtf8Charset() {
         val `in`: File = getFile("/htmltests/lowercase-charset-test.html")
         val doc = parse(`in`, null)
@@ -66,7 +64,6 @@ class ParseTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun testXwiki() {
         // https://github.com/jhy/jsoup/issues/1324
         // this tests that when in CharacterReader we hit a buffer while marked, we preserve the mark when buffered up and can rewind
@@ -82,7 +79,6 @@ class ParseTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun testXwikiExpanded() {
         // https://github.com/jhy/jsoup/issues/1324
         // this tests that if there is a huge illegal character reference, we can get through a buffer and rewind, and still catch that it's an invalid refence,
@@ -101,7 +97,6 @@ class ParseTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun testWikiExpandedFromString() {
         val `in`: File = getFile("/htmltests/xwiki-edit.html.gz")
         val html: String = getFileAsString(`in`)
@@ -113,7 +108,6 @@ class ParseTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun testWikiFromString() {
         val `in`: File = getFile("/htmltests/xwiki-1324.html.gz")
         val html: String = getFileAsString(`in`)
@@ -125,7 +119,6 @@ class ParseTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun testFileParseNoCharsetMethod() {
         val `in`: File = getFile("/htmltests/xwiki-1324.html.gz")
         val doc = parse(`in`)
@@ -146,7 +139,6 @@ class ParseTest {
             return ByteArrayInputStream(s.toByteArray(StandardCharsets.UTF_8))
         }
 
-        @Throws(IOException::class)
         fun getFileAsString(file: File): String {
             val bytes: ByteArray
             bytes = if (file.name.endsWith(".gz")) {

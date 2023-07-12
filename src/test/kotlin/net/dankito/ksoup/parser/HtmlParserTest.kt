@@ -1336,7 +1336,6 @@ class HtmlParserTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun testInvalidTableContents() {
         val `in`: File = ParseTest.getFile("/htmltests/table-invalid-elements.html")
         val doc = Jsoup.parse(`in`, "UTF-8")
@@ -1562,7 +1561,6 @@ class HtmlParserTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun testTemplateInsideTable() {
         val `in`: File = ParseTest.Companion.getFile("/htmltests/table-polymer-template.html")
         val doc = Jsoup.parse(`in`, "UTF-8")
@@ -1600,7 +1598,6 @@ class HtmlParserTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun handlesXmlDeclAndCommentsBeforeDoctype() {
         val `in`: File = ParseTest.Companion.getFile("/htmltests/comments.html")
         val doc = Jsoup.parse(`in`, "UTF-8")
@@ -1612,7 +1609,6 @@ class HtmlParserTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun fallbackToUtfIfCantEncode() {
         // that charset can't be encoded, so make sure we flip to utf
         val `in` = "<html><meta charset=\"ISO-2022-CN\"/>One</html>"
@@ -1627,7 +1623,6 @@ class HtmlParserTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun characterReaderBuffer() {
         val `in`: File = ParseTest.Companion.getFile("/htmltests/character-reader-buffer.html.gz")
         val doc = Jsoup.parse(`in`, "UTF-8")

@@ -1,5 +1,6 @@
 package net.dankito.ksoup
 
+import net.dankito.ksoup.jvm.IOException
 import net.dankito.ksoup.nodes.Document
 import net.dankito.ksoup.parser.Parser
 import java.io.*
@@ -324,7 +325,6 @@ interface Connection {
      * @throws java.net.SocketTimeoutException if the connection times out
      * @throws IOException on error
      */
-    @Throws(IOException::class)
     fun get(): Document
 
     /**
@@ -336,7 +336,6 @@ interface Connection {
      * @throws java.net.SocketTimeoutException if the connection times out
      * @throws IOException on error
      */
-    @Throws(IOException::class)
     fun post(): Document
 
     /**
@@ -348,7 +347,6 @@ interface Connection {
      * @throws java.net.SocketTimeoutException if the connection times out
      * @throws IOException on error
      */
-    @Throws(IOException::class)
     fun execute(): Response
 
     /**
@@ -733,7 +731,6 @@ interface Connection {
          * @return a parsed Document
          * @throws IOException on error
          */
-        @Throws(IOException::class)
         fun parse(): Document
 
         /**

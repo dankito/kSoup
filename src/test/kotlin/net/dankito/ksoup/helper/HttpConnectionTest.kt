@@ -8,7 +8,6 @@ import net.dankito.ksoup.helper.HttpConnection.KeyVal.Companion.create
 import net.dankito.ksoup.integration.ParseTest
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.io.IOException
 import java.net.*
 import java.util.*
 
@@ -279,7 +278,6 @@ class HttpConnectionTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun noUrlThrowsValidationError() {
         val con = HttpConnection()
         var threw = false
@@ -299,7 +297,6 @@ class HttpConnectionTest {
     }
 
     @Test
-    @Throws(MalformedURLException::class)
     fun supportsInternationalDomainNames() {
         val idn = "https://www.测试.测试/foo.html?bar"
         val puny = "https://www.xn--0zwm56d.xn--0zwm56d/foo.html?bar"
@@ -311,7 +308,6 @@ class HttpConnectionTest {
     }
 
     @Test
-    @Throws(MalformedURLException::class)
     fun supportsIdnWithPort() {
         val idn = "https://www.测试.测试:9001/foo.html?bar"
         val puny = "https://www.xn--0zwm56d.xn--0zwm56d:9001/foo.html?bar"
@@ -323,7 +319,6 @@ class HttpConnectionTest {
     }
 
     @Test
-    @Throws(IOException::class)
     fun validationErrorsOnExecute() {
         val con: Connection = HttpConnection()
         var urlThrew = false

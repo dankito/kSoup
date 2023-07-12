@@ -2,12 +2,11 @@ package net.dankito.ksoup.integration.servlets
 
 import net.dankito.ksoup.integration.TestServer
 import net.dankito.ksoup.parser.CharacterReaderTest
-import java.io.IOException
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 class InterruptedServlet : BaseServlet() {
-    @Throws(IOException::class)
+
     override fun doGet(req: HttpServletRequest, res: HttpServletResponse) {
         var magnitude = req.getParameter(Magnitude)
         magnitude = magnitude ?: ""

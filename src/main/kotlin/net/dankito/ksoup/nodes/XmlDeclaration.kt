@@ -3,7 +3,6 @@ package net.dankito.ksoup.nodes
 import net.dankito.ksoup.SerializationException
 import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.internal.StringUtil
-import java.io.IOException
 
 /**
  * An XML Declaration.
@@ -39,13 +38,12 @@ class XmlDeclaration(
             val sb = StringUtil.borrowBuilder()
             try {
                 getWholeDeclaration(sb, Document.OutputSettings())
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 throw SerializationException(e)
             }
             return StringUtil.releaseBuilder(sb).trim { it <= ' ' }
         }
 
-    @Throws(IOException::class)
     private fun getWholeDeclaration(accum: Appendable, out: Document.OutputSettings) {
         for (attribute in attributes()) {
             val key = attribute.key
@@ -64,7 +62,6 @@ class XmlDeclaration(
         }
     }
 
-    @Throws(IOException::class)
     override fun outerHtmlHead(accum: Appendable, depth: Int, out: Document.OutputSettings) {
         accum
             .append("<")
