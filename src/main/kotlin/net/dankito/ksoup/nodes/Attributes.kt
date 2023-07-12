@@ -4,6 +4,7 @@ import net.dankito.ksoup.SerializationException
 import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.internal.Normalizer
 import net.dankito.ksoup.internal.StringUtil
+import net.dankito.ksoup.jvm.Cloneable
 import net.dankito.ksoup.parser.ParseSettings
 import net.dankito.ksoup.jvm.IOException
 import java.util.*
@@ -25,7 +26,7 @@ import kotlin.contracts.contract
  *
  * @author Jonathan Hedley, jonathan@hedley.net
  */
-class Attributes : Iterable<Attribute>, java.lang.Cloneable {
+class Attributes : Iterable<Attribute>, Cloneable<Attributes> {
     // the number of instance fields is kept as low as possible giving an object size of 24 bytes
     private var size = 0 // number of slots used (not total capacity, which is keys.length)
     var keys = arrayOfNulls<String>(InitialCapacity)
@@ -421,7 +422,7 @@ class Attributes : Iterable<Attribute>, java.lang.Cloneable {
         return result
     }
 
-    fun clone(): Attributes {
+    override fun clone(): Attributes {
         // TODO: does this work?
         val clone: Attributes = Attributes()
 //        val clone: Attributes

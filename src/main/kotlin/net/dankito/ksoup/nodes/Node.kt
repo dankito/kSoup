@@ -3,6 +3,7 @@ package net.dankito.ksoup.nodes
 import net.dankito.ksoup.SerializationException
 import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.internal.StringUtil
+import net.dankito.ksoup.jvm.Cloneable
 import net.dankito.ksoup.select.GenericNodeVisitor
 import net.dankito.ksoup.select.NodeFilter
 import net.dankito.ksoup.select.NodeTraversor
@@ -14,11 +15,7 @@ import java.util.*
  *
  * @author Jonathan Hedley, jonathan@hedley.net
  */
-abstract class Node
-/**
- * Default constructor. Doesn't set up base uri, children, or attributes; use with caution.
- */
-protected constructor() : java.lang.Cloneable {
+abstract class Node protected constructor() : Cloneable<Node> {
 
     /**
      * Gets this node's parent node. Not overridable by extending classes, so useful if you really just need the Node type.
@@ -762,7 +759,7 @@ protected constructor() : java.lang.Cloneable {
      * @return a stand-alone cloned node, including clones of any children
      * @see .shallowClone
      */
-    open fun clone(): Node {
+    override fun clone(): Node {
         val thisClone = doClone(null) // splits for orphan
 
         // Queue up nodes that need their children cloned (BFS).
