@@ -89,16 +89,14 @@ class ParseTest {
         // and the parse tree is correct.
         val `in`: File = getFile("/htmltests/xwiki-edit.html.gz")
         val parser = htmlParser()
-        val doc =
-            parse(GZIPInputStream(FileInputStream(`in`)), "UTF-8", "https://localhost/", parser.setTrackErrors(100))
+        val doc = parse(GZIPInputStream(FileInputStream(`in`)), "UTF-8", "https://localhost/", parser.setTrackErrors(100))
         val errors = parser.errors
         Assertions.assertEquals("XWiki Jetty HSQLDB 12.1-SNAPSHOT", doc.select("#xwikiplatformversion").text())
         Assertions.assertEquals(0, errors.size) // not an invalid reference because did not look legit
 
         // was getting busted at =userdirectory, because it hit the bufferup point but the mark was then lost. so
         // updated to preserve the mark.
-        val wantHtml =
-            "<a class=\"list-group-item\" data-id=\"userdirectory\" href=\"/xwiki/bin/admin/XWiki/XWikiPreferences?editor=globaladmin&amp;RIGHTHERERIGHTHERERIGHTHERERIGHTHERE"
+        val wantHtml = "<a class=\"list-group-item\" data-id=\"userdirectory\" href=\"/xwiki/bin/admin/XWiki/XWikiPreferences?editor=globaladmin&amp;RIGHTHERERIGHTHERERIGHTHERERIGHTHERE"
         Assertions.assertTrue(doc.select("[data-id=userdirectory]").outerHtml().startsWith(wantHtml))
     }
 

@@ -13,13 +13,13 @@ import kotlin.math.min
  */
 class CharacterReader @JvmOverloads constructor(private val reader: Reader, sz: Int = maxBufferLen) {
     private var charBuf = CharArray(min(sz, maxBufferLen))
+
     private var bufLength = 0
     private var bufSplitPoint = 0
     private var bufPos = 0
     private var readerPos = 0
     private var bufMark = -1
-    private var stringCache: Array<String?>? =
-        arrayOfNulls(stringCacheSize) // holds reused strings in this doc, to lessen garbage
+    private var stringCache: Array<String?> = arrayOfNulls(stringCacheSize) // holds reused strings in this doc, to lessen garbage
 
     private var newlinePositions: MutableList<Int>? = null // optionally track the pos() position of newlines - scans during bufferUp()
     private var lineNumberOffset = 1 // line numbers start at 1; += newlinePosition[indexof(pos)]
@@ -44,12 +44,15 @@ class CharacterReader @JvmOverloads constructor(private val reader: Reader, sz: 
             reader.close()
         } catch (ignored: IOException) {
         } finally {
-            stringCache = null
+            stringCache = arrayOfNulls(stringCacheSize)
         }
     }
 
     private fun bufferUp() {
-        if (readFully || bufPos < bufSplitPoint) return
+        if (readFully || bufPos < bufSplitPoint) {
+            return
+        }
+
         val pos: Int
         val offset: Int
         if (bufMark != -1) {
@@ -59,17 +62,20 @@ class CharacterReader @JvmOverloads constructor(private val reader: Reader, sz: 
             pos = bufPos
             offset = 0
         }
+
         try {
-            val skipped: Long = reader.skip(pos.toLong())
+            val skipped = reader.skip(pos.toLong())
             reader.mark(maxBufferLen)
             var read = 0
             while (read <= minReadAheadLen) {
-                val thisRead: Int = reader.read(charBuf, read, charBuf.size - read)
+                val thisRead = reader.read(charBuf, read, charBuf.size - read)
                 if (thisRead == -1) readFully = true
                 if (thisRead <= 0) break
                 read += thisRead
             }
+
             reader.reset()
+
             if (read > 0) {
                 Validate.isTrue(skipped == pos.toLong()) // Previously asserted that there is room in buf to skip, so this will be a WTF
                 bufLength = read
@@ -81,6 +87,7 @@ class CharacterReader @JvmOverloads constructor(private val reader: Reader, sz: 
         } catch (e: IOException) {
             throw UncheckedIOException(e)
         }
+
         scanBufferForNewlines() // if enabled, we index newline positions for line number tracking
         lastIcSeq = null // cache for last containsIgnoreCase(seq)
     }
@@ -110,15 +117,17 @@ class CharacterReader @JvmOverloads constructor(private val reader: Reader, sz: 
         if (track && newlinePositions == null) {
             newlinePositions = ArrayList(maxBufferLen / 80) // rough guess of likely count
             scanBufferForNewlines() // first pass when enabled; subsequently called during bufferUp
-        } else if (!track) newlinePositions = null
+        } else if (!track) {
+            newlinePositions = null
+        }
     }
 
+    /**
+     * Check if the tracking of newlines is enabled.
+     * @return the current newline tracking state
+     * @since 1.14.3
+     */
     val isTrackNewlines: Boolean
-        /**
-         * Check if the tracking of newlines is enabled.
-         * @return the current newline tracking state
-         * @since 1.14.3
-         */
         get() = newlinePositions != null
 
     /**
@@ -134,9 +143,16 @@ class CharacterReader @JvmOverloads constructor(private val reader: Reader, sz: 
     fun lineNumber(pos: Int): Int {
         // note that this impl needs to be called before the next buffer up or line numberoffset will be wrong. if that
         // causes issues, can remove the reset of newlinepositions during buffer, at the cost of a larger tracking array
-        if (!isTrackNewlines) return 1
+        if (!isTrackNewlines) {
+            return 1
+        }
+
         val i = lineNumIndex(pos)
-        return if (i == -1) lineNumberOffset /* first line */ else i + lineNumberOffset + 1
+        return if (i == -1) { /* first line */
+            lineNumberOffset
+        } else {
+            i + lineNumberOffset + 1
+        }
     }
 
     /**
@@ -150,9 +166,16 @@ class CharacterReader @JvmOverloads constructor(private val reader: Reader, sz: 
     }
 
     fun columnNumber(pos: Int): Int {
-        if (!isTrackNewlines) return pos + 1
+        if (!isTrackNewlines) {
+            return pos + 1
+        }
+
         val i = lineNumIndex(pos)
-        return if (i == -1) pos + 1 else pos - (newlinePositions?.get(i) ?: 0) + 1
+        return if (i == -1) {
+            pos + 1
+        } else {
+            pos - (newlinePositions?.get(i) ?: 0) + 1
+        }
     }
 
     /**
@@ -167,15 +190,17 @@ class CharacterReader @JvmOverloads constructor(private val reader: Reader, sz: 
     }
 
     private fun lineNumIndex(pos: Int): Int {
-        return newlinePositions?.let { newlinePositions ->
-            var i: Int = newlinePositions.binarySearch(pos)
-            if (i < -1) {
-                abs(i) - 2
-            } else {
-                i
-            }
-        } ?: 0
+        val newlinePositions = this.newlinePositions
+        if (newlinePositions == null) {
+            return 0
+        }
 
+        val i = newlinePositions.binarySearch(pos)
+        return if (i < -1) {
+            abs(i) - 2
+        } else {
+            i
+        }
     }
 
     /**
@@ -199,17 +224,18 @@ class CharacterReader @JvmOverloads constructor(private val reader: Reader, sz: 
         }
     }
 
+    /**
+     * Tests if all the content has been read.
+     * @return true if nothing left to read.
+     */
     val isEmpty: Boolean
-        /**
-         * Tests if all the content has been read.
-         * @return true if nothing left to read.
-         */
         get() {
             bufferUp()
             return bufPos >= bufLength
         }
+
     private val isEmptyNoBufferUp: Boolean
-        private get() = bufPos >= bufLength
+        get() = bufPos >= bufLength
 
     /**
      * Get the char at the current position.
@@ -643,7 +669,7 @@ class CharacterReader @JvmOverloads constructor(private val reader: Reader, sz: 
          * That saves both having to create objects as hash keys, and running through the entry list, at the expense of
          * some more duplicates.
          */
-        private fun cacheString(charBuf: CharArray, stringCache: Array<String?>?, start: Int, count: Int): String {
+        private fun cacheString(charBuf: CharArray, stringCache: Array<String?>, start: Int, count: Int): String {
             // limit (no cache):
             if (count > maxStringCacheLen) return charBuf.concatToString(start, start + count)
             if (count < 1) return ""
@@ -656,7 +682,7 @@ class CharacterReader @JvmOverloads constructor(private val reader: Reader, sz: 
 
             // get from cache
             val index = hash and stringCacheSize - 1
-            var cached = stringCache!![index]
+            var cached = stringCache[index]
             if (cached != null && rangeEquals(charBuf, start, count, cached)) // positive hit
                 return cached else {
                 cached = charBuf.concatToString(start, start + count)

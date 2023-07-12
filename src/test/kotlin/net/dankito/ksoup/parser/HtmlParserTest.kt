@@ -3,7 +3,6 @@ package net.dankito.ksoup.parser
 import net.dankito.ksoup.Jsoup
 import net.dankito.ksoup.Jsoup.clean
 import net.dankito.ksoup.Jsoup.isValid
-import net.dankito.ksoup.Jsoup.parse
 import net.dankito.ksoup.Jsoup.parseBodyFragment
 import net.dankito.ksoup.TextUtil
 import net.dankito.ksoup.integration.ParseTest
@@ -123,7 +122,7 @@ class HtmlParserTest {
         // <!-----> is not a parse error
         val html = "<!------>"
         val parser = htmlParser().setTrackErrors(10)
-        val doc = parse(html, parser)
+        val doc = Jsoup.parse(html, parser)
         val comment = doc.childNode(0) as Comment
         Assertions.assertEquals("--", comment.data)
         Assertions.assertEquals(0, parser.errors.size)
@@ -369,7 +368,7 @@ class HtmlParserTest {
     fun handlesBaseTags() {
         // only listen to the first base href
         val h = "<a href=1>#</a><base href='/2/'><a href='3'>#</a><base href='http://bar'><a href=/4>#</a>"
-        val doc = parse(h, "http://foo/")
+        val doc = Jsoup.parse(h, "http://foo/")
         Assertions.assertEquals("http://foo/2/", doc.baseUri()) // gets set once, so doc and descendants have first only
         val anchors = doc.getElementsByTag("a")
         Assertions.assertEquals(3, anchors.size)
@@ -385,7 +384,7 @@ class HtmlParserTest {
     fun handlesProtocolRelativeUrl() {
         val base = "https://example.com/"
         val html = "<img src='//example.net/img.jpg'>"
-        val doc = parse(html, base)
+        val doc = Jsoup.parse(html, base)
         val el = doc.select("img").first()
         Assertions.assertEquals("https://example.net/img.jpg", el!!.absUrl("src"))
     }
@@ -667,7 +666,7 @@ class HtmlParserTest {
     @Test
     fun handlesBaseWithoutHref() {
         val h = "<head><base target='_blank'></head><body><a href=/foo>Test</a></body>"
-        val doc = parse(h, "http://example.com/")
+        val doc = Jsoup.parse(h, "http://example.com/")
         val a = doc.select("a").first()
         Assertions.assertEquals("/foo", a!!.attr("href"))
         Assertions.assertEquals("http://example.com/foo", a.attr("abs:href"))
@@ -1098,7 +1097,7 @@ class HtmlParserTest {
     fun tracksErrorsWhenRequested() {
         val html = "<p>One</p href='no'>\n<!DOCTYPE html>\n&arrgh;<font />&#33 &amp &#xD800;<br /></div><foo"
         val parser = htmlParser().setTrackErrors(500)
-        val doc = parse(html, "http://example.com", parser)
+        val doc = Jsoup.parse(html, "http://example.com", parser)
         val errors: List<ParseError> = parser.errors
         Assertions.assertEquals(9, errors.size)
         Assertions.assertEquals("<1:21>: Attributes incorrectly present on end tag [/p]", errors[0].toString())
@@ -1152,7 +1151,7 @@ class HtmlParserTest {
     fun noErrorsByDefault() {
         val html = "<p>One</p href='no'>&arrgh;<font /><br /><foo"
         val parser = htmlParser()
-        val doc = parse(html, "http://example.com", parser)
+        val doc = Jsoup.parse(html, "http://example.com", parser)
         val errors: List<ParseError> = parser.errors
         Assertions.assertEquals(0, errors.size)
     }
@@ -1161,7 +1160,7 @@ class HtmlParserTest {
     fun optionalPClosersAreNotErrors() {
         val html = "<body><div><p>One<p>Two</div></body>"
         val parser = htmlParser().setTrackErrors(128)
-        val doc = parse(html, "", parser)
+        val doc = Jsoup.parse(html, "", parser)
         val errors = parser.errors
         Assertions.assertEquals(0, errors.size)
     }
@@ -1340,7 +1339,7 @@ class HtmlParserTest {
     @Throws(IOException::class)
     fun testInvalidTableContents() {
         val `in`: File = ParseTest.getFile("/htmltests/table-invalid-elements.html")
-        val doc = parse(`in`, "UTF-8")
+        val doc = Jsoup.parse(`in`, "UTF-8")
         doc.outputSettings().prettyPrint(true)
         val rendered = doc.toString()
         val endOfEmail = rendered.indexOf("Comment")
@@ -1566,7 +1565,7 @@ class HtmlParserTest {
     @Throws(IOException::class)
     fun testTemplateInsideTable() {
         val `in`: File = ParseTest.Companion.getFile("/htmltests/table-polymer-template.html")
-        val doc = parse(`in`, "UTF-8")
+        val doc = Jsoup.parse(`in`, "UTF-8")
         doc.outputSettings().prettyPrint(true)
         val templates = doc.body().getElementsByTag("template")
         for (template in templates) {
@@ -1604,7 +1603,7 @@ class HtmlParserTest {
     @Throws(IOException::class)
     fun handlesXmlDeclAndCommentsBeforeDoctype() {
         val `in`: File = ParseTest.Companion.getFile("/htmltests/comments.html")
-        val doc = parse(`in`, "UTF-8")
+        val doc = Jsoup.parse(`in`, "UTF-8")
         Assertions.assertEquals(
             "<!--?xml version=\"1.0\" encoding=\"utf-8\"?--><!-- so --> <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"><!-- what --> <html xml:lang=\"en\" lang=\"en\" xmlns=\"http://www.w3.org/1999/xhtml\"> <!-- now --> <head> <!-- then --> <meta http-equiv=\"Content-type\" content=\"text/html; charset=utf-8\"> <title>A Certain Kind of Test</title> </head> <body> <h1>Hello</h1>h1&gt; (There is a UTF8 hidden BOM at the top of this file.) </body> </html>",
             StringUtil.normaliseWhitespace(doc.html())
@@ -1617,7 +1616,7 @@ class HtmlParserTest {
     fun fallbackToUtfIfCantEncode() {
         // that charset can't be encoded, so make sure we flip to utf
         val `in` = "<html><meta charset=\"ISO-2022-CN\"/>One</html>"
-        val doc = parse(ByteArrayInputStream(`in`.toByteArray()), null, "")
+        val doc = Jsoup.parse(ByteArrayInputStream(`in`.toByteArray()), null, "")
         Assertions.assertEquals("UTF-8", doc.charset()!!.name())
         Assertions.assertEquals("One", doc.text())
         val html = doc.outerHtml()
@@ -1631,7 +1630,7 @@ class HtmlParserTest {
     @Throws(IOException::class)
     fun characterReaderBuffer() {
         val `in`: File = ParseTest.Companion.getFile("/htmltests/character-reader-buffer.html.gz")
-        val doc = parse(`in`, "UTF-8")
+        val doc = Jsoup.parse(`in`, "UTF-8")
         val expectedHref = "http://www.domain.com/path?param_one=value&param_two=value"
         val links = doc.select("a")
         Assertions.assertEquals(2, links.size)
@@ -1683,7 +1682,7 @@ class HtmlParserTest {
  <p>2</p>
 </body>""", doc.body().outerHtml()
         )
-        val caseDoc = parse(html, "", htmlParser().settings(ParseSettings.preserveCase))
+        val caseDoc = Jsoup.parse(html, "", htmlParser().settings(ParseSettings.preserveCase))
         Assertions.assertEquals(
             """<body>
  <p>1</p>
@@ -1755,7 +1754,7 @@ class HtmlParserTest {
         var doc = Jsoup.parse("<script>Hello</script><style>There</style>")
         Assertions.assertTrue(doc.selectFirst("script")!!.childNode(0) is DataNode)
         Assertions.assertTrue(doc.selectFirst("style")!!.childNode(0) is DataNode)
-        doc = parse("<SCRIPT>Hello</SCRIPT><STYLE>There</STYLE>", "", htmlParser().settings(ParseSettings.preserveCase))
+        doc = Jsoup.parse("<SCRIPT>Hello</SCRIPT><STYLE>There</STYLE>", "", htmlParser().settings(ParseSettings.preserveCase))
         Assertions.assertTrue(doc.selectFirst("script")!!.childNode(0) is DataNode)
         Assertions.assertTrue(doc.selectFirst("style")!!.childNode(0) is DataNode)
     }
@@ -1765,7 +1764,7 @@ class HtmlParserTest {
         val html = "<TEXTAREA>YES YES</TEXTAREA>"
         var doc = Jsoup.parse(html)
         Assertions.assertEquals("YES YES", doc.selectFirst("textarea")!!.value())
-        doc = parse(html, "", htmlParser().settings(ParseSettings.preserveCase))
+        doc = Jsoup.parse(html, "", htmlParser().settings(ParseSettings.preserveCase))
         Assertions.assertEquals("YES YES", doc.selectFirst("textarea")!!.value())
     }
 
@@ -1838,7 +1837,7 @@ class HtmlParserTest {
     private fun didAddElements(input: String): Boolean {
         // two passes, one as XML and one as HTML. XML does not vivify missing/optional tags
         val html = Jsoup.parse(input)
-        val xml = parse(input, "", xmlParser())
+        val xml = Jsoup.parse(input, "", xmlParser())
         val htmlElementCount = html.allElements.size
         val xmlElementCount = xml.allElements.size
         return htmlElementCount > xmlElementCount
@@ -2046,7 +2045,7 @@ class HtmlParserTest {
     fun errorsBeforeHtml() {
         val parser = htmlParser()
         parser.setTrackErrors(10)
-        val doc = parse("<!doctype html><!doctype something></div>", parser)
+        val doc = Jsoup.parse("<!doctype html><!doctype something></div>", parser)
         val errors = parser.errors
         Assertions.assertEquals(2, errors.size)
         Assertions.assertEquals(
@@ -2067,7 +2066,7 @@ class HtmlParserTest {
     fun afterHeadReAdds() {
         val parser = htmlParser()
         parser.setTrackErrors(10)
-        val doc = parse("<head></head><meta charset=UTF8><p>Hello", parser)
+        val doc = Jsoup.parse("<head></head><meta charset=UTF8><p>Hello", parser)
         val errors = parser.errors
         Assertions.assertEquals(1, errors.size)
         Assertions.assertEquals(
@@ -2105,7 +2104,7 @@ class HtmlParserTest {
             "<ruby><rbc><rb>10</rb><rb>31</rb><rb>2002</rb></rbc><rtc><rt>Month</rt><rt>Day</rt><rt>Year</rt></rtc><rtc><rt>Expiration Date</rt><rp>(*)</rtc></ruby>"
         val parser = htmlParser()
         parser.setTrackErrors(10)
-        val doc = parse(html, parser)
+        val doc = Jsoup.parse(html, parser)
         val errors = parser.errors
         Assertions.assertEquals(3, errors.size)
         val ruby = doc.expectFirst("ruby")
@@ -2124,7 +2123,7 @@ class HtmlParserTest {
         val html = "<ruby><rp>(<rt>Hello<rt>Hello<rp>)</ruby>\n"
         val parser = htmlParser()
         parser.setTrackErrors(10)
-        val doc = parse(html, parser)
+        val doc = Jsoup.parse(html, parser)
         Assertions.assertEquals(0, parser.errors.size)
         val ruby = doc.expectFirst("ruby")
         Assertions.assertEquals(
@@ -2138,7 +2137,7 @@ class HtmlParserTest {
         val html = "<ruby><div><rp>Hello"
         val parser = htmlParser()
         parser.setTrackErrors(10)
-        val doc = parse(html, parser)
+        val doc = Jsoup.parse(html, parser)
         val errors = parser.errors
         Assertions.assertEquals(2, errors.size)
         val ruby = doc.expectFirst("ruby")
@@ -2154,7 +2153,7 @@ class HtmlParserTest {
         val html = "<div>"
         val parser = htmlParser()
         parser.setTrackErrors(10)
-        val doc = parse(html, parser)
+        val doc = Jsoup.parse(html, parser)
         val errors = parser.errors
         Assertions.assertEquals(1, errors.size)
         Assertions.assertEquals("Unexpected EOF token [] when in state [InBody]", errors[0].errorMessage)
@@ -2165,7 +2164,7 @@ class HtmlParserTest {
         val html = "<body>"
         val parser = htmlParser()
         parser.setTrackErrors(10)
-        val doc = parse(html, parser)
+        val doc = Jsoup.parse(html, parser)
         val errors = parser.errors
         Assertions.assertEquals(0, errors.size)
     }
