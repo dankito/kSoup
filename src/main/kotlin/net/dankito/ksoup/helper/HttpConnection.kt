@@ -1170,17 +1170,13 @@ class HttpConnection : Connection {
          * Many users would get caught by not setting a user-agent and therefore getting different responses on their desktop
          * vs in jsoup, which would otherwise default to `Java`. So by default, use a desktop UA.
          */
-        @JvmField
-        val DEFAULT_UA: String =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
-        private val USER_AGENT: String = "User-Agent"
-        @JvmField
-        val CONTENT_TYPE: String = "Content-Type"
-        @JvmField
-        val MULTIPART_FORM_DATA: String = "multipart/form-data"
-        val FORM_URL_ENCODED: String = "application/x-www-form-urlencoded"
-        private val HTTP_TEMP_REDIR: Int = 307 // http/1.1 temporary redirect, not in Java's set.
-        private val DefaultUploadType: String = "application/octet-stream"
+        const val DEFAULT_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
+        private const val USER_AGENT = "User-Agent"
+        const val CONTENT_TYPE = "Content-Type"
+        const val MULTIPART_FORM_DATA = "multipart/form-data"
+        const val FORM_URL_ENCODED = "application/x-www-form-urlencoded"
+        private const val HTTP_TEMP_REDIR = 307 // http/1.1 temporary redirect, not in Java's set.
+        private const val DefaultUploadType = "application/octet-stream"
         private val ISO_8859_1: Charset = Charset.forName("ISO-8859-1")
 
         /**

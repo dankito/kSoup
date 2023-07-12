@@ -27,15 +27,12 @@ object DataUtil {
     private val charsetRegex = Regex("(?i)\\bcharset=\\s*(?:[\"'])?([^\\s,;\"']*)")
     private val illegalCharsetCharacters = "[\"']".toRegex()
 
-    @JvmField
     val UTF_8: Charset = Charset.forName("UTF-8") // Don't use StandardCharsets, as those only appear in Android API 19, and we target 10.
     val defaultCharsetName: String = UTF_8.name() // used if not found in header or meta charset
-    private val firstReadBufferSize: Int = 1024 * 5
-    val bufferSize: Int = 1024 * 32
-    private val mimeBoundaryChars: CharArray =
-        "-_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray()
-    @JvmField
-    val boundaryLength: Int = 32
+    private const val firstReadBufferSize = 1024 * 5
+    const val bufferSize = 1024 * 32
+    private val mimeBoundaryChars = "-_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray()
+    const val boundaryLength: Int = 32
 
 
     /**

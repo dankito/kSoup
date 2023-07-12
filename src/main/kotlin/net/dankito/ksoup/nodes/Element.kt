@@ -23,7 +23,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
 
     private var shadowChildrenRef: WeakReference<List<Element>>? =
         null // points to child elements shadowed from node children
-    @JvmField
+
     var childNodes: MutableList<Node>
 
     /**

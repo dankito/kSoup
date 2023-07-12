@@ -61,13 +61,11 @@ class ParseSettings
         /**
          * HTML default settings: both tag and attribute names are lower-cased during parsing.
          */
-        @JvmField
         val htmlDefault = ParseSettings(false, false)
 
         /**
          * Preserve both tag and attribute case.
          */
-        @JvmField
         val preserveCase = ParseSettings(true, true)
 
         /** Returns the normal name that a Tag will have (trimmed and lower-cased)  */

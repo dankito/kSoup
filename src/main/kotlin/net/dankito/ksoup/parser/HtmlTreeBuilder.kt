@@ -858,13 +858,13 @@ class HtmlTreeBuilder : TreeBuilder() {
 
     companion object {
         // tag searches. must be sorted, used in inSorted. HtmlTreeBuilderTest validates they're sorted.
-        @JvmField val TagsSearchInScope = arrayOf("applet", "caption", "html", "marquee", "object", "table", "td", "th")
-        @JvmField val TagSearchList = arrayOf("ol", "ul")
-        @JvmField val TagSearchButton = arrayOf("button")
-        @JvmField val TagSearchTableScope = arrayOf("html", "table")
-        @JvmField val TagSearchSelectScope = arrayOf("optgroup", "option")
-        @JvmField val TagSearchEndTags = arrayOf("dd", "dt", "li", "optgroup", "option", "p", "rb", "rp", "rt", "rtc")
-        @JvmField val TagThoroughSearchEndTags = arrayOf(
+        val TagsSearchInScope = arrayOf("applet", "caption", "html", "marquee", "object", "table", "td", "th")
+        val TagSearchList = arrayOf("ol", "ul")
+        val TagSearchButton = arrayOf("button")
+        val TagSearchTableScope = arrayOf("html", "table")
+        val TagSearchSelectScope = arrayOf("optgroup", "option")
+        val TagSearchEndTags = arrayOf("dd", "dt", "li", "optgroup", "option", "p", "rb", "rp", "rt", "rtc")
+        val TagThoroughSearchEndTags = arrayOf(
             "caption",
             "colgroup",
             "dd",
@@ -884,7 +884,7 @@ class HtmlTreeBuilder : TreeBuilder() {
             "thead",
             "tr"
         )
-        @JvmField val TagSearchSpecial = arrayOf(
+        val TagSearchSpecial = arrayOf(
             "address", "applet", "area", "article", "aside", "base", "basefont", "bgsound",
             "blockquote", "body", "br", "button", "caption", "center", "col", "colgroup", "command", "dd",
             "details", "dir", "div", "dl", "dt", "embed", "fieldset", "figcaption", "figure", "footer", "form",
@@ -894,6 +894,7 @@ class HtmlTreeBuilder : TreeBuilder() {
             "section", "select", "style", "summary", "table", "tbody", "td", "textarea", "tfoot", "th", "thead",
             "title", "tr", "ul", "wbr", "xmp"
         )
+
         const val MaxScopeSearchDepth = 100 // prevents the parser bogging down in exceptionally broken pages
         private const val maxQueueDepth = 256 // an arbitrary tension point between real HTML and crafted pain
         private fun <T : Element?> onStack(queue: ArrayList<T>, element: T): Boolean {

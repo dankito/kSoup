@@ -8,9 +8,9 @@ import java.util.function.Supplier
  * Base structural evaluator.
  */
 internal abstract class StructuralEvaluator(val evaluator: Evaluator) : Evaluator() {
+
     // Memoize inner matches, to save repeated re-evaluations of parent, sibling etc.
     // root + element: Boolean matches. ThreadLocal in case the Evaluator is compiled then reused across multi threads
-    @JvmField
     val threadMemo: ThreadLocal<IdentityHashMap<Element, IdentityHashMap<Element, Boolean>>> =
         ThreadLocal.withInitial<IdentityHashMap<Element, IdentityHashMap<Element, Boolean>>>(
             Supplier<IdentityHashMap<Element, IdentityHashMap<Element, Boolean>>>({ IdentityHashMap() })

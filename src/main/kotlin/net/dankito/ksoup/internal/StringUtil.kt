@@ -12,7 +12,6 @@ import kotlin.math.min
 object StringUtil {
 
     // memoised padding up to 21 (blocks 0 to 20 spaces)
-    @JvmField
     val padding = arrayOf(
         "", " ", "  ", "   ", "    ", "     ", "      ", "       ", "        ",
         "         ", "          ", "           ", "            ", "             ", "              ", "               ",

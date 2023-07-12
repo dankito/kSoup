@@ -321,25 +321,23 @@ class W3CDom {
         }
 
         companion object {
-            private val xmlnsKey: String = "xmlns"
-            private val xmlnsPrefix: String = "xmlns:"
-            private val xhtmlNs: String = "http://www.w3.org/1999/xhtml"
+            private const val xmlnsKey = "xmlns"
+            private const val xmlnsPrefix = "xmlns:"
+            private const val xhtmlNs = "http://www.w3.org/1999/xhtml"
         }
     }
 
     companion object {
         /** For W3C Documents created by this class, this property is set on each node to link back to the original jsoup node.  */
-        @JvmField
-        val SourceProperty: String = "jsoupSource"
-        private val ContextProperty: String = "jsoupContextSource" // tracks the jsoup context element on w3c doc
-        private val ContextNodeProperty: String = "jsoupContextNode" // the w3c node used as the creating context
+        val SourceProperty = "jsoupSource"
+        private const val ContextProperty = "jsoupContextSource" // tracks the jsoup context element on w3c doc
+        private const val ContextNodeProperty = "jsoupContextNode" // the w3c node used as the creating context
 
         /**
          * To get support for XPath versions &gt; 1, set this property to the classname of an alternate XPathFactory
          * implementation. (For e.g. `net.sf.saxon.xpath.XPathFactoryImpl`).
          */
-        @JvmField
-        val XPathFactoryProperty: String = "javax.xml.xpath.XPathFactory:jsoup"
+        const val XPathFactoryProperty = "javax.xml.xpath.XPathFactory:jsoup"
 
         /**
          * Converts a jsoup DOM to a W3C DOM.
