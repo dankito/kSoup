@@ -16,11 +16,11 @@ object Wikipedia {
         log(doc.title())
         val newsHeadlines: Elements = doc.select("#mp-itn b a")
         for (headline: Element in newsHeadlines) {
-            log("%s\n\t%s", headline.attr("title"), headline.absUrl("href"))
+            log("${headline.attr("title")}\n\t${headline.absUrl("href")}")
         }
     }
 
-    private fun log(msg: String, vararg vals: String) {
-        println(String.format(msg, *vals))
+    private fun log(msg: String) {
+        println(msg)
     }
 }

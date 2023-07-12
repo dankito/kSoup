@@ -27,7 +27,7 @@ class HtmlTreeBuilderStateTest {
                 if (StringUtil.inSorted(tagName, InBodyStartInputAttribs)) {
                     continue // odd one out in the constant
                 }
-                assertTrue(Tag.isKnownTag(tagName), String.format("Unknown tag name: %s", tagName));
+                assertTrue(Tag.isKnownTag(tagName), "Unknown tag name: $tagName");
             }
         }
     }

@@ -428,12 +428,13 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @since 1.15.2
      */
     fun expectFirst(cssQuery: String): Element {
-        return Validate.ensureNotNull(
-            Selector.selectFirst(cssQuery, this),
-            if (parent() != null) "No elements matched the query '%s' on element '%s'." else "No elements matched the query '%s' in the document.",
-            cssQuery,
-            this.tagName()
-        ) as Element
+        val message = if (parent() != null) {
+            "No elements matched the query '$cssQuery' on element '${this.tagName()}'."
+        } else {
+            "No elements matched the query '$cssQuery' in the document."
+        }
+
+        return Validate.ensureNotNull(Selector.selectFirst(cssQuery, this), message)
     }
 
     /**
@@ -814,11 +815,9 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
         if (parent() == null || parent() is Document) // don't add Document to selector, as will always have a html node
             return StringUtil.releaseBuilder(selector)
         selector.insert(0, " > ")
-        if (parent()!!.select(selector.toString()).size > 1) selector.append(
-            String.format(
-                ":nth-child(%d)", elementSiblingIndex() + 1
-            )
-        )
+        if (parent()!!.select(selector.toString()).size > 1) {
+            selector.append(":nth-child(${elementSiblingIndex() + 1})")
+        }
         return parent()!!.cssSelector() + StringUtil.releaseBuilder(selector)
     }
 

@@ -142,11 +142,11 @@ abstract class TreeBuilder {
      * @param msg error message template
      * @param args template arguments
      */
-    protected fun error(msg: String, vararg args: Any?) {
+    protected fun error(msg: String) {
         parser?.errors?.let { errors ->
             if (errors.canAddError()) {
                 reader?.let { reader ->
-                    errors.add(ParseError(reader, msg, *args.filterNotNull().toTypedArray()))
+                    errors.add(ParseError(reader, msg))
                 }
             }
         }

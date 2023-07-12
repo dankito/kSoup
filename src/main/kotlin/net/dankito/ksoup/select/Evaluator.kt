@@ -45,7 +45,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format("%s", tagName)
+            return tagName
         }
     }
 
@@ -58,7 +58,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format("%s", tagName)
+            return tagName
         }
     }
 
@@ -75,7 +75,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format("#%s", id)
+            return "#$id"
         }
     }
 
@@ -92,7 +92,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format(".%s", className)
+            return ".$className"
         }
     }
 
@@ -109,7 +109,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format("[%s]", key)
+            return "[$key]"
         }
     }
 
@@ -137,7 +137,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format("[^%s]", keyPrefix)
+            return "[^$keyPrefix]"
         }
     }
 
@@ -154,7 +154,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format("[%s=%s]", key, value)
+            return "[$key=$value]"
         }
     }
 
@@ -171,7 +171,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format("[%s!=%s]", key, value)
+            return "[$key!=$value]"
         }
     }
 
@@ -188,7 +188,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format("[%s^=%s]", key, value)
+            return "[$key^=$value]"
         }
     }
 
@@ -205,7 +205,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format("[%s$=%s]", key, value)
+            return "[$key$=$value]"
         }
     }
 
@@ -222,7 +222,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format("[%s*=%s]", key, value)
+            return "[$key*=$value]"
         }
     }
 
@@ -242,7 +242,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format("[%s~=%s]", key, pattern.toString())
+            return "[$key~=$pattern]"
         }
     }
 
@@ -294,7 +294,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format(":lt(%d)", index)
+            return ":lt($index)"
         }
     }
 
@@ -307,7 +307,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format(":gt(%d)", index)
+            return ":gt($index)"
         }
     }
 
@@ -320,7 +320,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format(":eq(%d)", index)
+            return ":eq($index)"
         }
     }
 
@@ -361,14 +361,12 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            if (a == 0) {
-                return StringUtil.format(":%s(%d)", pseudoClass, b)
-            }
-
-            return if (b == 0) {
-                StringUtil.format(":%s(%dn)", pseudoClass, a)
+            return if (a == 0) {
+                ":$pseudoClass($b)"
+            } else  if (b == 0) {
+                ":$pseudoClass(${a}n)"
             } else {
-                StringUtil.format(":%s(%dn%+d)", pseudoClass, a, b)
+                ":$pseudoClass(${a}n${if (b > 0) "+" else ""}$b)"
             }
         }
 
@@ -552,7 +550,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format(":contains(%s)", searchText)
+            return ":contains($searchText)"
         }
     }
 
@@ -571,7 +569,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format(":containsWholeText(%s)", searchText)
+            return ":containsWholeText($searchText)"
         }
     }
 
@@ -586,7 +584,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format(":containsWholeOwnText(%s)", searchText)
+            return ":containsWholeOwnText($searchText)"
         }
     }
 
@@ -605,7 +603,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format(":containsData(%s)", searchText)
+            return ":containsData($searchText)"
         }
     }
 
@@ -624,7 +622,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format(":containsOwn(%s)", searchText)
+            return ":containsOwn($searchText)"
         }
     }
 
@@ -642,7 +640,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format(":matches(%s)", regex)
+            return ":matches($regex)"
         }
     }
 
@@ -660,7 +658,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format(":matchesOwn(%s)", regex)
+            return ":matchesOwn($regex)"
         }
     }
 
@@ -679,7 +677,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format(":matchesWholeText(%s)", regex)
+            return ":matchesWholeText($regex)"
         }
     }
 
@@ -698,7 +696,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return StringUtil.format(":matchesWholeOwnText(%s)", regex)
+            return ":matchesWholeOwnText($regex)"
         }
     }
 

@@ -186,7 +186,7 @@ class HtmlTreeBuilder : TreeBuilder() {
                 reader?.let { reader ->
                     currentToken?.let { currentToken ->
                         parser.errors.add(
-                            ParseError(reader, "Unexpected %s token [%s] when in state [%s]", currentToken.tokenType(), currentToken, state)
+                            ParseError(reader, "Unexpected ${currentToken.tokenType()} token [$currentToken] when in state [$state]")
                         )
                     }
                 }
@@ -237,7 +237,7 @@ class HtmlTreeBuilder : TreeBuilder() {
         if (startTag.isSelfClosing) {
             if (tag.isKnownTag) {
                 if (!tag.isEmpty) {
-                    tokeniser!!.error("Tag [%s] cannot be self closing; not a void tag", tag.normalName)
+                    tokeniser!!.error("Tag [${tag.normalName}] cannot be self closing; not a void tag")
                 }
             } else  // unknown tag, remember this is self closing for output
                 tag.setSelfClosing()
@@ -300,7 +300,7 @@ class HtmlTreeBuilder : TreeBuilder() {
             if (!attributes.isEmpty) {
                 val dupes: Int = attributes.deduplicate(settings)
                 if (dupes > 0) {
-                    error("Dropped duplicate attribute(s) in tag [%s]", startTag.normalName)
+                    error("Dropped duplicate attribute(s) in tag [${startTag.normalName}]")
                 }
             }
         }

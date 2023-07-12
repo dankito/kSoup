@@ -176,13 +176,9 @@ class W3CDom() {
                 expression.evaluate(contextNode, XPathConstants.NODESET) as NodeList // love the strong typing here /s
             Validate.notNull(nodeList)
         } catch (e: XPathExpressionException) {
-            throw Selector.SelectorParseException(
-                e, "Could not evaluate XPath query [%s]: %s", xpath, e.message
-            )
+            throw Selector.SelectorParseException("Could not evaluate XPath query [$xpath]: ${e.message}", e)
         } catch (e: XPathFactoryConfigurationException) {
-            throw Selector.SelectorParseException(
-                e, "Could not evaluate XPath query [%s]: %s", xpath, e.message
-            )
+            throw Selector.SelectorParseException("Could not evaluate XPath query [$xpath]: ${e.message}", e)
         }
         return nodeList
     }

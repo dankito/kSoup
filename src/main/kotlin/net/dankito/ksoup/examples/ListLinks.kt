@@ -15,31 +15,31 @@ object ListLinks {
     fun main(args: Array<String>) {
         Validate.isTrue(args.size == 1, "usage: supply url to fetch")
         val url: String = args.get(0)
-        print("Fetching %s...", url)
+        print("Fetching $url...")
         val doc = Jsoup.connect(url).get()
         val links: Elements = doc.select("a[href]")
         val media: Elements = doc.select("[src]")
         val imports: Elements = doc.select("link[href]")
-        print("\nMedia: (%d)", media.size)
+        print("\nMedia: (${media.size})")
         for (src: Element in media) {
-            if ((src.normalName() == "img")) print(
-                " * %s: <%s> %sx%s (%s)",
-                src.tagName(), src.attr("abs:src"), src.attr("width"), src.attr("height"),
-                trim(src.attr("alt"), 20)
-            ) else print(" * %s: <%s>", src.tagName(), src.attr("abs:src"))
+            if ((src.normalName() == "img")) {
+                print(" * ${src.tagName()}: <${src.attr("abs:src")}> ${src.attr("width")}x${src.attr("height")} (${trim(src.attr("alt"), 20)})")
+            } else {
+                print(" * ${src.tagName()}: <${src.attr("abs:src")}>")
+            }
         }
-        print("\nImports: (%d)", imports.size)
+        print("\nImports: (${imports.size})")
         for (link: Element in imports) {
-            print(" * %s <%s> (%s)", link.tagName(), link.attr("abs:href"), link.attr("rel"))
+            print(" * ${link.tagName()} <${link.attr("abs:href")}> (${link.attr("rel")})")
         }
-        print("\nLinks: (%d)", links.size)
+        print("\nLinks: (${links.size})")
         for (link: Element in links) {
-            print(" * a: <%s>  (%s)", link.attr("abs:href"), trim(link.text(), 35))
+            print(" * a: <${link.attr("abs:href")}>  (${trim(link.text(), 35)})")
         }
     }
 
-    private fun print(msg: String, vararg args: Any) {
-        println(String.format(msg, *args))
+    private fun print(msg: String) {
+        println(msg)
     }
 
     private fun trim(s: String, width: Int): String {

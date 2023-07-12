@@ -37,7 +37,7 @@ object Validate {
         }
 
         if (obj == null) {
-            throw ValidationException(String.format("The parameter '%s' must not be null.", param))
+            throw ValidationException("The parameter '$param' must not be null.")
         }
     }
 
@@ -63,8 +63,12 @@ object Validate {
      * @return the object, or throws an exception if it is null
      * @throws ValidationException if the object is null
      */
-    fun ensureNotNull(obj: Any?): Any {
-        return obj ?: throw ValidationException("Object must not be null")
+    fun <T> ensureNotNull(obj: T?): T {
+        contract {
+            returns() implies (obj != null)
+        }
+
+        return ensureNotNull(obj, "Object must not be null")
     }
 
     /**
@@ -76,8 +80,12 @@ object Validate {
      * @return the object, or throws an exception if it is null
      * @throws ValidationException if the object is null
      */
-    fun ensureNotNull(obj: Any?, msg: String, vararg args: Any): Any {
-        return obj ?: throw ValidationException(String.format(msg, *args))
+    fun <T> ensureNotNull(obj: T?, msg: String): T {
+        contract {
+            returns() implies (obj != null)
+        }
+
+        return obj ?: throw ValidationException(msg)
     }
 
     /**
@@ -161,7 +169,7 @@ object Validate {
         }
 
         if (string.isNullOrEmpty()) {
-            throw ValidationException(String.format("The '%s' parameter must not be empty.", param))
+            throw ValidationException("The '$param' parameter must not be empty.")
         }
     }
 
@@ -205,15 +213,5 @@ object Validate {
     fun assertFail(msg: String): Boolean {
         fail(msg)
         return false
-    }
-
-    /**
-     * Cause a failure.
-     * @param msg message to output.
-     * @param args the format arguments to the msg
-     * @throws IllegalStateException if we reach this state
-     */
-    fun fail(msg: String, vararg args: Any) {
-        throw ValidationException(String.format(msg, *args))
     }
 }

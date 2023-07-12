@@ -72,8 +72,8 @@ internal abstract class StructuralEvaluator(val evaluator: Evaluator) : Evaluato
             return 10 * evaluator.cost()
         }
 
-        public override fun toString(): String {
-            return String.format(":has(%s)", evaluator)
+        override fun toString(): String {
+            return ":has($evaluator)"
         }
     }
 
@@ -88,7 +88,7 @@ internal abstract class StructuralEvaluator(val evaluator: Evaluator) : Evaluato
         }
 
         override fun toString(): String {
-            return String.format(":not(%s)", evaluator)
+            return ":not($evaluator)"
         }
     }
 
@@ -110,7 +110,7 @@ internal abstract class StructuralEvaluator(val evaluator: Evaluator) : Evaluato
         }
 
         override fun toString(): String {
-            return String.format("%s ", evaluator)
+            return "$evaluator "
         }
     }
 
@@ -127,7 +127,7 @@ internal abstract class StructuralEvaluator(val evaluator: Evaluator) : Evaluato
         }
 
         override fun toString(): String {
-            return String.format("%s > ", evaluator)
+            return "$evaluator > "
         }
     }
 
@@ -149,7 +149,7 @@ internal abstract class StructuralEvaluator(val evaluator: Evaluator) : Evaluato
         }
 
         override fun toString(): String {
-            return String.format("%s ~ ", evaluator)
+            return "$evaluator ~ "
         }
     }
 
@@ -166,7 +166,7 @@ internal abstract class StructuralEvaluator(val evaluator: Evaluator) : Evaluato
         }
 
         override fun toString(): String {
-            return String.format("%s + ", evaluator)
+            return "$evaluator + "
         }
     }
 }

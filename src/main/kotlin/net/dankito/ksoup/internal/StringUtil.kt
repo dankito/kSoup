@@ -276,7 +276,7 @@ object StringUtil {
         } else if (isValidCodePoint(codePoint)) {
             charArrayOf(highSurrogate(codePoint), lowSurrogate(codePoint))
         } else {
-            throw IllegalArgumentException(String.format("Not a valid Unicode code point: 0x%X", codePoint))
+            throw IllegalArgumentException("Not a valid Unicode code point: 0x${codePoint.toString(16)}")
         }
     }
 
@@ -295,10 +295,6 @@ object StringUtil {
     fun isValidCodePoint(codePoint: Int): Boolean {
         val plane = codePoint ushr 16
         return plane < 17
-    }
-
-    fun format(format: String, vararg args: Any): String {
-        return String.format(format, *args)
     }
 
     private val extraDotSegmentsPattern = Regex("^/((\\.{1,2}/)+)")

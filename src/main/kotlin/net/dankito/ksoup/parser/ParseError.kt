@@ -31,25 +31,13 @@ class ParseError {
         errorMessage = errorMsg
     }
 
-    internal constructor(reader: CharacterReader?, errorFormat: String, vararg args: Any?) {
-        position = reader!!.pos()
-        cursorPos = reader.cursorPos()
-        errorMessage = String.format(errorFormat, *args)
-    }
-
     internal constructor(pos: Int, errorMsg: String) {
         position = pos
         cursorPos = pos.toString()
         errorMessage = errorMsg
     }
 
-    internal constructor(pos: Int, errorFormat: String?, vararg args: Any?) {
-        position = pos
-        cursorPos = pos.toString()
-        errorMessage = String.format((errorFormat)!!, *args)
-    }
-
-    public override fun toString(): String {
-        return "<" + cursorPos + ">: " + errorMessage
+     override fun toString(): String {
+        return "<$cursorPos>: $errorMessage"
     }
 }

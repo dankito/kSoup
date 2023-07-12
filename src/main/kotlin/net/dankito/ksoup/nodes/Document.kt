@@ -134,7 +134,7 @@ class Document(private val location: String) :
         for (el in els) {
             if (el is FormElement) return el
         }
-        Validate.fail("No form elements matched the query '%s' in the document.", cssQuery)
+        Validate.fail("No form elements matched the query '$cssQuery' in the document.")
         return null // (not really)
     }
 

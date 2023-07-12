@@ -69,10 +69,8 @@ class HttpConnection : Connection {
             req.url(URL(url))
         } catch (e: MalformedURLException) {
             throw IllegalArgumentException(
-                String.format(
-                    "The supplied URL, '%s', is malformed. Make sure it is an absolute URL, and starts with 'http://' or 'https://'. See https://jsoup.org/cookbook/extracting-data/working-with-urls",
-                    url
-                ), e
+                "The supplied URL, '$url', is malformed. Make sure it is an absolute URL, and starts with 'http://' or 'https://'. See https://jsoup.org/cookbook/extracting-data/working-with-urls",
+                e
             )
         }
         return this
@@ -827,12 +825,9 @@ class HttpConnection : Connection {
 
                 // enforce too many redirects:
                 numRedirects = previousResponse.numRedirects + 1
-                if (numRedirects >= MAX_REDIRECTS) throw IOException(
-                    String.format(
-                        "Too many redirects occurred trying to load URL %s",
-                        previousResponse.url()
-                    )
-                )
+                if (numRedirects >= MAX_REDIRECTS) {
+                    throw IOException("Too many redirects occurred trying to load URL ${previousResponse.url()}")
+                }
             }
         }
 

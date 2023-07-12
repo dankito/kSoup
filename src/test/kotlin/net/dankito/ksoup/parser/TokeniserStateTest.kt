@@ -36,7 +36,7 @@ class TokeniserStateTest {
     @Test
     fun testBeforeTagName() {
         for (c in whiteSpace) {
-            val body = String.format("<div%c>test</div>", c)
+            val body = "<div$c>test</div>"
             val doc = Jsoup.parse(body)
             val els = doc.select("div")
             Assertions.assertEquals("test", els.text())
@@ -88,7 +88,7 @@ class TokeniserStateTest {
     @Test
     fun testRCDATAEndTagName() {
         for (c in whiteSpace) {
-            val body = String.format("<textarea>data</textarea%c>", c)
+            val body = "<textarea>data</textarea$c>"
             val doc = Jsoup.parse(body)
             val els = doc.select("textarea")
             Assertions.assertEquals("data", els.text())
@@ -127,12 +127,12 @@ class TokeniserStateTest {
         for (q in quote) {
             for (ws in whiteSpace) {
                 val htmls = arrayOf(
-                    String.format("<!DOCTYPE html%cPUBLIC %c-//W3C//DTD HTML 4.0//EN%c>", ws, q, q),
-                    String.format("<!DOCTYPE html %cPUBLIC %c-//W3C//DTD HTML 4.0//EN%c>", ws, q, q),
-                    String.format("<!DOCTYPE html PUBLIC%c%c-//W3C//DTD HTML 4.0//EN%c>", ws, q, q),
-                    String.format("<!DOCTYPE html PUBLIC %c%c-//W3C//DTD HTML 4.0//EN%c>", ws, q, q),
-                    String.format("<!DOCTYPE html PUBLIC %c-//W3C//DTD HTML 4.0//EN%c%c>", q, q, ws),
-                    String.format("<!DOCTYPE html PUBLIC%c-//W3C//DTD HTML 4.0//EN%c%c>", q, q, ws)
+                    "<!DOCTYPE html${ws}PUBLIC ${q}-//W3C//DTD HTML 4.0//EN${q}>",
+                    "<!DOCTYPE html ${ws}PUBLIC ${q}-//W3C//DTD HTML 4.0//EN${q}>",
+                    "<!DOCTYPE html PUBLIC${ws}${q}-//W3C//DTD HTML 4.0//EN${q}>",
+                    "<!DOCTYPE html PUBLIC ${ws}${q}-//W3C//DTD HTML 4.0//EN${q}>",
+                    "<!DOCTYPE html PUBLIC ${q}-//W3C//DTD HTML 4.0//EN${q}${ws}>",
+                    "<!DOCTYPE html PUBLIC${q}-//W3C//DTD HTML 4.0//EN${q}${ws}>"
                 )
                 for (html in htmls) {
                     val doc = Jsoup.parse(html)
@@ -148,17 +148,12 @@ class TokeniserStateTest {
         for (q in quote) {
             for (ws in whiteSpace) {
                 val htmls = arrayOf(
-                    String.format(
-                        "<!DOCTYPE html%cSYSTEM %chttp://www.w3.org/TR/REC-html40/strict.dtd%c>",
-                        ws,
-                        q,
-                        q
-                    ),
-                    String.format("<!DOCTYPE html %cSYSTEM %chttp://www.w3.org/TR/REC-html40/strict.dtd%c>", ws, q, q),
-                    String.format("<!DOCTYPE html SYSTEM%c%chttp://www.w3.org/TR/REC-html40/strict.dtd%c>", ws, q, q),
-                    String.format("<!DOCTYPE html SYSTEM %c%chttp://www.w3.org/TR/REC-html40/strict.dtd%c>", ws, q, q),
-                    String.format("<!DOCTYPE html SYSTEM %chttp://www.w3.org/TR/REC-html40/strict.dtd%c%c>", q, q, ws),
-                    String.format("<!DOCTYPE html SYSTEM%chttp://www.w3.org/TR/REC-html40/strict.dtd%c%c>", q, q, ws)
+                    "<!DOCTYPE html${ws}SYSTEM ${q}http://www.w3.org/TR/REC-html40/strict.dtd${q}>",
+                    "<!DOCTYPE html ${ws}SYSTEM ${q}http://www.w3.org/TR/REC-html40/strict.dtd${q}>",
+                    "<!DOCTYPE html SYSTEM${ws}${q}http://www.w3.org/TR/REC-html40/strict.dtd${q}>",
+                    "<!DOCTYPE html SYSTEM ${ws}${q}http://www.w3.org/TR/REC-html40/strict.dtd${q}>",
+                    "<!DOCTYPE html SYSTEM ${q}http://www.w3.org/TR/REC-html40/strict.dtd${q}${ws}>",
+                    "<!DOCTYPE html SYSTEM${q}http://www.w3.org/TR/REC-html40/strict.dtd${q}${ws}>"
                 )
                 for (html in htmls) {
                     val doc = Jsoup.parse(html)
@@ -175,13 +170,10 @@ class TokeniserStateTest {
         for (q in quote) {
             for (ws in whiteSpace) {
                 val htmls = arrayOf(
-                    String.format(
-                        "<!DOCTYPE html PUBLIC %c-//W3C//DTD HTML 4.0//EN%c"
-                                + "%c%chttp://www.w3.org/TR/REC-html40/strict.dtd%c>", q, q, ws, q, q
-                    ), String.format(
-                        "<!DOCTYPE html PUBLIC %c-//W3C//DTD HTML 4.0//EN%c"
-                                + "%chttp://www.w3.org/TR/REC-html40/strict.dtd%c>", q, q, q, q
-                    )
+                    "<!DOCTYPE html PUBLIC ${q}-//W3C//DTD HTML 4.0//EN${q}"
+                                + "${ws}${q}http://www.w3.org/TR/REC-html40/strict.dtd${q}>",
+                    "<!DOCTYPE html PUBLIC ${q}-//W3C//DTD HTML 4.0//EN${q}"
+                                + "${q}http://www.w3.org/TR/REC-html40/strict.dtd${q}>"
                 )
                 for (html in htmls) {
                     val doc = Jsoup.parse(html)

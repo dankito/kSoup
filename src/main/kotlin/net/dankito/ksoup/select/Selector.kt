@@ -174,9 +174,6 @@ object Selector {
         return Collector.findFirst(QueryParser.parse(cssQuery), root)
     }
 
-    class SelectorParseException : IllegalStateException {
-        constructor(msg: String?) : super(msg)
-        constructor(msg: String, vararg msgArgs: Any) : super(String.format(msg, *msgArgs))
-        constructor(cause: Throwable?, msg: String, vararg msgArgs: Any?) : super(String.format(msg, *msgArgs), cause)
-    }
+    class SelectorParseException(msg: String?, cause: Throwable? = null) : IllegalStateException(msg, cause)
+
 }

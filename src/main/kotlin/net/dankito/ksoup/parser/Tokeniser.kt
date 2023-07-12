@@ -76,7 +76,9 @@ internal class Tokeniser(
             lastStartCloseSeq = null // only lazy inits
         } else if (token.type === Token.TokenType.EndTag) {
             val endTag = token as Token.EndTag
-            if (endTag.hasAttributes()) error("Attributes incorrectly present on end tag [/%s]", endTag.normalName ?: endTag.toStringName())
+            if (endTag.hasAttributes()) {
+                error("Attributes incorrectly present on end tag [/${endTag.normalName ?: endTag.toStringName()}]")
+            }
         }
     }
 
@@ -168,10 +170,9 @@ internal class Tokeniser(
                 return null
             }
             reader.unmark()
-            if (!reader.matchConsume(";")) characterReferenceError(
-                "missing semicolon on [&#%s]",
-                numRef
-            ) // missing semi
+            if (!reader.matchConsume(";")) { // missing semi
+                characterReferenceError("missing semicolon on [&#$numRef]")
+            }
             var charval = -1
             try {
                 val base = if (isHexMode) 16 else 10
@@ -179,12 +180,12 @@ internal class Tokeniser(
             } catch (ignored: NumberFormatException) {
             } // skip
             if (charval == -1 || charval >= 0xD800 && charval <= 0xDFFF || charval > 0x10FFFF) {
-                characterReferenceError("character [%s] outside of valid range", charval)
+                characterReferenceError("character [$charval] outside of valid range")
                 codeRef[0] = replacementChar.code
             } else {
                 // fix illegal unicode characters to match browser behavior
                 if (charval >= win1252ExtensionsStart && charval < win1252ExtensionsStart + win1252Extensions.size) {
-                    characterReferenceError("character [%s] is not a valid unicode code point", charval)
+                    characterReferenceError("character [$charval] is not a valid unicode code point")
                     charval = win1252Extensions[charval - win1252ExtensionsStart]
                 }
 
@@ -202,7 +203,7 @@ internal class Tokeniser(
             if (!found) {
                 reader.rewindToMark()
                 if (looksLegit) // named with semicolon
-                    characterReferenceError("invalid named reference [%s]", nameRef)
+                    characterReferenceError("invalid named reference [$nameRef]")
                 return null
             }
             if (inAttribute && (reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_'))) {
@@ -211,10 +212,9 @@ internal class Tokeniser(
                 return null
             }
             reader.unmark()
-            if (!reader.matchConsume(";")) characterReferenceError(
-                "missing semicolon on [&%s]",
-                nameRef
-            ) // missing semi
+            if (!reader.matchConsume(";")) { // missing semi
+                characterReferenceError("missing semicolon on [&$nameRef]")
+            }
             val numChars: Int = Entities.codepointsForName(nameRef, multipointHolder)
             if (numChars == 1) {
                 codeRef[0] = multipointHolder[0]
@@ -279,29 +279,25 @@ internal class Tokeniser(
 
     fun error(state: TokeniserState) {
         if (errors.canAddError()) {
-            errors.add(ParseError(reader, "Unexpected character '%s' in input state [%s]", reader.current(), state))
+            errors.add(ParseError(reader, "Unexpected character '$reader.current()' in input state [$state]"))
         }
     }
 
     fun eofError(state: TokeniserState) {
         if (errors.canAddError()) {
-            errors.add(ParseError(reader, "Unexpectedly reached end of file (EOF) in input state [%s]", state))
+            errors.add(ParseError(reader, "Unexpectedly reached end of file (EOF) in input state [$state]"))
         }
     }
 
-    private fun characterReferenceError(message: String, vararg args: Any) {
-        if (errors.canAddError()) errors.add(
-            ParseError(reader, String.format("Invalid character reference: $message", *args))
-        )
+    private fun characterReferenceError(message: String) {
+        if (errors.canAddError()) {
+            errors.add(ParseError(reader, "Invalid character reference: $message"))
+        }
     }
 
     fun error(errorMsg: String) {
-        if (errors.canAddError()) errors.add(ParseError(reader, errorMsg))
-    }
-
-    fun error(errorMsg: String, vararg args: Any) {
         if (errors.canAddError()) {
-            errors.add(ParseError(reader, errorMsg, *args))
+            errors.add(ParseError(reader, errorMsg))
         }
     }
 
@@ -324,9 +320,13 @@ internal class Tokeniser(
             if (reader.matches('&')) {
                 reader.consume()
                 val c = consumeCharacterReference(null, inAttribute)
-                if (c == null || c.size == 0) builder.append('&') else {
+                if (c == null || c.size == 0) {
+                    builder.append('&')
+                } else {
                     builder.appendCodePoint(c.get(0))
-                    if (c.size == 2) builder.appendCodePoint(c.get(1))
+                    if (c.size == 2) {
+                        builder.appendCodePoint(c.get(1))
+                    }
 //                    builder.append(StringUtil.codepointToChar(c[0]))
 //                    if (c.size == 2) builder.append(StringUtil.codepointToChar(c[1]))
                 }

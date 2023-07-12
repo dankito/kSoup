@@ -22,14 +22,9 @@ class FuzzFixesIT {
         for (i in 0 until numIters) {
             val doc = Jsoup.parse(file, "UTF-8", "https://example.com/")
             Assertions.assertNotNull(doc)
-            if (System.currentTimeMillis() > completeBy) Assertions.fail<Any>(
-                String.format(
-                    "Timeout: only completed %d iters of [%s] in %d seconds",
-                    i,
-                    file.name,
-                    timeout
-                )
-            )
+            if (System.currentTimeMillis() > completeBy) {
+                Assertions.fail<Any>("Timeout: only completed $i iters of [${file.name}] in $timeout seconds")
+            }
         }
     }
 
@@ -42,9 +37,9 @@ class FuzzFixesIT {
         for (i in 0 until numIters) {
             val doc = Jsoup.parse(file, "UTF-8", "https://example.com/", xmlParser())
             Assertions.assertNotNull(doc)
-            if (System.currentTimeMillis() > completeBy) Assertions.fail<Any>(
-                String.format("Timeout: only completed %d iters of [%s] in %d seconds", i, file.name, timeout)
-            )
+            if (System.currentTimeMillis() > completeBy) {
+                Assertions.fail<Any>("Timeout: only completed $i iters of [${file.name}] in $timeout seconds")
+            }
         }
     }
 

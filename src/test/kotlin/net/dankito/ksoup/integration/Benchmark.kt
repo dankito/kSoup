@@ -11,7 +11,7 @@ object Benchmark {
     fun run(a: Runnable, b: Runnable, count: Int) {
         val aMillis: Long
         val bMillis: Long
-        print("Running test A (x%d)", count)
+        print("Running test A (x$count)")
         aMillis = time(a, count)
         print("Running test B")
         bMillis = time(b, count)

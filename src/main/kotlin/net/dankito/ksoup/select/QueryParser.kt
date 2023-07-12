@@ -98,7 +98,7 @@ class QueryParser private constructor(query: String) {
                 currentEval = or
             }
 
-            else -> throw SelectorParseException("Unknown combinator '%s'", combinator)
+            else -> throw SelectorParseException("Unknown combinator '$combinator'")
         }
         if (replaceRightMost) (rootEval as CombiningEvaluator.Or?)!!.replaceRightMostEvaluator(currentEval) else rootEval =
             currentEval
@@ -124,16 +124,8 @@ class QueryParser private constructor(query: String) {
             tq.matches("[") -> byAttribute()
             tq.matchChomp("*") -> AllElements()
             tq.matchChomp(":") -> parsePseudoSelector()
-            else -> throw SelectorParseException("Could not parse query '%s': unexpected token at '%s'", query, tq.remainder())
+            else -> throw SelectorParseException("Could not parse query '$query': unexpected token at '${tq.remainder()}'")
         }
-//        return if (tq.matchChomp("#")) byId() else if (tq.matchChomp(".")) byClass() else if (tq.matchesWord() || tq.matches(
-//                "*|"
-//            )
-//        ) byTag() else if (tq.matches("[")) byAttribute() else if (tq.matchChomp("*")) AllElements() else if (tq.matchChomp(
-//                ":"
-//            )
-//        ) parsePseudoSelector() else  // unhandled
-//            throw SelectorParseException("Could not parse query '%s': unexpected token at '%s'", query, tq.remainder())
     }
 
     private fun parsePseudoSelector(): Evaluator {
@@ -166,11 +158,7 @@ class QueryParser private constructor(query: String) {
             "empty" -> IsEmpty()
             "root" -> IsRoot()
             "matchText" -> MatchText()
-            else -> throw SelectorParseException(
-                "Could not parse query '%s': unexpected token at '%s'",
-                query,
-                tq.remainder()
-            )
+            else -> throw SelectorParseException("Could not parse query '$query': unexpected token at '${tq.remainder()}'")
         }
     }
 
@@ -214,25 +202,23 @@ class QueryParser private constructor(query: String) {
         val key: String = cq.consumeToAny(*AttributeEvals) // eq, not, start, end, contain, match, (no val)
         Validate.notEmpty(key)
         cq.consumeWhitespace()
-        val eval: Evaluator
-        if (cq.isEmpty) {
-            if (key.startsWith("^")) eval = AttributeStarting(key.substring(1)) else eval = Evaluator.Attribute(key)
-        } else {
-            if (cq.matchChomp("=")) eval = AttributeWithValue(key, cq.remainder()) else if (cq.matchChomp("!=")) eval =
-                AttributeWithValueNot(key, cq.remainder()) else if (cq.matchChomp("^=")) eval =
-                AttributeWithValueStarting(key, cq.remainder()) else if (cq.matchChomp("$=")) eval =
-                AttributeWithValueEnding(key, cq.remainder()) else if (cq.matchChomp("*=")) eval =
-                AttributeWithValueContaining(key, cq.remainder()) else if (cq.matchChomp("~=")) eval =
-                AttributeWithValueMatching(
-                    key,
-                    Regex(cq.remainder())
-                ) else throw SelectorParseException(
-                "Could not parse attribute query '%s': unexpected token at '%s'",
-                query,
-                cq.remainder()
-            )
+
+        return when {
+            cq.isEmpty -> {
+                if (key.startsWith("^")) {
+                    AttributeStarting(key.substring(1))
+                } else {
+                    Evaluator.Attribute(key)
+                }
+            }
+            cq.matchChomp("=") -> AttributeWithValue(key, cq.remainder())
+            cq.matchChomp("!=") -> AttributeWithValueNot(key, cq.remainder())
+            cq.matchChomp("^=") -> AttributeWithValueStarting(key, cq.remainder())
+            cq.matchChomp("$=") -> AttributeWithValueEnding(key, cq.remainder())
+            cq.matchChomp("*=") -> AttributeWithValueContaining(key, cq.remainder())
+            cq.matchChomp("~=") -> AttributeWithValueMatching(key, Regex(cq.remainder()))
+            else -> throw SelectorParseException("Could not parse attribute query '$query': unexpected token at '$cq.remainder()'")
         }
-        return eval
     }
 
     private fun cssNthChild(backwards: Boolean, ofType: Boolean): Evaluator {
@@ -254,7 +240,7 @@ class QueryParser private constructor(query: String) {
             a = 0
             b = mB.value.replaceFirst("^\\+".toRegex(), "").toInt() // TODO: is .value correct or should i use .groupValues[0]?
         } else {
-            throw SelectorParseException("Could not parse nth-index '%s': unexpected format", arg)
+            throw SelectorParseException("Could not parse nth-index '$arg': unexpected format")
         }
         val eval: Evaluator
         if (ofType) if (backwards) eval = IsNthLastOfType(a, b) else eval = IsNthOfType(a, b) else {

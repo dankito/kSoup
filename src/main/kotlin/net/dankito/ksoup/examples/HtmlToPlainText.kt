@@ -77,9 +77,11 @@ class HtmlToPlainText {
                     "h4",
                     "h5"
                 )
-            ) append("\n") else if ((name == "a")) append(
-                String.format(" <%s>", node.absUrl("href"))
-            )
+            ) {
+                append("\n")
+            } else if ((name == "a")) {
+                append(" <${node.absUrl("href")}>")
+            }
         }
 
         // appends text to the string builder with a simple word wrap method
