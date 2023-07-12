@@ -162,7 +162,6 @@ class HttpConnectionTest {
     }
 
     @Test
-    @Throws(MalformedURLException::class)
     fun connectWithUrl() {
         val con = connect(URL("http://example.com"))
         Assertions.assertEquals("http://example.com", con.request().url().toExternalForm())
@@ -253,7 +252,6 @@ class HttpConnectionTest {
     }
 
     @Test
-    @Throws(MalformedURLException::class)
     fun encodeUrl() {
         val url1 = URL("https://test.com/foo bar/[One]?q=white space#frag")
         val url2 = UrlBuilder(url1).build()
@@ -261,7 +259,6 @@ class HttpConnectionTest {
     }
 
     @Test
-    @Throws(MalformedURLException::class)
     fun encodedUrlDoesntDoubleEncode() {
         val url1 = URL("https://test.com/foo bar/[One]?q=white space#frag ment")
         val url2 = UrlBuilder(url1).build()

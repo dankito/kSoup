@@ -2136,7 +2136,6 @@ class ElementTest {
     }
 
     @Test
-    @Throws(NoSuchFieldException::class, IllegalAccessException::class)
     fun accessorsDoNotVivifyAttributes() {
         // internally, we don't want to create empty Attribute objects unless actually used for something
         val doc = Jsoup.parse("<div><p><a href=foo>One</a>")

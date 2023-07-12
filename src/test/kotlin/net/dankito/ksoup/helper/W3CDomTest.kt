@@ -19,7 +19,6 @@ import java.nio.charset.StandardCharsets
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.OutputKeys
 import javax.xml.xpath.XPathConstants
-import javax.xml.xpath.XPathExpressionException
 import javax.xml.xpath.XPathFactory
 
 class W3CDomTest {
@@ -171,7 +170,6 @@ class W3CDomTest {
     }
 
     @Test
-    @Throws(XPathExpressionException::class)
     fun xmlnsXpathTest() {
         val w3c = W3CDom()
         var html = "<html><body><div>hello</div></body></html>"
@@ -207,7 +205,6 @@ class W3CDomTest {
     }
 
     @Test
-    @Throws(XPathExpressionException::class)
     fun xhtmlNoNamespace() {
         val w3c = W3CDom()
         val html = "<html><body><div>hello</div></body></html>"
@@ -219,7 +216,6 @@ class W3CDomTest {
     }
 
     @Test
-    @Throws(XPathExpressionException::class)
     fun canDisableNamespaces() {
         val w3c = W3CDom()
         Assertions.assertTrue(w3c.namespaceAware())
@@ -231,7 +227,6 @@ class W3CDomTest {
         Assertions.assertEquals("div", nodeList?.item(0)?.localName)
     }
 
-    @Throws(XPathExpressionException::class)
     private fun xpath(w3cDoc: Document, query: String): NodeList? {
         val xpath = XPathFactory.newInstance().newXPath().compile(query)
         return xpath.evaluate(w3cDoc, XPathConstants.NODE) as? NodeList

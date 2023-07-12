@@ -13,6 +13,7 @@ import java.util.stream.Stream
 import javax.xml.xpath.*
 
 class XpathTest {
+
     @Test
     fun supportsXpath() {
         val html = "<body><div><p>One</div><div><p>Two</div><div>Three</div>"
@@ -212,11 +213,9 @@ class XpathTest {
             return true
         }
 
-        @Throws(XPathFactoryConfigurationException::class)
         override fun setFeature(name: String, value: Boolean) {
         }
 
-        @Throws(XPathFactoryConfigurationException::class)
         override fun getFeature(name: String): Boolean {
             return true
         }

@@ -12,8 +12,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /** Integration tests to test longer running Connection  */
 class SessionIT {
+
     @Test
-    @Throws(InterruptedException::class)
     fun multiThread() {
         val numThreads = 20
         val numThreadLoops = 5
@@ -60,7 +60,6 @@ class SessionIT {
 
     // test that we throw a nice clear exception if you try to multi-thread by forget .newRequest()
     @Test
-    @Throws(InterruptedException::class)
     fun multiThreadWithoutNewRequestBlowsUp() {
         val numThreads = 20
         val url: String =

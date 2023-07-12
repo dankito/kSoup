@@ -306,7 +306,6 @@ object StringUtil {
      * @return the resolved absolute URL
      * @throws MalformedURLException if an error occurred generating the URL
      */
-  @Throws(MalformedURLException::class)
   fun resolve(base: URL, relUrl: String): URL {
     var relUrl = stripControlChars(relUrl)
         // workaround: java resolves '//path/file + ?foo' to '//path/?foo', not '//path/file?foo' as desired

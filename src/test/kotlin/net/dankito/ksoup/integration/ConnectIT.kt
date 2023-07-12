@@ -13,9 +13,9 @@ import java.nio.charset.StandardCharsets
  * Failsafe integration tests for Connect methods. These take a bit longer to run, so included as Integ, not Unit, tests.
  */
 class ConnectIT {
+
     // Slow Rider tests.
     @Test
-    @Throws(InterruptedException::class)
     fun canInterruptBodyStringRead() {
         // todo - implement in interruptable channels, so it's immediate
         val body = arrayOfNulls<String>(1)
@@ -39,7 +39,6 @@ class ConnectIT {
     }
 
     @Test
-    @Throws(InterruptedException::class)
     fun canInterruptDocumentRead() {
         // todo - implement in interruptable channels, so it's immediate
         val body = arrayOfNulls<String>(1)

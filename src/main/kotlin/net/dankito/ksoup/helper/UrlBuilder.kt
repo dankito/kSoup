@@ -2,7 +2,6 @@ package net.dankito.ksoup.helper
 
 import net.dankito.ksoup.Connection
 import net.dankito.ksoup.internal.StringUtil
-import java.io.UnsupportedEncodingException
 import java.net.*
 
 /**
@@ -57,13 +56,12 @@ internal class UrlBuilder(var u: URL) {
         } catch (e: URISyntaxException) {
             assert(Validate.assertFail(e.toString()))
             return u
-        } catch (e: UnsupportedEncodingException) {
+        } catch (e: Exception) {
             assert(Validate.assertFail(e.toString()))
             return u
         }
     }
 
-    @Throws(UnsupportedEncodingException::class)
     fun appendKeyVal(kv: Connection.KeyVal?) {
         if (q == null) q = StringUtil.borrowBuilder() else q!!.append('&')
         q!!
@@ -76,12 +74,11 @@ internal class UrlBuilder(var u: URL) {
         private fun decodePart(encoded: String): String {
             try {
                 return URLDecoder.decode(encoded, DataUtil.UTF_8.name())
-            } catch (e: UnsupportedEncodingException) {
+            } catch (e: Exception) {
                 throw RuntimeException(e) // wtf!
             }
         }
 
-        @Throws(UnsupportedEncodingException::class)
         private fun appendToAscii(s: String?, spaceAsPlus: Boolean, sb: StringBuilder) {
             // minimal normalization of Unicode -> Ascii, and space normal. Existing escapes are left as-is.
             for (i in 0 until s!!.length) {

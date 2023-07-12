@@ -440,7 +440,6 @@ class DocumentTest {
     }
 
     @Test
-    @Throws(Exception::class)
     fun testShiftJisRoundtrip() {
         val input = ("<html>"
                 + "<head>"
@@ -462,7 +461,6 @@ class DocumentTest {
     }
 
     @Test
-    @Throws(InterruptedException::class)
     fun parseAndHtmlOnDifferentThreads() {
         val html = "<p>Alrighty then it's not \uD83D\uDCA9. <span>Next</span></p>" // 💩
         val asci = "<p>Alrighty then it's not &#x1f4a9;. <span>Next</span></p>"
