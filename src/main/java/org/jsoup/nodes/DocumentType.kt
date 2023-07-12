@@ -86,6 +86,10 @@ class DocumentType(name: String?, publicId: String?, systemId: String?) : LeafNo
         return !StringUtil.isBlank(attr(attribute))
     }
 
+    override fun createInstanceForClone(): Node =
+        this::class.java.getDeclaredConstructor(String::class.java, String::class.java, String::class.java)
+            .newInstance(name(), publicId(), systemId())
+
     companion object {
         // todo needs a bit of a chunky cleanup. this level of detail isn't needed
         const val PUBLIC_KEY = "PUBLIC"

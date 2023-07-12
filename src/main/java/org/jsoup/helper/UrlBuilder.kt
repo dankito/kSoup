@@ -11,34 +11,38 @@ import java.net.*
  * Normalization includes puny-coding the host, and encoding non-ascii path components. Any non-ascii characters in
  * the query string (or the fragment/anchor) are escaped, but any existing escapes in those components are preserved.
  */
-internal class UrlBuilder(var u: URL?) {
+internal class UrlBuilder(var u: URL) {
     var q: StringBuilder? = null
 
     init {
-        if (u!!.getQuery() != null) q = StringUtil.borrowBuilder().append(u!!.getQuery())
+        u.query?.let { query ->
+            q = StringUtil.borrowBuilder().append(query)
+        }
     }
 
-    fun build(): URL? {
+    fun build(): URL {
         try {
             // use the URI class to encode non-ascii in path
-            val uri: URI = URI(
-                u!!.getProtocol(),
-                u!!.getUserInfo(),
-                IDN.toASCII(decodePart(u!!.getHost())),  // puny-code
-                u!!.getPort(),
-                decodePart(u!!.getPath()),
+            val uri = URI(
+                u.protocol,
+                u.userInfo,
+                IDN.toASCII(decodePart(u.host)),  // puny-code
+                u.port,
+                decodePart(u.path),
                 null, null // query and fragment appended later so as not to encode
             )
-            var normUrl: String? = uri.toASCIIString()
-            if (q != null || u!!.getRef() != null) {
+
+            var normUrl = uri.toASCIIString()
+            if (q != null || u.ref != null) {
                 val sb: StringBuilder = StringUtil.borrowBuilder().append(normUrl)
-                if (q != null) {
+                q?.let { q ->
                     sb.append('?')
                     appendToAscii(StringUtil.releaseBuilder(q), true, sb)
                 }
-                if (u!!.getRef() != null) {
+
+                if (u.ref != null) {
                     sb.append('#')
-                    appendToAscii(u!!.getRef(), false, sb)
+                    appendToAscii(u.ref, false, sb)
                 }
                 normUrl = StringUtil.releaseBuilder(sb)
             }

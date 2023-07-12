@@ -16,8 +16,13 @@ class Tag private constructor(
      */
     var name: String
 ) : Cloneable {
-    private val normalName // always the lower case version of this tag, regardless of case preservation mode
-            : String?
+
+    /**
+     * Get this tag's normalized (lowercased) name.
+     * @return the tag's normal name.
+     */
+    val normalName: String = // always the lower case version of this tag, regardless of case preservation mode
+        Normalizer.lowerCase(name)
 
     /**
      * Gets if this is a block tag.
@@ -26,7 +31,14 @@ class Tag private constructor(
      */
     var isBlock: Boolean = true // block
         private set
-    private var formatAsBlock: Boolean = true // should be formatted as a block
+
+    /**
+     * Gets if this tag should be formatted as a block (or as inline)
+     *
+     * @return if should be formatted as block or inline
+     */
+    var formatAsBlock: Boolean = true // should be formatted as a block
+        private set
 
     /**
      * Get if this is an empty tag
@@ -57,17 +69,8 @@ class Tag private constructor(
      * Get this tag's normalized (lowercased) name.
      * @return the tag's normal name.
      */
-    fun normalName(): String? {
+    fun normalName(): String {
         return normalName
-    }
-
-    /**
-     * Gets if this tag should be formatted as a block (or as inline)
-     *
-     * @return if should be formatted as block or inline
-     */
-    fun formatAsBlock(): Boolean {
-        return formatAsBlock
     }
 
     val isInline: Boolean
@@ -114,10 +117,10 @@ class Tag private constructor(
         return this
     }
 
-    public override fun equals(o: Any?): Boolean {
-        if (this === o) return true
-        if (!(o is Tag)) return false
-        val tag: Tag = o
+    override fun equals(oother: Any?): Boolean {
+        if (this === oother) return true
+        if (!(oother is Tag)) return false
+        val tag: Tag = oother
         if (!(name == tag.name)) return false
         if (isEmpty != tag.isEmpty) return false
         if (formatAsBlock != tag.formatAsBlock) return false
@@ -128,7 +131,7 @@ class Tag private constructor(
         return isFormSubmittable == tag.isFormSubmittable
     }
 
-    public override fun hashCode(): Int {
+    override fun hashCode(): Int {
         var result: Int = name.hashCode()
         result = 31 * result + (if (isBlock) 1 else 0)
         result = 31 * result + (if (formatAsBlock) 1 else 0)
@@ -140,7 +143,7 @@ class Tag private constructor(
         return result
     }
 
-    public override fun toString(): String {
+    override fun toString(): String {
         return name
     }
 
@@ -150,10 +153,6 @@ class Tag private constructor(
         } catch (e: CloneNotSupportedException) {
             throw RuntimeException(e)
         }
-    }
-
-    init {
-        normalName = Normalizer.lowerCase(name)
     }
 
     companion object {

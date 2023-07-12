@@ -25,8 +25,8 @@ object Jsoup {
      * @return sane HTML
      */
     @JvmStatic
-    fun parse(html: String?, baseUri: String?): Document? {
-        return Parser.Companion.parse(html, baseUri)
+    fun parse(html: String, baseUri: String): Document {
+        return Parser.parse(html, baseUri)
     }
 
     /**
@@ -40,7 +40,7 @@ object Jsoup {
      * @return sane HTML
      */
     @JvmStatic
-    fun parse(html: String?, baseUri: String?, parser: Parser): Document? {
+    fun parse(html: String, baseUri: String, parser: Parser): Document {
         return parser.parseInput(html, baseUri)
     }
 
@@ -55,7 +55,7 @@ object Jsoup {
      * @return sane HTML
      */
     @JvmStatic
-    fun parse(html: String?, parser: Parser): Document? {
+    fun parse(html: String, parser: Parser): Document {
         return parser.parseInput(html, "")
     }
 
@@ -68,8 +68,8 @@ object Jsoup {
      * @see .parse
      */
     @JvmStatic
-    fun parse(html: String?): Document? {
-        return Parser.Companion.parse(html, "")
+    fun parse(html: String): Document {
+        return Parser.parse(html, "")
     }
 
     /**
@@ -87,8 +87,8 @@ object Jsoup {
      * @see Connection.newRequest
      */
     @JvmStatic
-    fun connect(url: String?): Connection {
-        return HttpConnection.Companion.connect(url)
+    fun connect(url: String): Connection {
+        return HttpConnection.connect(url)
     }
 
     /**
@@ -131,7 +131,7 @@ object Jsoup {
      */
     @JvmStatic
     @Throws(IOException::class)
-    fun parse(file: File, charsetName: String?, baseUri: String?): Document {
+    fun parse(file: File, charsetName: String?, baseUri: String): Document {
         return DataUtil.load(file, charsetName, baseUri)
     }
 
@@ -148,7 +148,7 @@ object Jsoup {
     @JvmStatic
     @Throws(IOException::class)
     fun parse(file: File, charsetName: String?): Document {
-        return DataUtil.load(file, charsetName, file.getAbsolutePath())
+        return DataUtil.load(file, charsetName, file.absolutePath)
     }
 
     /**
@@ -168,7 +168,7 @@ object Jsoup {
     @JvmStatic
     @Throws(IOException::class)
     fun parse(file: File): Document {
-        return DataUtil.load(file, null, file.getAbsolutePath())
+        return DataUtil.load(file, null, file.absolutePath)
     }
 
     /**
@@ -185,7 +185,7 @@ object Jsoup {
      */
     @JvmStatic
     @Throws(IOException::class)
-    fun parse(file: File, charsetName: String?, baseUri: String?, parser: Parser?): Document? {
+    fun parse(file: File, charsetName: String?, baseUri: String, parser: Parser): Document {
         return DataUtil.load(file, charsetName, baseUri, parser)
     }
 
@@ -201,7 +201,7 @@ object Jsoup {
      */
     @JvmStatic
     @Throws(IOException::class)
-    fun parse(@WillClose `in`: InputStream?, charsetName: String?, baseUri: String?): Document? {
+    fun parse(@WillClose `in`: InputStream, charsetName: String?, baseUri: String): Document {
         return DataUtil.load(`in`, charsetName, baseUri)
     }
 
@@ -219,7 +219,7 @@ object Jsoup {
      */
     @JvmStatic
     @Throws(IOException::class)
-    fun parse(`in`: InputStream?, charsetName: String?, baseUri: String?, parser: Parser?): Document? {
+    fun parse(`in`: InputStream, charsetName: String?, baseUri: String, parser: Parser): Document {
         return DataUtil.load(`in`, charsetName, baseUri, parser)
     }
 
@@ -232,8 +232,8 @@ object Jsoup {
      * @see Document.body
      */
     @JvmStatic
-    fun parseBodyFragment(bodyHtml: String?, baseUri: String?): Document {
-        return Parser.Companion.parseBodyFragment(bodyHtml, baseUri)
+    fun parseBodyFragment(bodyHtml: String, baseUri: String): Document {
+        return Parser.parseBodyFragment(bodyHtml, baseUri)
     }
 
     /**
@@ -244,8 +244,8 @@ object Jsoup {
      * @see Document.body
      */
     @JvmStatic
-    fun parseBodyFragment(bodyHtml: String?): Document {
-        return Parser.Companion.parseBodyFragment(bodyHtml, "")
+    fun parseBodyFragment(bodyHtml: String): Document {
+        return Parser.parseBodyFragment(bodyHtml, "")
     }
 
     /**
@@ -266,8 +266,8 @@ object Jsoup {
      */
     @JvmStatic
     @Throws(IOException::class)
-    fun parse(url: URL?, timeoutMillis: Int): Document? {
-        val con: Connection = HttpConnection.Companion.connect(url)
+    fun parse(url: URL, timeoutMillis: Int): Document {
+        val con: Connection = HttpConnection.connect(url)
         con.timeout(timeoutMillis)
         return con.get()
     }
@@ -283,9 +283,9 @@ object Jsoup {
      * @see Cleaner.clean
      */
     @JvmStatic
-    fun clean(bodyHtml: String?, baseUri: String?, safelist: Safelist): String? {
+    fun clean(bodyHtml: String, baseUri: String, safelist: Safelist): String {
         val dirty: Document = parseBodyFragment(bodyHtml, baseUri)
-        val cleaner: Cleaner = Cleaner(safelist)
+        val cleaner = Cleaner(safelist)
         val clean: Document = cleaner.clean(dirty)
         return clean.body().html()
     }
@@ -323,7 +323,7 @@ object Jsoup {
      * @see Cleaner.clean
      */
     @JvmStatic
-    fun clean(bodyHtml: String?, safelist: Safelist): String? {
+    fun clean(bodyHtml: String, safelist: Safelist): String {
         return clean(bodyHtml, "", safelist)
     }
 
@@ -344,10 +344,10 @@ object Jsoup {
      */
     @JvmStatic
     fun clean(
-        bodyHtml: String?,
-        baseUri: String?,
+        bodyHtml: String,
+        baseUri: String,
         safelist: Safelist,
-        outputSettings: Document.OutputSettings?
+        outputSettings: Document.OutputSettings
     ): String {
         val dirty: Document = parseBodyFragment(bodyHtml, baseUri)
         val cleaner = Cleaner(safelist)
@@ -380,7 +380,7 @@ object Jsoup {
      * @see .clean
      */
     @JvmStatic
-    fun isValid(bodyHtml: String?, safelist: Safelist): Boolean {
+    fun isValid(bodyHtml: String, safelist: Safelist): Boolean {
         return Cleaner(safelist).isValidBodyHtml(bodyHtml)
     }
 }

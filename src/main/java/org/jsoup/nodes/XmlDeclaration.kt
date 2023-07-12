@@ -8,23 +8,17 @@ import java.io.IOException
 /**
  * An XML Declaration.
  */
-class XmlDeclaration(name: String, isProcessingInstruction: Boolean) : LeafNode() {
-    // todo this impl isn't really right, the data shouldn't be attributes, just a run of text after the name
-    private val isProcessingInstruction // <! if true, <? if false, declaration (and last data char should be ?)
-            : Boolean
+// todo this impl isn't really right, the data shouldn't be attributes, just a run of text after the name
+class XmlDeclaration(
+    name: String,
+    private val isProcessingInstruction: Boolean // <! if true, <? if false, declaration (and last data char should be ?)
+) : LeafNode(name) {
 
-    /**
-     * Create a new XML declaration
-     * @param name of declaration
-     * @param isProcessingInstruction is processing instruction
-     */
     init {
         Validate.notNull(name)
-        value = name
-        this.isProcessingInstruction = isProcessingInstruction
     }
 
-    override fun nodeName(): String? {
+    override fun nodeName(): String {
         return "#declaration"
     }
 
@@ -54,13 +48,16 @@ class XmlDeclaration(name: String, isProcessingInstruction: Boolean) : LeafNode(
     @Throws(IOException::class)
     private fun getWholeDeclaration(accum: Appendable, out: Document.OutputSettings) {
         for (attribute in attributes()) {
+            val key = attribute.key
             if (key != nodeName()) { // skips coreValue (name)
-                accum!!.append(' ')
+                accum.append(' ')
                 // basically like Attribute, but skip empty vals in XML
                 accum.append(key)
-                if (!`val`!!.isEmpty()) {
+
+                val value = attribute.value
+                if (value.isNotEmpty()) {
                     accum.append("=\"")
-                    Entities.escape(accum, `val`, out, true, false, false, false)
+                    Entities.escape(accum, value, out, true, false, false, false)
                     accum.append('"')
                 }
             }
@@ -79,11 +76,14 @@ class XmlDeclaration(name: String, isProcessingInstruction: Boolean) : LeafNode(
             .append(">")
     }
 
-    override fun outerHtmlTail(accum: Appendable, depth: Int, out: Document.OutputSettings) {n}
+    override fun outerHtmlTail(accum: Appendable, depth: Int, out: Document.OutputSettings) { }
 
     override fun toString(): String {
-        return outerHtml()!!
+        return outerHtml()
     }
+
+    override fun createInstanceForClone(): Node =
+        this::class.java.getDeclaredConstructor(Any::class.java, Boolean::class.java).newInstance(value, isProcessingInstruction)
 
     override fun clone(): XmlDeclaration {
         return super.clone() as XmlDeclaration

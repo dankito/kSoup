@@ -32,7 +32,7 @@ import javax.net.ssl.SSLSocketFactory
  * be shared across threads but a given request, not.
  */
 @Suppress("unused")
-open interface Connection {
+interface Connection {
     /**
      * GET and POST http methods.
      */
@@ -60,28 +60,28 @@ open interface Connection {
      * @return a new Connection object, with a shared Cookie Store and initialized settings from this Connection and Request
      * @since 1.14.1
      */
-    open fun newRequest(): Connection
+    fun newRequest(): Connection
 
     /**
      * Set the request URL to fetch. The protocol must be HTTP or HTTPS.
      * @param url URL to connect to
      * @return this Connection, for chaining
      */
-    open fun url(url: URL?): Connection
+    fun url(url: URL): Connection
 
     /**
      * Set the request URL to fetch. The protocol must be HTTP or HTTPS.
      * @param url URL to connect to
      * @return this Connection, for chaining
      */
-    open fun url(url: String?): Connection
+    fun url(url: String): Connection
 
     /**
      * Set the proxy to use for this request. Set to `null` to disable a previously set proxy.
      * @param proxy proxy to use
      * @return this Connection, for chaining
      */
-    open fun proxy(proxy: Proxy?): Connection
+    fun proxy(proxy: Proxy?): Connection
 
     /**
      * Set the HTTP proxy to use for this request.
@@ -89,7 +89,7 @@ open interface Connection {
      * @param port the proxy port
      * @return this Connection, for chaining
      */
-    open fun proxy(host: String?, port: Int): Connection
+    fun proxy(host: String, port: Int): Connection
 
     /**
      * Set the request user-agent header.
@@ -97,7 +97,7 @@ open interface Connection {
      * @return this Connection, for chaining
      * @see org.jsoup.helper.HttpConnection.DEFAULT_UA
      */
-    open fun userAgent(userAgent: String?): Connection
+    fun userAgent(userAgent: String): Connection
 
     /**
      * Set the total request timeout duration. If a timeout occurs, an [java.net.SocketTimeoutException] will be thrown.
@@ -110,7 +110,7 @@ open interface Connection {
      * @return this Connection, for chaining
      * @see .maxBodySize
      */
-    open fun timeout(millis: Int): Connection
+    fun timeout(millis: Int): Connection
 
     /**
      * Set the maximum bytes to read from the (uncompressed) connection into the body, before the connection is closed,
@@ -121,28 +121,28 @@ open interface Connection {
      * @param bytes number of bytes to read from the input before truncating
      * @return this Connection, for chaining
      */
-    open fun maxBodySize(bytes: Int): Connection
+    fun maxBodySize(bytes: Int): Connection
 
     /**
      * Set the request referrer (aka "referer") header.
      * @param referrer referrer to use
      * @return this Connection, for chaining
      */
-    open fun referrer(referrer: String?): Connection
+    fun referrer(referrer: String): Connection
 
     /**
      * Configures the connection to (not) follow server redirects. By default this is **true**.
      * @param followRedirects true if server redirects should be followed.
      * @return this Connection, for chaining
      */
-    open fun followRedirects(followRedirects: Boolean): Connection
+    fun followRedirects(followRedirects: Boolean): Connection
 
     /**
      * Set the request method to use, GET or POST. Default is GET.
      * @param method HTTP request method
      * @return this Connection, for chaining
      */
-    open fun method(method: Method?): Connection
+    fun method(method: Method): Connection
 
     /**
      * Configures the connection to not throw exceptions when a HTTP error occurs. (4xx - 5xx, e.g. 404 or 500). By
@@ -151,7 +151,7 @@ open interface Connection {
      * @param ignoreHttpErrors - false (default) if HTTP errors should be ignored.
      * @return this Connection, for chaining
      */
-    open fun ignoreHttpErrors(ignoreHttpErrors: Boolean): Connection
+    fun ignoreHttpErrors(ignoreHttpErrors: Boolean): Connection
 
     /**
      * Ignore the document's Content-Type when parsing the response. By default this is **false**, an unrecognised
@@ -161,14 +161,14 @@ open interface Connection {
      * Document.
      * @return this Connection, for chaining
      */
-    open fun ignoreContentType(ignoreContentType: Boolean): Connection
+    fun ignoreContentType(ignoreContentType: Boolean): Connection
 
     /**
      * Set custom SSL socket factory
      * @param sslSocketFactory custom SSL socket factory
      * @return this Connection, for chaining
      */
-    open fun sslSocketFactory(sslSocketFactory: SSLSocketFactory?): Connection
+    fun sslSocketFactory(sslSocketFactory: SSLSocketFactory): Connection
 
     /**
      * Add a request data parameter. Request parameters are sent in the request query string for GETs, and in the
@@ -177,7 +177,7 @@ open interface Connection {
      * @param value data value
      * @return this Connection, for chaining
      */
-    open fun data(key: String?, value: String?): Connection
+    fun data(key: String, value: String): Connection
 
     /**
      * Add an input stream as a request data parameter. For GETs, has no effect, but for POSTS this will upload the
@@ -190,7 +190,7 @@ open interface Connection {
      * @return this Connections, for chaining
      * @see .data
      */
-    open fun data(key: String?, filename: String?, inputStream: InputStream?): Connection
+    fun data(key: String, filename: String, inputStream: InputStream): Connection
 
     /**
      * Add an input stream as a request data parameter. For GETs, has no effect, but for POSTS this will upload the
@@ -203,21 +203,21 @@ open interface Connection {
      * You must close the InputStream in a `finally` block.
      * @return this Connections, for chaining
      */
-    open fun data(key: String?, filename: String?, inputStream: InputStream?, contentType: String?): Connection
+    fun data(key: String, filename: String, inputStream: InputStream, contentType: String): Connection
 
     /**
      * Adds all of the supplied data to the request data parameters
      * @param data collection of data parameters
      * @return this Connection, for chaining
      */
-    open fun data(data: Collection<KeyVal?>): Connection
+    fun data(data: Collection<KeyVal>): Connection
 
     /**
      * Adds all of the supplied data to the request data parameters
      * @param data map of data parameters
      * @return this Connection, for chaining
      */
-    open fun data(data: Map<String?, String?>): Connection
+    fun data(data: Map<String, String>): Connection
 
     /**
      * Add one or more request `key, val` data parameter pairs.
@@ -232,14 +232,14 @@ open interface Connection {
      * @param keyvals a set of key value pairs.
      * @return this Connection, for chaining
      */
-    open fun data(vararg keyvals: String?): Connection
+    fun data(vararg keyvals: String): Connection
 
     /**
      * Get the data KeyVal for this key, if any
      * @param key the data key
      * @return null if not set
      */
-    open fun data(key: String): KeyVal?
+    fun data(key: String): KeyVal?
 
     /**
      * Set a POST (or PUT) request body. Useful when a server expects a plain request body, not a set for URL
@@ -251,7 +251,7 @@ open interface Connection {
      * If any data key/vals are supplied, they will be sent as URL query params.
      * @return this Request, for chaining
      */
-    open fun requestBody(body: String?): Connection
+    fun requestBody(body: String): Connection
 
     /**
      * Set a request header.
@@ -260,7 +260,7 @@ open interface Connection {
      * @return this Connection, for chaining
      * @see org.jsoup.Connection.Request.headers
      */
-    open fun header(name: String?, value: String?): Connection
+    fun header(name: String, value: String): Connection
 
     /**
      * Adds each of the supplied headers to the request.
@@ -268,7 +268,7 @@ open interface Connection {
      * @return this Connection, for chaining
      * @see org.jsoup.Connection.Request.headers
      */
-    open fun headers(headers: Map<String?, String?>): Connection
+    fun headers(headers: Map<String, String>): Connection
 
     /**
      * Set a cookie to be sent in the request.
@@ -276,14 +276,14 @@ open interface Connection {
      * @param value value of cookie
      * @return this Connection, for chaining
      */
-    open fun cookie(name: String?, value: String?): Connection
+    fun cookie(name: String, value: String): Connection
 
     /**
      * Adds each of the supplied cookies to the request.
      * @param cookies map of cookie name -&gt; value pairs
      * @return this Connection, for chaining
      */
-    open fun cookies(cookies: Map<String?, String?>): Connection
+    fun cookies(cookies: Map<String, String>): Connection
 
     /**
      * Provide a custom or pre-filled CookieStore to be used on requests made by this Connection.
@@ -291,14 +291,14 @@ open interface Connection {
      * @return this Connection, for chaining
      * @since 1.14.1
      */
-    open fun cookieStore(cookieStore: CookieStore?): Connection
+    fun cookieStore(cookieStore: CookieStore): Connection
 
     /**
      * Get the cookie store used by this Connection.
      * @return the cookie store
      * @since 1.14.1
      */
-    open fun cookieStore(): CookieStore?
+    fun cookieStore(): CookieStore
 
     /**
      * Provide an alternate parser to use when parsing the response to a Document. If not set, defaults to the HTML
@@ -306,14 +306,14 @@ open interface Connection {
      * @param parser alternate parser
      * @return this Connection, for chaining
      */
-    open fun parser(parser: Parser?): Connection
+    fun parser(parser: Parser): Connection
 
     /**
      * Sets the default post data character set for x-www-form-urlencoded post data
      * @param charset character set to encode post data
      * @return this Connection, for chaining
      */
-    open fun postDataCharset(charset: String?): Connection
+    fun postDataCharset(charset: String): Connection
 
     /**
      * Execute the request as a GET, and parse the result.
@@ -325,7 +325,7 @@ open interface Connection {
      * @throws IOException on error
      */
     @Throws(IOException::class)
-    open fun get(): Document?
+    fun get(): Document
 
     /**
      * Execute the request as a POST, and parse the result.
@@ -337,7 +337,7 @@ open interface Connection {
      * @throws IOException on error
      */
     @Throws(IOException::class)
-    open fun post(): Document?
+    fun post(): Document
 
     /**
      * Execute the request.
@@ -349,66 +349,66 @@ open interface Connection {
      * @throws IOException on error
      */
     @Throws(IOException::class)
-    open fun execute(): Response?
+    fun execute(): Response
 
     /**
      * Get the request object associated with this connection
      * @return request
      */
-    open fun request(): Request
+    fun request(): Request
 
     /**
      * Set the connection's request
      * @param request new request object
      * @return this Connection, for chaining
      */
-    open fun request(request: Request): Connection
+    fun request(request: Request): Connection
 
     /**
      * Get the response, once the request has been executed.
      * @return response
      * @throws IllegalArgumentException if called before the response has been executed.
      */
-    open fun response(): Response
+    fun response(): Response
 
     /**
      * Set the connection's response
      * @param response new response
      * @return this Connection, for chaining
      */
-    open fun response(response: Response?): Connection
+    fun response(response: Response): Connection
 
     /**
      * Common methods for Requests and Responses
      * @param <T> Type of Base, either Request or Response
     </T> */
-    open interface Base<T : Base<T>?> {
+    interface Base<T : Base<T>> {
         /**
          * Get the URL of this Request or Response. For redirected responses, this will be the final destination URL.
          * @return URL
          * @throws IllegalArgumentException if called on a Request that was created without a URL.
          */
-        open fun url(): URL?
+        fun url(): URL
 
         /**
          * Set the URL
          * @param url new URL
          * @return this, for chaining
          */
-        open fun url(url: URL?): T
+        fun url(url: URL): T
 
         /**
          * Get the request method, which defaults to `GET`
          * @return method
          */
-        open fun method(): Method
+        fun method(): Method
 
         /**
          * Set the request method
          * @param method new method
          * @return this, for chaining
          */
-        open fun method(method: Method): T
+        fun method(method: Method): T
 
         /**
          * Get the value of a header. If there is more than one header value with the same name, the headers are returned
@@ -422,14 +422,14 @@ open interface Connection {
          * @see .hasHeader
          * @see .cookie
          */
-        open fun header(name: String): String?
+        fun header(name: String): String?
 
         /**
          * Get the values of a header.
          * @param name header name, case insensitive.
          * @return a list of values for this header, or an empty list if not set.
          */
-        open fun headers(name: String): List<String>
+        fun headers(name: String): List<String>
 
         /**
          * Set a header. This method will overwrite any existing header with the same case insensitive name. (If there
@@ -439,7 +439,7 @@ open interface Connection {
          * @return this, for chaining
          * @see .addHeader
          */
-        open fun header(name: String, value: String?): T
+        fun header(name: String, value: String): T
 
         /**
          * Add a header. The header will be added regardless of whether a header with the same name already exists.
@@ -447,14 +447,14 @@ open interface Connection {
          * @param value Value of new header
          * @return this, for chaining
          */
-        open fun addHeader(name: String, value: String?): T
+        fun addHeader(name: String, value: String?): T
 
         /**
          * Check if a header is present
          * @param name name of header (case insensitive)
          * @return if the header is present in this request/response
          */
-        open fun hasHeader(name: String): Boolean
+        fun hasHeader(name: String): Boolean
 
         /**
          * Check if a header is present, with the given value
@@ -462,14 +462,14 @@ open interface Connection {
          * @param value value (case insensitive)
          * @return if the header and value pair are set in this req/res
          */
-        open fun hasHeaderWithValue(name: String, value: String): Boolean
+        fun hasHeaderWithValue(name: String, value: String): Boolean
 
         /**
          * Remove headers by name. If there is more than one header with this name, they will all be removed.
          * @param name name of header to remove (case insensitive)
          * @return this, for chaining
          */
-        open fun removeHeader(name: String?): T
+        fun removeHeader(name: String): T
 
         /**
          * Retrieve all of the request/response header names and corresponding values as a map. For headers with multiple
@@ -480,13 +480,13 @@ open interface Connection {
          * @return headers
          * @see .multiHeaders
          */
-        open fun headers(): Map<String, String>
+        fun headers(): Map<String, String>
 
         /**
          * Retreive all of the headers, keyed by the header name, and with a list of values per header.
          * @return a list of multiple values per header.
          */
-        open fun multiHeaders(): Map<String, List<String>>
+        fun multiHeaders(): Map<String, List<String>>
 
         /**
          * Get a cookie value by name from this request/response.
@@ -498,7 +498,7 @@ open interface Connection {
          * @param name name of cookie to retrieve.
          * @return value of cookie, or null if not set
          */
-        open fun cookie(name: String): String?
+        fun cookie(name: String): String?
 
         /**
          * Set a cookie in this request/response.
@@ -506,45 +506,45 @@ open interface Connection {
          * @param value value of cookie
          * @return this, for chaining
          */
-        open fun cookie(name: String, value: String): T
+        fun cookie(name: String, value: String): T
 
         /**
          * Check if a cookie is present
          * @param name name of cookie
          * @return if the cookie is present in this request/response
          */
-        open fun hasCookie(name: String): Boolean
+        fun hasCookie(name: String): Boolean
 
         /**
          * Remove a cookie by name
          * @param name name of cookie to remove
          * @return this, for chaining
          */
-        open fun removeCookie(name: String): T
+        fun removeCookie(name: String): T
 
         /**
          * Retrieve all of the request/response cookies as a map
          * @return cookies
          */
-        open fun cookies(): Map<String, String>
+        fun cookies(): Map<String, String>
     }
 
     /**
      * Represents a HTTP request.
      */
-    open interface Request : Base<Request?> {
+    interface Request : Base<Request> {
         /**
          * Get the proxy used for this request.
          * @return the proxy; `null` if not enabled.
          */
-        open fun proxy(): Proxy?
+        fun proxy(): Proxy?
 
         /**
          * Update the proxy for this request.
          * @param proxy the proxy ot use; `null` to disable.
          * @return this Request, for chaining
          */
-        open fun proxy(proxy: Proxy?): Request
+        fun proxy(proxy: Proxy?): Request
 
         /**
          * Set the HTTP proxy to use for this request.
@@ -552,99 +552,99 @@ open interface Connection {
          * @param port the proxy port
          * @return this Connection, for chaining
          */
-        open fun proxy(host: String?, port: Int): Request
+        fun proxy(host: String, port: Int): Request
 
         /**
          * Get the request timeout, in milliseconds.
          * @return the timeout in milliseconds.
          */
-        open fun timeout(): Int
+        fun timeout(): Int
 
         /**
          * Update the request timeout.
          * @param millis timeout, in milliseconds
          * @return this Request, for chaining
          */
-        open fun timeout(millis: Int): Request
+        fun timeout(millis: Int): Request
 
         /**
          * Get the maximum body size, in bytes.
          * @return the maximum body size, in bytes.
          */
-        open fun maxBodySize(): Int
+        fun maxBodySize(): Int
 
         /**
          * Update the maximum body size, in bytes.
          * @param bytes maximum body size, in bytes.
          * @return this Request, for chaining
          */
-        open fun maxBodySize(bytes: Int): Request
+        fun maxBodySize(bytes: Int): Request
 
         /**
          * Get the current followRedirects configuration.
          * @return true if followRedirects is enabled.
          */
-        open fun followRedirects(): Boolean
+        fun followRedirects(): Boolean
 
         /**
          * Configures the request to (not) follow server redirects. By default this is **true**.
          * @param followRedirects true if server redirects should be followed.
          * @return this Request, for chaining
          */
-        open fun followRedirects(followRedirects: Boolean): Request
+        fun followRedirects(followRedirects: Boolean): Request
 
         /**
          * Get the current ignoreHttpErrors configuration.
          * @return true if errors will be ignored; false (default) if HTTP errors will cause an IOException to be
          * thrown.
          */
-        open fun ignoreHttpErrors(): Boolean
+        fun ignoreHttpErrors(): Boolean
 
         /**
          * Configures the request to ignore HTTP errors in the response.
          * @param ignoreHttpErrors set to true to ignore HTTP errors.
          * @return this Request, for chaining
          */
-        open fun ignoreHttpErrors(ignoreHttpErrors: Boolean): Request
+        fun ignoreHttpErrors(ignoreHttpErrors: Boolean): Request
 
         /**
          * Get the current ignoreContentType configuration.
          * @return true if invalid content-types will be ignored; false (default) if they will cause an IOException to
          * be thrown.
          */
-        open fun ignoreContentType(): Boolean
+        fun ignoreContentType(): Boolean
 
         /**
          * Configures the request to ignore the Content-Type of the response.
          * @param ignoreContentType set to true to ignore the content type.
          * @return this Request, for chaining
          */
-        open fun ignoreContentType(ignoreContentType: Boolean): Request
+        fun ignoreContentType(ignoreContentType: Boolean): Request
 
         /**
          * Get the current custom SSL socket factory, if any.
          * @return custom SSL socket factory if set, null otherwise
          */
-        open fun sslSocketFactory(): SSLSocketFactory?
+        fun sslSocketFactory(): SSLSocketFactory?
 
         /**
          * Set a custom SSL socket factory.
          * @param sslSocketFactory SSL socket factory
          */
-        open fun sslSocketFactory(sslSocketFactory: SSLSocketFactory?)
+        fun sslSocketFactory(sslSocketFactory: SSLSocketFactory)
 
         /**
          * Add a data parameter to the request
          * @param keyval data to add.
          * @return this Request, for chaining
          */
-        open fun data(keyval: KeyVal?): Request
+        fun data(keyval: KeyVal): Request
 
         /**
          * Get all of the request's data parameters
          * @return collection of keyvals
          */
-        open fun data(): MutableCollection<KeyVal?>
+        fun data(): MutableCollection<KeyVal>
 
         /**
          * Set a POST (or PUT) request body. Useful when a server expects a plain request body, not a set for URL
@@ -657,75 +657,75 @@ open interface Connection {
          * @param body to use as the request body. Set to null to clear a previously set body.
          * @return this Request, for chaining
          */
-        open fun requestBody(body: String?): Request
+        fun requestBody(body: String?): Request
 
         /**
          * Get the current request body.
          * @return null if not set.
          */
-        open fun requestBody(): String?
+        fun requestBody(): String?
 
         /**
          * Specify the parser to use when parsing the document.
          * @param parser parser to use.
          * @return this Request, for chaining
          */
-        open fun parser(parser: Parser?): Request
+        fun parser(parser: Parser): Request
 
         /**
          * Get the current parser to use when parsing the document.
          * @return current Parser
          */
-        open fun parser(): Parser?
+        fun parser(): Parser
 
         /**
          * Sets the post data character set for x-www-form-urlencoded post data
          * @param charset character set to encode post data
          * @return this Request, for chaining
          */
-        open fun postDataCharset(charset: String?): Request
+        fun postDataCharset(charset: String): Request
 
         /**
          * Gets the post data character set for x-www-form-urlencoded post data
          * @return character set to encode post data
          */
-        open fun postDataCharset(): String?
+        fun postDataCharset(): String
     }
 
     /**
      * Represents a HTTP response.
      */
-    open interface Response : Base<Response?> {
+    interface Response : Base<Response> {
         /**
          * Get the status code of the response.
          * @return status code
          */
-        open fun statusCode(): Int
+        fun statusCode(): Int
 
         /**
          * Get the status message of the response.
          * @return status message
          */
-        open fun statusMessage(): String
+        fun statusMessage(): String
 
         /**
          * Get the character set name of the response, derived from the content-type header.
          * @return character set name if set, **null** if not
          */
-        open fun charset(): String?
+        fun charset(): String?
 
         /**
          * Set / override the response character set. When the document body is parsed it will be with this charset.
          * @param charset to decode body as
          * @return this Response, for chaining
          */
-        open fun charset(charset: String?): Response
+        fun charset(charset: String): Response
 
         /**
          * Get the response content type (e.g. "text/html");
          * @return the response content type, or **null** if one was not set
          */
-        open fun contentType(): String?
+        fun contentType(): String?
 
         /**
          * Read and parse the body of the response as a Document. If you intend to parse the same response multiple
@@ -734,19 +734,19 @@ open interface Connection {
          * @throws IOException on error
          */
         @Throws(IOException::class)
-        open fun parse(): Document?
+        fun parse(): Document
 
         /**
          * Get the body of the response as a plain string.
          * @return body
          */
-        open fun body(): String
+        fun body(): String
 
         /**
          * Get the body of the response as an array of bytes.
          * @return body bytes
          */
-        open fun bodyAsBytes(): ByteArray
+        fun bodyAsBytes(): ByteArray
 
         /**
          * Read the body of the response into a local buffer, so that [.parse] may be called repeatedly on the
@@ -755,7 +755,7 @@ open interface Connection {
          * @return this response, for chaining
          * @throws UncheckedIOException if an IO exception occurs during buffering.
          */
-        open fun bufferUp(): Response
+        fun bufferUp(): Response
 
         /**
          * Get the body of the response as a (buffered) InputStream. You should close the input stream when you're done with it.
@@ -764,57 +764,57 @@ open interface Connection {
          * This method is useful for writing large responses to disk, without buffering them completely into memory first.
          * @return the response body input stream
          */
-        open fun bodyStream(): BufferedInputStream
+        fun bodyStream(): BufferedInputStream
     }
 
     /**
      * A Key:Value tuple(+), used for form data.
      */
-    open interface KeyVal {
+    interface KeyVal {
         /**
          * Update the key of a keyval
          * @param key new key
          * @return this KeyVal, for chaining
          */
-        open fun key(key: String?): KeyVal
+        fun key(key: String): KeyVal
 
         /**
          * Get the key of a keyval
          * @return the key
          */
-        open fun key(): String?
+        fun key(): String
 
         /**
          * Update the value of a keyval
          * @param value the new value
          * @return this KeyVal, for chaining
          */
-        open fun value(value: String?): KeyVal
+        fun value(value: String): KeyVal
 
         /**
          * Get the value of a keyval
          * @return the value
          */
-        open fun value(): String?
+        fun value(): String
 
         /**
          * Add or update an input stream to this keyVal
          * @param inputStream new input stream
          * @return this KeyVal, for chaining
          */
-        open fun inputStream(inputStream: InputStream?): KeyVal
+        fun inputStream(inputStream: InputStream): KeyVal
 
         /**
          * Get the input stream associated with this keyval, if any
          * @return input stream if set, or null
          */
-        open fun inputStream(): InputStream?
+        fun inputStream(): InputStream?
 
         /**
          * Does this keyval have an input stream?
          * @return true if this keyval does indeed have an input stream
          */
-        open fun hasInputStream(): Boolean
+        fun hasInputStream(): Boolean
 
         /**
          * Set the Content Type header used in the MIME body (aka mimetype) when uploading files.
@@ -824,12 +824,12 @@ open interface Connection {
          * @param contentType the new content type
          * @return this KeyVal
          */
-        open fun contentType(contentType: String?): KeyVal
+        fun contentType(contentType: String): KeyVal
 
         /**
          * Get the current Content Type, or `null` if not set.
          * @return the current Content Type.
          */
-        open fun contentType(): String?
+        fun contentType(): String?
     }
 }

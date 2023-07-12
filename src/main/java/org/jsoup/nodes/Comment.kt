@@ -36,18 +36,20 @@ class Comment(data: String) : LeafNode() {
 
     @Throws(IOException::class)
     override fun outerHtmlHead(accum: Appendable, depth: Int, out: Document.OutputSettings) {
-        if (out.prettyPrint() && (isEffectivelyFirst && parentNode is Element && (parentNode as Element).tag()!!
-                .formatAsBlock() || out.outline())
-        ) indent(accum, depth, out)
+        if (out.prettyPrint() && (isEffectivelyFirst && parentNode is Element && (parentNode as Element).tag().formatAsBlock || out.outline())) {
+            indent(accum, depth, out)
+        }
+
         accum
             .append("<!--")
             .append(data)
             .append("-->")
     }
 
-    public override fun outerHtmlTail(accum: Appendable?, depth: Int, out: Document.OutputSettings?) {}
+    override fun outerHtmlTail(accum: Appendable, depth: Int, out: Document.OutputSettings) { }
+
     override fun toString(): String {
-        return outerHtml()!!
+        return outerHtml()
     }
 
     override fun clone(): Comment {
@@ -72,16 +74,19 @@ class Comment(data: String) : LeafNode() {
         val data = data
         var decl: XmlDeclaration? = null
         val declContent = data!!.substring(1, data.length - 1)
+
         // make sure this bogus comment is not immediately followed by another, treat as comment if so
-        if (isXmlDeclarationData(declContent)) return null
+        if (isXmlDeclarationData(declContent)) {
+            return null
+        }
+
         val fragment = "<$declContent>"
         // use the HTML parser not XML, so we don't get into a recursive XML Declaration on contrived data
-        val doc: Document =
-            Parser.Companion.htmlParser().settings(ParseSettings.Companion.preserveCase).parseInput(fragment, baseUri())
-        if (doc.body()!!.childrenSize() > 0) {
-            val el = doc.body()!!.child(0)
+        val doc: Document = Parser.htmlParser().settings(ParseSettings.Companion.preserveCase).parseInput(fragment, baseUri())
+        if (doc.body().childrenSize() > 0) {
+            val el = doc.body().child(0)
             decl = XmlDeclaration(
-                NodeUtils.parser(doc)!!.settings()!!.normalizeTag(el!!.tagName())!!,
+                NodeUtils.parser(doc).settings().normalizeTag(el.tagName()),
                 data.startsWith("!")
             )
             decl.attributes().addAll(el.attributes())

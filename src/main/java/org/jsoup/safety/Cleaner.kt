@@ -4,6 +4,7 @@ import org.jsoup.helper.Validate
 import org.jsoup.nodes.*
 import org.jsoup.parser.ParseErrorList
 import org.jsoup.parser.Parser
+import org.jsoup.parser.Tag
 import org.jsoup.select.NodeTraversor
 import org.jsoup.select.NodeVisitor
 
@@ -107,11 +108,11 @@ class Cleaner(safelist: Safelist) {
      * @param bodyHtml HTML fragment to test
      * @return true if no tags or attributes need to be removed; false if they do
      */
-    fun isValidBodyHtml(bodyHtml: String?): Boolean {
-        val clean: Document = Document.Companion.createShell("")
-        val dirty: Document = Document.Companion.createShell("")
+    fun isValidBodyHtml(bodyHtml: String): Boolean {
+        val clean: Document = Document.createShell("")
+        val dirty: Document = Document.createShell("")
         val errorList: ParseErrorList = ParseErrorList.Companion.tracking(1)
-        val nodes: List<Node?>? = Parser.Companion.parseFragment(bodyHtml, dirty.body(), "", errorList)
+        val nodes = Parser.parseFragment(bodyHtml, dirty.body(), "", errorList)
         dirty.body().insertChildren(0, nodes)
         val numDiscarded: Int = copySafeNodes(dirty.body(), clean.body())
         return numDiscarded == 0 && errorList.isEmpty()
@@ -120,21 +121,17 @@ class Cleaner(safelist: Safelist) {
     /**
      * Iterates the input and copies trusted nodes (tags, attributes, text) into the destination.
      */
-    private inner class CleaningVisitor private constructor(private val root: Element, destination: Element) :
-        NodeVisitor {
-        private var numDiscarded: Int = 0
-        private var destination // current element to append nodes to
-                : Element?
+    internal inner class CleaningVisitor internal constructor(
+        private val root: Element,
+        private var destination: Element // current element to append nodes to
+    ) : NodeVisitor {
+        internal var numDiscarded: Int = 0
+            private set
 
-        init {
-            this.destination = destination
-        }
-
-        public override fun head(source: Node, depth: Int) {
+        override fun head(source: Node, depth: Int) {
             if (source is Element) {
-                val sourceEl: Element = source as Element
-                if (safelist.isSafeTag(sourceEl.normalName())) { // safe, clone and copy safe attrs
-                    val meta: ElementMeta = createSafeElement(sourceEl)
+                if (safelist.isSafeTag(source.normalName())) { // safe, clone and copy safe attrs
+                    val meta: ElementMeta = createSafeElement(source)
                     val destChild: Element = meta.el
                     destination.appendChild(destChild)
                     numDiscarded += meta.numAttribsDiscarded
@@ -143,49 +140,63 @@ class Cleaner(safelist: Safelist) {
                     numDiscarded++
                 }
             } else if (source is TextNode) {
-                val sourceText: TextNode = source as TextNode
-                val destText: TextNode = TextNode(sourceText.wholeText)
+                val sourceText: TextNode = source
+                val destText = TextNode(sourceText.wholeText)
                 destination.appendChild(destText)
-            } else if (source is DataNode && safelist.isSafeTag(source.parent().nodeName())) {
-                val sourceData: DataNode = source as DataNode
-                val destData: DataNode = DataNode(sourceData.wholeData)
+            } else if (source is DataNode && source.parent() != null && safelist.isSafeTag(source.parent()!!.nodeName())) {
+                val destData = DataNode(source.wholeData)
                 destination.appendChild(destData)
             } else { // else, we don't care about comments, xml proc instructions, etc
                 numDiscarded++
             }
         }
 
-        public override fun tail(source: Node?, depth: Int) {
+        override fun tail(source: Node, depth: Int) {
             if (source is Element && safelist.isSafeTag(source.nodeName())) {
-                destination = destination.parent() // would have descended, so pop destination stack
+                // TODO: is this correct?
+//                destination = destination.parent() // would have descended, so pop destination stack
+                destination.parent()?.let { parent ->
+                    destination = parent // would have descended, so pop destination stack
+                }
             }
         }
     }
 
-    private fun copySafeNodes(source: Element?, dest: Element?): Int {
-        val cleaningVisitor: CleaningVisitor = CleaningVisitor(source, dest)
+    private fun copySafeNodes(source: Element, dest: Element): Int {
+        val cleaningVisitor = CleaningVisitor(source, dest)
         NodeTraversor.traverse(cleaningVisitor, source)
         return cleaningVisitor.numDiscarded
     }
 
     private fun createSafeElement(sourceEl: Element): ElementMeta {
-        val sourceTag: String? = sourceEl.tagName()
-        val destAttrs: Attributes = Attributes()
-        val dest: Element = Element(valueOf(sourceTag), sourceEl.baseUri(), destAttrs)
-        var numDiscarded: Int = 0
-        val sourceAttrs: Attributes? = sourceEl.attributes()
+        val sourceTag = sourceEl.tagName()
+        val destAttrs = Attributes()
+        val dest = Element(Tag.valueOf(sourceTag), sourceEl.baseUri(), destAttrs)
+        var numDiscarded = 0
+        val sourceAttrs = sourceEl.attributes()
+
         for (sourceAttr: Attribute in sourceAttrs) {
-            if (safelist.isSafeAttribute(sourceTag, sourceEl, sourceAttr)) destAttrs.put(sourceAttr) else numDiscarded++
+            if (safelist.isSafeAttribute(sourceTag, sourceEl, sourceAttr)) {
+                destAttrs.put(sourceAttr)
+            } else {
+                numDiscarded++
+            }
         }
-        val enforcedAttrs: Attributes? = safelist.getEnforcedAttributes(sourceTag)
+
+        val enforcedAttrs = safelist.getEnforcedAttributes(sourceTag)
         destAttrs.addAll(enforcedAttrs)
 
         // Copy the original start and end range, if set
         // TODO - might be good to make a generic Element#userData set type interface, and copy those all over
-        if (sourceEl.sourceRange().isTracked()) sourceEl.sourceRange().track(dest, true)
-        if (sourceEl.endSourceRange().isTracked()) sourceEl.endSourceRange().track(dest, false)
+        if (sourceEl.sourceRange().isTracked) {
+            sourceEl.sourceRange().track(dest, true)
+        }
+        if (sourceEl.endSourceRange().isTracked) {
+            sourceEl.endSourceRange().track(dest, false)
+        }
+
         return ElementMeta(dest, numDiscarded)
     }
 
-    private class ElementMeta internal constructor(var el: Element, var numAttribsDiscarded: Int)
+    private class ElementMeta(var el: Element, var numAttribsDiscarded: Int)
 }

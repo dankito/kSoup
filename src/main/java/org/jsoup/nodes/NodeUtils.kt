@@ -14,9 +14,9 @@ internal object NodeUtils {
      * Get the output setting for this node,  or if this node has no document (or parent), retrieve the default output
      * settings
      */
-    fun outputSettings(node: Node): Document.OutputSettings? {
+    fun outputSettings(node: Node): Document.OutputSettings {
         val owner = node.ownerDocument()
-        return if (owner != null) owner.outputSettings() else Document("").outputSettings()
+        return owner?.outputSettings() ?: Document("").outputSettings()
     }
 
     /**
@@ -24,7 +24,7 @@ internal object NodeUtils {
      */
     fun parser(node: Node): Parser {
         val doc = node.ownerDocument()
-        return if (doc != null && doc.parser() != null) doc.parser() else Parser(HtmlTreeBuilder())
+        return doc?.parser() ?: Parser(HtmlTreeBuilder())
     }
 
     /**
@@ -33,7 +33,7 @@ internal object NodeUtils {
      * stashed them during conversion). This process could potentially be optimized by transpiling the compiled xpath
      * expression to a jsoup Evaluator when there's 1:1 support, thus saving the W3C document conversion stage.
      */
-    fun <T : Node?> selectXpath(xpath: String?, el: Element, nodeType: Class<T>): List<T?>? {
+    fun <T : Node> selectXpath(xpath: String, el: Element, nodeType: Class<T>): List<T> {
         Validate.notEmpty(xpath)
         Validate.notNull(el)
         Validate.notNull(nodeType)

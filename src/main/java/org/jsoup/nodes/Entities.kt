@@ -3,11 +3,11 @@ package org.jsoup.nodes
 import org.jsoup.SerializationException
 import org.jsoup.helper.Validate
 import org.jsoup.internal.StringUtil
+import org.jsoup.nodes.Document.OutputSettings
+import org.jsoup.nodes.Document.OutputSettings.Syntax
 import org.jsoup.parser.CharacterReader
 import org.jsoup.parser.Parser
-import java.io.IOException
 import java.nio.charset.CharsetEncoder
-import java.util.*
 
 /**
  * HTML entities, and escape routines. Source: [W3C
@@ -18,7 +18,7 @@ object Entities {
     private const val emptyName = ""
     const val codepointRadix = 36
     private val codeDelims = charArrayOf(',', ';')
-    private val multipoints = HashMap<String?, String>() // name -> multiple character references
+    private val multipoints = HashMap<String, String>() // name -> multiple character references
 
     /**
      * Check if the input is a known named entity
@@ -48,21 +48,22 @@ object Entities {
      * @return the string value of the character(s) represented by this entity, or "" if not defined
      */
     @JvmStatic
-    fun getByName(name: String?): String {
-        val `val` = multipoints[name]
-        if (`val` != null) return `val`
-        val codepoint = EscapeMode.extended.codepointForName(name)
-        return if (codepoint != empty) String(intArrayOf(codepoint), 0, 1) else emptyName
+    fun getByName(name: String): String {
+        val value = multipoints.get(name)
+        if (value != null) return value
+
+        val codepoint: Int = EscapeMode.extended.codepointForName(name)
+        return if (codepoint != empty) StringUtil.codepointToChar(codepoint).toString() else emptyName
     }
 
-    fun codepointsForName(name: String?, codepoints: IntArray): Int {
-        val `val` = multipoints[name]
-        if (`val` != null) {
-            codepoints[0] = `val`.codePointAt(0)
-            codepoints[1] = `val`.codePointAt(1)
+    fun codepointsForName(name: String, codepoints: IntArray): Int {
+        val value = multipoints.get(name)
+        if (value != null) {
+            codepoints[0] = StringUtil.getCodePointAt(value, 0)
+            codepoints[1] = StringUtil.getCodePointAt(value, 1)
             return 2
         }
-        val codepoint = EscapeMode.extended.codepointForName(name)
+        val codepoint: Int = EscapeMode.extended.codepointForName(name)
         if (codepoint != empty) {
             codepoints[0] = codepoint
             return 1
@@ -78,12 +79,13 @@ object Entities {
      * @return the escaped string
      */
     @JvmStatic
-    fun escape(string: String?, out: Document.OutputSettings?): String? {
+    fun escape(string: String?, out: OutputSettings): String {
         if (string == null) return ""
+
         val accum = StringUtil.borrowBuilder()
         try {
             escape(accum, string, out, false, false, false, false)
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             throw SerializationException(e) // doesn't happen
         }
         return StringUtil.releaseBuilder(accum)
@@ -97,94 +99,106 @@ object Entities {
      * @return the escaped string
      */
     @JvmStatic
-    fun escape(string: String?): String? {
-        if (DefaultOutput == null) DefaultOutput = Document.OutputSettings()
-        return escape(string, DefaultOutput)
+    fun escape(string: String?): String {
+        val output = DefaultOutput ?: OutputSettings().apply {
+            DefaultOutput = this
+        }
+        return escape(string, output)
     }
 
-    private var DefaultOutput: Document.OutputSettings? =
-        null // lazy-init, to break circular dependency with OutputSettings
+    private var DefaultOutput: OutputSettings? = null // lazy-init, to break circular dependency with OutputSettings
 
     // this method does a lot, but other breakups cause rescanning and stringbuilder generations
-    @Throws(IOException::class)
-    fun escape(
-        accum: Appendable?, string: String?, out: Document.OutputSettings?,
-        inAttribute: Boolean, normaliseWhite: Boolean, stripLeadingWhite: Boolean, trimTrailing: Boolean
+    fun escape(accum: Appendable, string: String, out: OutputSettings,
+               inAttribute: Boolean, normaliseWhite: Boolean, stripLeadingWhite: Boolean, trimTrailing: Boolean
     ) {
         var lastWasWhite = false
         var reachedNonWhite = false
-        val escapeMode = out!!.escapeMode()
-        val encoder = out.encoder()
+        val escapeMode: EscapeMode = out.escapeMode()
+        val encoder: CharsetEncoder = out.encoder()
         val coreCharset = out.coreCharset // init in out.prepareEncoder()
-        val length = string!!.length
+        val length = string.length
+
         var codePoint: Int
         var skipped = false
         var offset = 0
+
         while (offset < length) {
-            codePoint = string.codePointAt(offset)
+            codePoint = StringUtil.getCodePointAt(string, offset)
+
             if (normaliseWhite) {
                 if (StringUtil.isWhitespace(codePoint)) {
                     if (stripLeadingWhite && !reachedNonWhite) {
-                        offset += Character.charCount(codePoint)
+                        offset += StringUtil.charCount(codePoint)
                         continue
                     }
                     if (lastWasWhite) {
-                        offset += Character.charCount(codePoint)
+                        offset += StringUtil.charCount(codePoint)
                         continue
                     }
                     if (trimTrailing) {
                         skipped = true
-                        offset += Character.charCount(codePoint)
+                        offset += StringUtil.charCount(codePoint)
                         continue
                     }
-                    accum!!.append(' ')
+                    accum.append(' ')
                     lastWasWhite = true
-                    offset += Character.charCount(codePoint)
+                    offset += StringUtil.charCount(codePoint)
                     continue
                 } else {
                     lastWasWhite = false
                     reachedNonWhite = true
                     if (skipped) {
-                        accum!!.append(' ') // wasn't the end, so need to place a normalized space
+                        accum.append(' ') // wasn't the end, so need to place a normalized space
                         skipped = false
                     }
                 }
             }
-            // surrogate pairs, split implementation for efficiency on single char common case (saves creating strings, char[]):
-            if (codePoint < Character.MIN_SUPPLEMENTARY_CODE_POINT) {
-                val c = codePoint.toChar()
-                when (c) {
-                    '&' -> accum!!.append("&amp;")
-                    0xA0 -> if (escapeMode != EscapeMode.xhtml) accum!!.append("&nbsp;") else accum!!.append("&#xa0;")
-                    '<' ->                         // escape when in character data or when in a xml attribute val or XML syntax; not needed in html attr val
-                        if (!inAttribute || escapeMode == EscapeMode.xhtml || out.syntax() == Document.OutputSettings.Syntax.xml) accum!!.append(
-                            "&lt;"
-                        ) else accum!!.append(c)
 
-                    '>' -> if (!inAttribute) accum!!.append("&gt;") else accum!!.append(c)
-                    '"' -> if (inAttribute) accum!!.append("&quot;") else accum!!.append(c)
-                    0x9, 0xA, 0xD -> accum!!.append(c)
-                    else -> if (c.code < 0x20 || !canEncode(coreCharset, c, encoder)) appendEncoded(
-                        accum,
-                        escapeMode,
-                        codePoint
-                    ) else accum!!.append(c)
+            // surrogate pairs, split implementation for efficiency on single char common case (saves creating strings, char[]):
+            if (codePoint < StringUtil.MIN_SUPPLEMENTARY_CODE_POINT) {
+                val c = codePoint.toChar()
+                when (codePoint) {
+                    0xA0 -> if (escapeMode != EscapeMode.xhtml) accum.append("&nbsp;") else accum.append("&#xa0;")
+                    0x9, 0xA, 0xD -> accum.append(c)
+                    else -> {
+                        when (c) {
+                            '&' -> accum.append("&amp;")
+                            '<' ->                         // escape when in character data or when in a xml attribute val or XML syntax; not needed in html attr val
+                                if (!inAttribute || escapeMode == EscapeMode.xhtml || out.syntax() === Syntax.xml) accum.append(
+                                    "&lt;"
+                                ) else accum.append(c)
+
+                            '>' -> if (!inAttribute) accum.append("&gt;") else accum.append(c)
+                            '"' -> if (inAttribute) accum.append("&quot;") else accum.append(c)
+                            else -> {
+                                if (c.code < 0x20 || coreCharset == null || !canEncode(coreCharset, c, encoder)) {
+                                    appendEncoded(accum, escapeMode, codePoint)
+                                } else {
+                                    accum.append(c)
+                                }
+                            }
+                        }
+                    }
                 }
             } else {
-                val c = String(Character.toChars(codePoint))
-                if (encoder.canEncode(c)) // uses fallback encoder for simplicity
-                    accum!!.append(c) else appendEncoded(accum, escapeMode, codePoint)
+                val c = StringUtil.toChars(codePoint).concatToString()
+                if (encoder.canEncode(c)) { // uses fallback encoder for simplicity
+                    accum.append(c)
+                } else {
+                    appendEncoded(accum, escapeMode, codePoint)
+                }
             }
-            offset += Character.charCount(codePoint)
+
+            offset += StringUtil.charCount(codePoint)
         }
     }
 
-    @Throws(IOException::class)
-    private fun appendEncoded(accum: Appendable?, escapeMode: EscapeMode?, codePoint: Int) {
-        val name = escapeMode!!.nameForCodepoint(codePoint)
+    private fun appendEncoded(accum: Appendable, escapeMode: EscapeMode, codePoint: Int) {
+        val name = escapeMode.nameForCodepoint(codePoint)
         if (emptyName != name) // ok for identity check
-            accum!!.append('&').append(name).append(';') else accum!!.append("&#x")
-            .append(Integer.toHexString(codePoint)).append(';')
+            accum.append('&').append(name).append(';') else accum.append("&#x")
+            .append(codePoint.toString(16)).append(';')
     }
 
     /**
@@ -194,7 +208,7 @@ object Entities {
      * @return the unescaped string
      */
     @JvmStatic
-    fun unescape(string: String?): String? {
+    fun unescape(string: String): String {
         return unescape(string, false)
     }
 
@@ -206,8 +220,8 @@ object Entities {
      * @return unescaped string
      */
     @JvmStatic
-    fun unescape(string: String?, strict: Boolean): String? {
-        return Parser.Companion.unescapeEntities(string, strict)
+    fun unescape(string: String, strict: Boolean): String {
+        return Parser.unescapeEntities(string, strict)
     }
 
     /*
@@ -223,56 +237,16 @@ object Entities {
      * Alterslash: 3013, 28
      * Jsoup: 167, 2
      */
-    private fun canEncode(charset: CoreCharset?, c: Char, fallback: CharsetEncoder?): Boolean {
+    private fun canEncode(charset: CoreCharset, c: Char, fallback: CharsetEncoder): Boolean {
         // todo add more charset tests if impacted by Android's bad perf in canEncode
         return when (charset) {
             CoreCharset.ascii -> c.code < 0x80
             CoreCharset.utf -> true // real is:!(Character.isLowSurrogate(c) || Character.isHighSurrogate(c)); - but already check above
-            else -> fallback!!.canEncode(c)
+            else -> fallback.canEncode(c)
         }
     }
 
-    private fun load(e: EscapeMode, pointsData: String?, size: Int) {
-        e.nameKeys = arrayOfNulls(size)
-        e.codeVals = IntArray(size)
-        e.codeKeys = IntArray(size)
-        e.nameVals = arrayOfNulls(size)
-        var i = 0
-        val reader = CharacterReader(pointsData)
-        try {
-            while (!reader.isEmpty) {
-                // NotNestedLessLess=10913,824;1887&
-                val name = reader.consumeTo('=')
-                reader.advance()
-                val cp1 = reader.consumeToAny(*codeDelims).toInt(codepointRadix)
-                val codeDelim = reader.current()
-                reader.advance()
-                val cp2: Int
-                if (codeDelim == ',') {
-                    cp2 = reader.consumeTo(';').toInt(codepointRadix)
-                    reader.advance()
-                } else {
-                    cp2 = empty
-                }
-                val indexS = reader.consumeTo('&')
-                val index = indexS.toInt(codepointRadix)
-                reader.advance()
-                e.nameKeys[i] = name
-                e.codeVals[i] = cp1
-                e.codeKeys[index] = cp1
-                e.nameVals[index] = name
-                if (cp2 != empty) {
-                    multipoints[name] = String(intArrayOf(cp1, cp2), 0, 2)
-                }
-                i++
-            }
-            Validate.isTrue(i == size, "Unexpected count of entities loaded")
-        } finally {
-            reader.close()
-        }
-    }
-
-    enum class EscapeMode(file: String?, size: Int) {
+    enum class EscapeMode(file: String, size: Int) {
         /**
          * Restricted entities suitable for XHTML output: lt, gt, amp, and quot only.
          */
@@ -289,26 +263,26 @@ object Entities {
         extended(EntitiesData.fullPoints, 2125);
 
         // table of named references to their codepoints. sorted so we can binary search. built by BuildEntities.
-        val nameKeys: Array<String?>
-        val codeVals // limitation is the few references with multiple characters; those go into multipoints.
-                : IntArray
+        private val nameKeys = arrayOfNulls<String>(size)
+
+        private val codeVals = IntArray(size) // limitation is the few references with multiple characters; those go into multipoints.
 
         // table of codepoints to named entities.
-        val codeKeys // we don't support multicodepoints to single named value currently
-                : IntArray
-        val nameVals: Array<String?>
+        private val codeKeys = IntArray(size) // we don't support multicodepoints to single named value currently
+
+        private val nameVals = arrayOfNulls<String>(size)
 
         init {
             load(this, file, size)
         }
 
         fun codepointForName(name: String?): Int {
-            val index = Arrays.binarySearch(nameKeys, name)
+            val index: Int = nameKeys.asList().binarySearch(name)
             return if (index >= 0) codeVals[index] else empty
         }
 
         fun nameForCodepoint(codepoint: Int): String? {
-            val index = Arrays.binarySearch(codeKeys, codepoint)
+            val index: Int = codeKeys.asList().binarySearch(codepoint)
             return if (index >= 0) {
                 // the results are ordered so lower case versions of same codepoint come after uppercase, and we prefer to emit lower
                 // (and binary search for same item with multi results is undefined
@@ -319,9 +293,46 @@ object Entities {
         private fun size(): Int {
             return nameKeys.size
         }
+
+        private fun load(e: EscapeMode, pointsData: String, size: Int) {
+            var i = 0
+            val reader = CharacterReader(pointsData)
+            try {
+                while (!reader.isEmpty) {
+                    // NotNestedLessLess=10913,824;1887&
+                    val name: String = reader.consumeTo('=')
+                    reader.advance()
+                    val cp1: Int = reader.consumeToAny(*codeDelims).toInt(codepointRadix)
+                    val codeDelim: Char = reader.current()
+                    reader.advance()
+                    val cp2: Int
+                    if (codeDelim == ',') {
+                        cp2 = reader.consumeTo(';').toInt(codepointRadix)
+                        reader.advance()
+                    } else {
+                        cp2 = empty
+                    }
+                    val indexS: String = reader.consumeTo('&')
+                    val index = indexS.toInt(codepointRadix)
+                    reader.advance()
+                    e.nameKeys[i] = name
+                    e.codeVals[i] = cp1
+                    e.codeKeys[index] = cp1
+                    e.nameVals[index] = name
+                    if (cp2 != empty) {
+                        val array = charArrayOf(StringUtil.codepointToChar(cp1), StringUtil.codepointToChar(cp2))
+                        multipoints.put(name, array.concatToString(0, 0 + 2))
+                    }
+                    i++
+                }
+                Validate.isTrue(i == size, "Unexpected count of entities loaded")
+            } finally {
+                reader.close()
+            }
+        }
     }
 
-    enum class CoreCharset {
+    internal enum class CoreCharset {
         ascii,
         utf,
         fallback;

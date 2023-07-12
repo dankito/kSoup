@@ -3,7 +3,6 @@ package org.jsoup.examples
 import org.jsoup.Jsoup
 import org.jsoup.helper.Validate
 import org.jsoup.internal.StringUtil
-import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
@@ -29,27 +28,27 @@ import java.io.IOException
  *
  * @author Jonathan Hedley, jonathan@hedley.net
  */
-class HtmlToPlainText() {
+class HtmlToPlainText {
     /**
      * Format an Element to plain-text
      * @param element the root element to format
      * @return formatted text
      */
     fun getPlainText(element: Element?): String {
-        val formatter: FormattingVisitor = FormattingVisitor()
+        val formatter = FormattingVisitor()
         NodeTraversor.traverse(formatter, element) // walk the DOM, and call .head() and .tail() for each node
         return formatter.toString()
     }
 
     // the formatting rules, implemented in a breadth-first DOM traverse
-    private class FormattingVisitor() : NodeVisitor {
+    private class FormattingVisitor : NodeVisitor {
         private var width: Int = 0
         private val accum: StringBuilder = StringBuilder() // holds the accumulated text
 
         // hit when the node is first seen
-        public override fun head(node: Node, depth: Int) {
-            val name: String? = node.nodeName()
-            if (node is TextNode) append((node as TextNode).text()) // TextNodes carry all user-readable text in the DOM.
+        override fun head(node: Node, depth: Int) {
+            val name = node.nodeName()
+            if (node is TextNode) append(node.text()) // TextNodes carry all user-readable text in the DOM.
             else if ((name == "li")) append("\n * ") else if ((name == "dt")) append("  ") else if (StringUtil.`in`(
                     name,
                     "p",
@@ -64,8 +63,8 @@ class HtmlToPlainText() {
         }
 
         // hit when all of the node's children (if any) have been visited
-        public override fun tail(node: Node?, depth: Int) {
-            val name: String? = node.nodeName()
+        override fun tail(node: Node, depth: Int) {
+            val name = node.nodeName()
             if (StringUtil.`in`(
                     name,
                     "br",
@@ -84,7 +83,7 @@ class HtmlToPlainText() {
         }
 
         // appends text to the string builder with a simple word wrap method
-        private fun append(text: String?) {
+        private fun append(text: String) {
             if (text.startsWith("\n")) width =
                 0 // reset counter if starts with a newline. only from formats above, not in natural text
             if ((text == " ") &&
@@ -111,7 +110,7 @@ class HtmlToPlainText() {
             }
         }
 
-        public override fun toString(): String {
+        override fun toString(): String {
             return accum.toString()
         }
 
@@ -134,10 +133,10 @@ class HtmlToPlainText() {
             val selector: String? = if (args.size == 2) args.get(1) else null
 
             // fetch the specified URL and parse to a HTML DOM
-            val doc: Document? = Jsoup.connect(url).userAgent(userAgent).timeout(timeout).get()
-            val formatter: HtmlToPlainText = HtmlToPlainText()
+            val doc = Jsoup.connect(url).userAgent(userAgent).timeout(timeout).get()
+            val formatter = HtmlToPlainText()
             if (selector != null) {
-                val elements: Elements? = doc.select(selector) // get each element that matches the CSS selector
+                val elements: Elements = doc.select(selector) // get each element that matches the CSS selector
                 for (element: Element? in elements) {
                     val plainText: String = formatter.getPlainText(element) // format that element to plain text
                     println(plainText)

@@ -1,8 +1,9 @@
 package org.jsoup.nodes
 
-import org.jsoup.Jsoupimport
+import org.jsoup.Jsoup
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
 
-org.junit.jupiter.api.Assertionsimport org.junit.jupiter.api.Test
 class CommentTest {
     private val comment = Comment(" This is one heck of a comment! ")
     private val decl = Comment("?xml encoding='ISO-8859-1'?")

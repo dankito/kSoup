@@ -63,11 +63,11 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * Internal test to check if a nodelist object has been created.
      */
     fun hasChildNodes(): Boolean {
-        return childNodes !== Node.Companion.EmptyNodes
+        return childNodes !== Node.EmptyNodes
     }
 
-    public override fun ensureChildNodes(): List<Node?> {
-        if (childNodes === Node.Companion.EmptyNodes) {
+    public override fun ensureChildNodes(): MutableList<Node> {
+        if (childNodes === Node.EmptyNodes) {
             childNodes = NodeList(this, 4)
         }
         return childNodes
@@ -78,16 +78,16 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
     }
 
     override fun attributes(): Attributes {
-        if (attributes == null) // not using hasAttributes, as doesn't clear warning
-            attributes = Attributes()
-        return attributes
+        return attributes ?: Attributes().also {
+            this.attributes = it
+        }
     }
 
     override fun baseUri(): String {
         return searchUpForAttribute(this, BaseUriKey)
     }
 
-    override fun doSetBaseUri(baseUri: String) {
+    public override fun doSetBaseUri(baseUri: String) {
         attributes().put(BaseUriKey, baseUri)
     }
 
@@ -95,8 +95,8 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
         return childNodes.size
     }
 
-    override fun nodeName(): String? {
-        return tag.getName()
+    override fun nodeName(): String {
+        return tag.name
     }
 
     /**
@@ -104,8 +104,8 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      *
      * @return the tag name
      */
-    fun tagName(): String? {
-        return tag.getName()
+    fun tagName(): String {
+        return tag.name
     }
 
     /**
@@ -114,8 +114,8 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * normal name of `div`.
      * @return normal name
      */
-    override fun normalName(): String? {
-        return tag!!.normalName()
+    override fun normalName(): String {
+        return tag.normalName()
     }
 
     /**
@@ -126,12 +126,9 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return this element, for chaining
      * @see Elements.tagName
      */
-    fun tagName(tagName: String?): Element {
+    fun tagName(tagName: String): Element {
         Validate.notEmptyParam(tagName, "tagName")
-        tag = Tag.Companion.valueOf(
-            tagName,
-            NodeUtils.parser(this)!!.settings()
-        ) // maintains the case option of the original parse
+        tag = Tag.valueOf(tagName, NodeUtils.parser(this).settings()) // maintains the case option of the original parse
         return this
     }
 
@@ -140,26 +137,26 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      *
      * @return the tag object
      */
-    fun tag(): Tag? {
+    fun tag(): Tag {
         return tag
     }
 
+    /**
+     * Test if this element is a block-level element. (E.g. `<div> == true` or an inline element
+     * `<span> == false`).
+     *
+     * @return true if block, false if not (and thus inline)
+     */
     val isBlock: Boolean
-        /**
-         * Test if this element is a block-level element. (E.g. `<div> == true` or an inline element
-         * `<span> == false`).
-         *
-         * @return true if block, false if not (and thus inline)
-         */
-        get() = tag!!.isBlock
+        get() = tag.isBlock
 
     /**
      * Get the `id` attribute of this element.
      *
      * @return The id attribute, if present, or an empty string if not.
      */
-    fun id(): String? {
-        return if (attributes != null) attributes!!.getIgnoreCase("id") else ""
+    fun id(): String {
+        return attributes?.getIgnoreCase("id") ?: ""
     }
 
     /**
@@ -215,7 +212,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * You can find elements that have data attributes using the `[^data-]` attribute key prefix selector.
      * @return a map of `key=value` custom data attributes.
      */
-    fun dataset(): Map<String, String> {
+    fun dataset(): Map<String, String?> {
         return attributes().dataset()
     }
 
@@ -380,7 +377,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @see QueryParser.parse
      * @throws Selector.SelectorParseException (unchecked) on an invalid CSS query.
      */
-    fun select(cssQuery: String?): Elements {
+    fun select(cssQuery: String): Elements {
         return Selector.select(cssQuery, this)
     }
 
@@ -391,7 +388,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param evaluator an element evaluator
      * @return an [Elements] list containing elements that match the query (empty if none match)
      */
-    fun select(evaluator: Evaluator?): Elements {
+    fun select(evaluator: Evaluator): Elements {
         return Selector.select(evaluator, this)
     }
 
@@ -406,7 +403,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return the first matching element, or **`null`** if there is no match.
      * @see .expectFirst
      */
-    fun selectFirst(cssQuery: String?): Element? {
+    fun selectFirst(cssQuery: String): Element? {
         return Selector.selectFirst(cssQuery, this)
     }
 
@@ -418,7 +415,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return the first matching element (walking down the tree, starting from this element), or `null` if none
      * match.
      */
-    fun selectFirst(evaluator: Evaluator?): Element? {
+    fun selectFirst(evaluator: Evaluator): Element? {
         return Collector.findFirst(evaluator, this)
     }
 
@@ -430,7 +427,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @throws IllegalArgumentException if no match is found
      * @since 1.15.2
      */
-    fun expectFirst(cssQuery: String?): Element? {
+    fun expectFirst(cssQuery: String): Element {
         return Validate.ensureNotNull(
             Selector.selectFirst(cssQuery, this),
             if (parent() != null) "No elements matched the query '%s' on element '%s'." else "No elements matched the query '%s' in the document.",
@@ -446,8 +443,8 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param cssQuery a [Selector] CSS query
      * @return if this element matches the query
      */
-    fun `is`(cssQuery: String?): Boolean {
-        return `is`(QueryParser.Companion.parse(cssQuery))
+    fun `is`(cssQuery: String): Boolean {
+        return `is`(QueryParser.parse(cssQuery))
     }
 
     /**
@@ -455,8 +452,8 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param evaluator an element evaluator
      * @return if this element matches
      */
-    fun `is`(evaluator: Evaluator?): Boolean {
-        return evaluator!!.matches(root(), this)
+    fun `is`(evaluator: Evaluator): Boolean {
+        return evaluator.matches(root(), this)
     }
 
     /**
@@ -466,8 +463,8 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return the closest ancestor element (possibly itself) that matches the provided evaluator. `null` if not
      * found.
      */
-    fun closest(cssQuery: String?): Element? {
-        return closest(QueryParser.Companion.parse(cssQuery))
+    fun closest(cssQuery: String): Element? {
+        return closest(QueryParser.parse(cssQuery))
     }
 
     /**
@@ -477,14 +474,17 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return the closest ancestor element (possibly itself) that matches the provided evaluator. `null` if not
      * found.
      */
-    fun closest(evaluator: Evaluator?): Element? {
+    fun closest(evaluator: Evaluator): Element? {
         Validate.notNull(evaluator)
         var el: Element? = this
         val root = root()
         do {
-            if (evaluator!!.matches(root, el)) return el
-            el = el!!.parent()
+            if (evaluator.matches(root, el!!)) {
+                return el
+            }
+            el = el.parent()
         } while (el != null)
+
         return null
     }
 
@@ -508,7 +508,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @see .selectXpath
      * @since 1.14.3
      */
-    fun selectXpath(xpath: String?): Elements {
+    fun selectXpath(xpath: String): Elements {
         return Elements(NodeUtils.selectXpath(xpath, this, Element::class.java))
     }
 
@@ -527,7 +527,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return a list of matching nodes
      * @since 1.14.3
      */
-    fun <T : Node?> selectXpath(xpath: String?, nodeType: Class<T>): List<T?>? {
+    fun <T : Node> selectXpath(xpath: String, nodeType: Class<T>): List<T> {
         return NodeUtils.selectXpath(xpath, this, nodeType)
     }
 
@@ -539,14 +539,14 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @see .prependChild
      * @see .insertChildren
      */
-    fun appendChild(child: Node?): Element {
+    fun appendChild(child: Node): Element {
         Validate.notNull(child)
 
         // was - Node#addChildren(child). short-circuits an array create and a loop.
-        reparentChild(child!!)
+        reparentChild(child)
         ensureChildNodes()
         childNodes.add(child)
-        child.setSiblingIndex(childNodes.size - 1)
+        child.siblingIndex = childNodes.size - 1
         return this
     }
 
@@ -557,7 +557,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return this Element, for chaining
      * @see .insertChildren
      */
-    fun appendChildren(children: Collection<Node?>?): Element {
+    fun appendChildren(children: Collection<Node>): Element {
         insertChildren(-1, children)
         return this
     }
@@ -580,9 +580,9 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param child node to add.
      * @return this element, so that you can add more child nodes or elements.
      */
-    fun prependChild(child: Node?): Element {
+    fun prependChild(child: Node): Element {
         Validate.notNull(child)
-        addChildren(0, child!!)
+        addChildren(0, child)
         return this
     }
 
@@ -593,7 +593,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return this Element, for chaining
      * @see .insertChildren
      */
-    fun prependChildren(children: Collection<Node?>?): Element {
+    fun prependChildren(children: Collection<Node>): Element {
         insertChildren(0, children)
         return this
     }
@@ -607,15 +607,14 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param children child nodes to insert
      * @return this element, for chaining.
      */
-    fun insertChildren(index: Int, children: Collection<Node?>?): Element {
+    fun insertChildren(index: Int, children: Collection<Node>): Element {
         var index = index
         Validate.notNull(children, "Children collection to be inserted must not be null.")
         val currentSize = childNodeSize()
         if (index < 0) index += currentSize + 1 // roll around
         Validate.isTrue(index >= 0 && index <= currentSize, "Insert position out of bounds.")
-        val nodes = ArrayList(children)
-        val nodeArray = nodes.toTypedArray<Node?>()
-        addChildren(index, *nodeArray)
+
+        addChildren(index, *children.toTypedArray())
         return this
     }
 
@@ -628,7 +627,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param children child nodes to insert
      * @return this element, for chaining.
      */
-    fun insertChildren(index: Int, vararg children: Node?): Element {
+    fun insertChildren(index: Int, vararg children: Node): Element {
         var index = index
         Validate.notNull(children, "Children collection to be inserted must not be null.")
         val currentSize = childNodeSize()
@@ -645,13 +644,8 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return the new element, to allow you to add content to it, e.g.:
      * `parent.appendElement("h1").attr("id", "header").text("Welcome");`
      */
-    fun appendElement(tagName: String?): Element {
-        val child = Element(
-            Tag.Companion.valueOf(
-                tagName, NodeUtils.parser(this)!!
-                    .settings()
-            ), baseUri()
-        )
+    fun appendElement(tagName: String): Element {
+        val child = Element(Tag.valueOf(tagName, NodeUtils.parser(this).settings()), baseUri())
         appendChild(child)
         return child
     }
@@ -663,13 +657,8 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return the new element, to allow you to add content to it, e.g.:
      * `parent.prependElement("h1").attr("id", "header").text("Welcome");`
      */
-    fun prependElement(tagName: String?): Element {
-        val child = Element(
-            Tag.Companion.valueOf(
-                tagName, NodeUtils.parser(this)!!
-                    .settings()
-            ), baseUri()
-        )
+    fun prependElement(tagName: String): Element {
+        val child = Element(Tag.valueOf(tagName, NodeUtils.parser(this).settings()), baseUri())
         prependChild(child)
         return child
     }
@@ -706,11 +695,10 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return this element
      * @see .html
      */
-    fun append(html: String?): Element {
+    fun append(html: String): Element {
         Validate.notNull(html)
-        val nodes = NodeUtils.parser(this)!!
-            .parseFragmentInput(html, this, baseUri())
-        addChildren(*nodes!!.toTypedArray<Node?>())
+        val nodes = NodeUtils.parser(this).parseFragmentInput(html, this, baseUri())
+        addChildren(*nodes.toTypedArray())
         return this
     }
 
@@ -720,11 +708,10 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return this element
      * @see .html
      */
-    fun prepend(html: String?): Element {
+    fun prepend(html: String): Element {
         Validate.notNull(html)
-        val nodes = NodeUtils.parser(this)!!
-            .parseFragmentInput(html, this, baseUri())
-        addChildren(0, *nodes!!.toTypedArray<Node?>())
+        val nodes = NodeUtils.parser(this).parseFragmentInput(html, this, baseUri())
+        addChildren(0, *nodes.toTypedArray())
         return this
     }
 
@@ -735,7 +722,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return this element, for chaining
      * @see .after
      */
-    override fun before(html: String): Element? {
+    override fun before(html: String): Element {
         return super.before(html) as Element
     }
 
@@ -745,7 +732,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return this Element, for chaining
      * @see .after
      */
-    override fun before(node: Node?): Element? {
+    override fun before(node: Node): Element {
         return super.before(node) as Element
     }
 
@@ -756,7 +743,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return this element, for chaining
      * @see .before
      */
-    override fun after(html: String): Element? {
+    override fun after(html: String): Element {
         return super.after(html) as Element
     }
 
@@ -766,7 +753,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return this element, for chaining
      * @see .before
      */
-    override fun after(node: Node?): Element? {
+    override fun after(node: Node): Element {
         return super.after(node) as Element
     }
 
@@ -785,7 +772,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param html HTML to wrap around this element, e.g. `<div class="head"></div>`. Can be arbitrarily deep.
      * @return this element, for chaining.
      */
-    override fun wrap(html: String?): Element? {
+    override fun wrap(html: String): Element {
         return super.wrap(html) as Element
     }
 
@@ -800,14 +787,14 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      *
      * @return the CSS Path that can be used to retrieve the element in a selector.
      */
-    fun cssSelector(): String? {
-        if (id()!!.length > 0) {
+    fun cssSelector(): String {
+        if (id().length > 0) {
             // prefer to return the ID - but check that it's actually unique first!
             val idSel = "#" + TokenQueue.Companion.escapeCssIdentifier(id())
             val doc = ownerDocument()
             if (doc != null) {
                 val els = doc.select(idSel)
-                if (els!!.size == 1 && els[0] === this) // otherwise, continue to the nth-child impl
+                if (els.size == 1 && els[0] === this) // otherwise, continue to the nth-child impl
                     return idSel
             } else {
                 return idSel // no ownerdoc, return the ID selector
@@ -815,7 +802,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
         }
 
         // Escape tagname, and translate HTML namespace ns:tag to CSS namespace syntax ns|tag
-        val tagName: String = TokenQueue.Companion.escapeCssIdentifier(tagName())!!
+        val tagName: String = TokenQueue.Companion.escapeCssIdentifier(tagName())
             .replace("\\:", "|")
         val selector = StringUtil.borrowBuilder().append(tagName)
         // String classes = StringUtil.join(classNames().stream().map(TokenQueue::escapeCssIdentifier).iterator(), ".");
@@ -823,11 +810,11 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
         val escapedClasses = StringUtil.StringJoiner(".")
         for (name in classNames()) escapedClasses.add(TokenQueue.Companion.escapeCssIdentifier(name))
         val classes = escapedClasses.complete()
-        if (classes!!.length > 0) selector.append('.').append(classes)
+        if (classes.length > 0) selector.append('.').append(classes)
         if (parent() == null || parent() is Document) // don't add Document to selector, as will always have a html node
             return StringUtil.releaseBuilder(selector)
         selector.insert(0, " > ")
-        if (parent()!!.select(selector.toString())!!.size > 1) selector.append(
+        if (parent()!!.select(selector.toString()).size > 1) selector.append(
             String.format(
                 ":nth-child(%d)", elementSiblingIndex() + 1
             )
@@ -863,10 +850,16 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @see .previousElementSibling
      */
     fun nextElementSibling(): Element? {
-        var next: Node = this
-        while (next.nextSibling().also { next = it!! } != null) {
-            if (next is Element) return next as Element
+        var next = this.nextSibling()
+
+        while (next != null) {
+            if (next is Element) {
+                return next
+            }
+
+            next = next.nextSibling()
         }
+
         return null
     }
 
@@ -875,7 +868,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      *
      * @return each of the element siblings after this element, or an empty list if there are no next sibling elements
      */
-    fun nextElementSiblings(): Elements? {
+    fun nextElementSiblings(): Elements {
         return nextElementSiblings(true)
     }
 
@@ -885,10 +878,16 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @see .nextElementSibling
      */
     fun previousElementSibling(): Element? {
-        var prev: Node = this
-        while (prev.previousSibling().also { prev = it!! } != null) {
-            if (prev is Element) return prev as Element
+        var prev = this.previousSibling()
+
+        while (prev != null) {
+            if (prev is Element) {
+                return prev
+            }
+
+            prev = prev.previousSibling()
         }
+
         return null
     }
 
@@ -897,11 +896,11 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      *
      * @return the previous element siblings, or an empty list if there are none.
      */
-    fun previousElementSiblings(): Elements? {
+    fun previousElementSiblings(): Elements {
         return nextElementSiblings(false)
     }
 
-    private fun nextElementSiblings(next: Boolean): Elements? {
+    private fun nextElementSiblings(next: Boolean): Elements {
         val els = Elements()
         if (parentNode == null) return els
         els.add(this)
@@ -977,7 +976,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param tagName The tag name to search for (case insensitively).
      * @return a matching unmodifiable list of elements. Will be empty if this element and none of its children match.
      */
-    fun getElementsByTag(tagName: String?): Elements? {
+    fun getElementsByTag(tagName: String?): Elements {
         var tagName = tagName
         Validate.notEmpty(tagName)
         tagName = Normalizer.normalize(tagName)
@@ -1012,7 +1011,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @see .hasClass
      * @see .classNames
      */
-    fun getElementsByClass(className: String): Elements? {
+    fun getElementsByClass(className: String): Elements {
         Validate.notEmpty(className)
         return Collector.collect(Evaluator.Class(className), this)
     }
@@ -1023,7 +1022,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param key name of the attribute, e.g. `href`
      * @return elements that have this attribute, empty if none
      */
-    fun getElementsByAttribute(key: String): Elements? {
+    fun getElementsByAttribute(key: String): Elements {
         var key = key
         Validate.notEmpty(key)
         key = key.trim { it <= ' ' }
@@ -1036,7 +1035,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param keyPrefix name prefix of the attribute e.g. `data-`
      * @return elements that have attribute names that start with the prefix, empty if none.
      */
-    fun getElementsByAttributeStarting(keyPrefix: String): Elements? {
+    fun getElementsByAttributeStarting(keyPrefix: String): Elements {
         var keyPrefix = keyPrefix
         Validate.notEmpty(keyPrefix)
         keyPrefix = keyPrefix.trim { it <= ' ' }
@@ -1050,7 +1049,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param value value of the attribute
      * @return elements that have this attribute with this value, empty if none
      */
-    fun getElementsByAttributeValue(key: String?, value: String?): Elements? {
+    fun getElementsByAttributeValue(key: String, value: String): Elements {
         return Collector.collect(Evaluator.AttributeWithValue(key, value), this)
     }
 
@@ -1061,7 +1060,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param value value of the attribute
      * @return elements that do not have a matching attribute
      */
-    fun getElementsByAttributeValueNot(key: String?, value: String?): Elements? {
+    fun getElementsByAttributeValueNot(key: String, value: String): Elements {
         return Collector.collect(Evaluator.AttributeWithValueNot(key, value), this)
     }
 
@@ -1072,7 +1071,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param valuePrefix start of attribute value
      * @return elements that have attributes that start with the value prefix
      */
-    fun getElementsByAttributeValueStarting(key: String?, valuePrefix: String?): Elements? {
+    fun getElementsByAttributeValueStarting(key: String, valuePrefix: String): Elements {
         return Collector.collect(Evaluator.AttributeWithValueStarting(key, valuePrefix), this)
     }
 
@@ -1083,7 +1082,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param valueSuffix end of the attribute value
      * @return elements that have attributes that end with the value suffix
      */
-    fun getElementsByAttributeValueEnding(key: String?, valueSuffix: String?): Elements? {
+    fun getElementsByAttributeValueEnding(key: String, valueSuffix: String): Elements {
         return Collector.collect(Evaluator.AttributeWithValueEnding(key, valueSuffix), this)
     }
 
@@ -1094,7 +1093,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param match substring of value to search for
      * @return elements that have attributes containing this text
      */
-    fun getElementsByAttributeValueContaining(key: String?, match: String?): Elements? {
+    fun getElementsByAttributeValueContaining(key: String, match: String): Elements {
         return Collector.collect(Evaluator.AttributeWithValueContaining(key, match), this)
     }
 
@@ -1104,7 +1103,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param pattern compiled regular expression to match against attribute values
      * @return elements that have attributes matching this regular expression
      */
-    fun getElementsByAttributeValueMatching(key: String?, pattern: Pattern): Elements? {
+    fun getElementsByAttributeValueMatching(key: String, pattern: Regex): Elements {
         return Collector.collect(Evaluator.AttributeWithValueMatching(key, pattern), this)
     }
 
@@ -1114,14 +1113,13 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param regex regular expression to match against attribute values. You can use [embedded flags](http://java.sun.com/docs/books/tutorial/essential/regex/pattern.html#embedded) (such as (?i) and (?m) to control regex options.
      * @return elements that have attributes matching this regular expression
      */
-    fun getElementsByAttributeValueMatching(key: String?, regex: String): Elements? {
-        val pattern: Pattern
-        pattern = try {
-            Pattern.compile(regex)
+    fun getElementsByAttributeValueMatching(key: String, regex: String): Elements {
+        val regex = try {
+            Regex(regex)
         } catch (e: PatternSyntaxException) {
             throw IllegalArgumentException("Pattern syntax error: $regex", e)
         }
-        return getElementsByAttributeValueMatching(key, pattern)
+        return getElementsByAttributeValueMatching(key, regex)
     }
 
     /**
@@ -1129,7 +1127,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param index 0-based index
      * @return elements less than index
      */
-    fun getElementsByIndexLessThan(index: Int): Elements? {
+    fun getElementsByIndexLessThan(index: Int): Elements {
         return Collector.collect(Evaluator.IndexLessThan(index), this)
     }
 
@@ -1138,7 +1136,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param index 0-based index
      * @return elements greater than index
      */
-    fun getElementsByIndexGreaterThan(index: Int): Elements? {
+    fun getElementsByIndexGreaterThan(index: Int): Elements {
         return Collector.collect(Evaluator.IndexGreaterThan(index), this)
     }
 
@@ -1147,7 +1145,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param index 0-based index
      * @return elements equal to index
      */
-    fun getElementsByIndexEquals(index: Int): Elements? {
+    fun getElementsByIndexEquals(index: Int): Elements {
         return Collector.collect(Evaluator.IndexEquals(index), this)
     }
 
@@ -1158,7 +1156,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return elements that contain the string, case-insensitive.
      * @see Element.text
      */
-    fun getElementsContainingText(searchText: String?): Elements? {
+    fun getElementsContainingText(searchText: String): Elements {
         return Collector.collect(Evaluator.ContainsText(searchText), this)
     }
 
@@ -1169,7 +1167,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return elements that contain the string, case-insensitive.
      * @see Element.ownText
      */
-    fun getElementsContainingOwnText(searchText: String?): Elements? {
+    fun getElementsContainingOwnText(searchText: String): Elements {
         return Collector.collect(Evaluator.ContainsOwnText(searchText), this)
     }
 
@@ -1179,7 +1177,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return elements matching the supplied regular expression.
      * @see Element.text
      */
-    fun getElementsMatchingText(pattern: Pattern): Elements? {
+    fun getElementsMatchingText(pattern: Regex): Elements {
         return Collector.collect(Evaluator.Matches(pattern), this)
     }
 
@@ -1189,14 +1187,13 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return elements matching the supplied regular expression.
      * @see Element.text
      */
-    fun getElementsMatchingText(regex: String): Elements? {
-        val pattern: Pattern
-        pattern = try {
-            Pattern.compile(regex)
+    fun getElementsMatchingText(regex: String): Elements {
+        val regex = try {
+            Regex(regex)
         } catch (e: PatternSyntaxException) {
             throw IllegalArgumentException("Pattern syntax error: $regex", e)
         }
-        return getElementsMatchingText(pattern)
+        return getElementsMatchingText(regex)
     }
 
     /**
@@ -1205,7 +1202,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return elements matching the supplied regular expression.
      * @see Element.ownText
      */
-    fun getElementsMatchingOwnText(pattern: Pattern): Elements? {
+    fun getElementsMatchingOwnText(pattern: Regex): Elements {
         return Collector.collect(Evaluator.MatchesOwn(pattern), this)
     }
 
@@ -1215,22 +1212,21 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return elements matching the supplied regular expression.
      * @see Element.ownText
      */
-    fun getElementsMatchingOwnText(regex: String): Elements? {
-        val pattern: Pattern
-        pattern = try {
-            Pattern.compile(regex)
+    fun getElementsMatchingOwnText(regex: String): Elements {
+        val regex = try {
+            Regex(regex)
         } catch (e: PatternSyntaxException) {
             throw IllegalArgumentException("Pattern syntax error: $regex", e)
         }
-        return getElementsMatchingOwnText(pattern)
+        return getElementsMatchingOwnText(regex)
     }
 
-    val allElements: Elements?
-        /**
-         * Find all elements under this element (including self, and children of children).
-         *
-         * @return all elements
-         */
+    /**
+     * Find all elements under this element (including self, and children of children).
+     *
+     * @return all elements
+     */
+    val allElements: Elements
         get() = Collector.collect(Evaluator.AllElements(), this)
 
     /**
@@ -1271,10 +1267,9 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
                 // make sure there is a space between block tags and immediately following text nodes or inline elements <div>One</div>Two should be "One Two".
                 if (node is Element) {
                     val next = node.nextSibling()
-                    if (node.isBlock && (next is TextNode || next is Element && !next.tag.formatAsBlock()) && !TextNode.lastCharIsWhitespace(
-                            accum
-                        )
-                    ) accum.append(' ')
+                    if (node.isBlock && (next is TextNode || next is Element && !next.tag.formatAsBlock) && !TextNode.lastCharIsWhitespace(accum)) {
+                        accum.append(' ')
+                    }
                 }
             }
         }, this)
@@ -1356,11 +1351,11 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
         // special case for script/style in HTML: should be data node
         val owner = ownerDocument()
         // an alternate impl would be to run through the parser
-        if (owner != null && owner.parser()
-                .isContentForTagData(normalName())
-        ) appendChild(DataNode(text)) else appendChild(
-            TextNode(text)
-        )
+        if (owner != null && owner.parser().isContentForTagData(normalName())) {
+            appendChild(DataNode(text))
+        } else {
+            appendChild(TextNode(text))
+        }
         return this
     }
 
@@ -1541,7 +1536,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * Get the value of a form element (input, textarea, etc).
      * @return the value of the form element, or empty string if not set.
      */
-    fun `val`(): String? {
+    fun value(): String {
         return if (normalName() == "textarea") text() else attr("value")
     }
 
@@ -1550,7 +1545,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @param value value to set
      * @return this element (for chaining)
      */
-    fun `val`(value: String): Element {
+    fun value(value: String): Element {
         if (normalName() == "textarea") text(value) else attr("value", value)
         return this
     }
@@ -1564,8 +1559,8 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @see Node.sourceRange
      * @since 1.15.2
      */
-    fun endSourceRange(): Range? {
-        return Range.Companion.of(this, false)
+    fun endSourceRange(): Range {
+        return Range.of(this, false)
     }
 
     fun shouldIndent(out: Document.OutputSettings?): Boolean {
@@ -1595,9 +1590,11 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
     @Throws(IOException::class)
     override fun outerHtmlTail(accum: Appendable, depth: Int, out: Document.OutputSettings) {
         if (!(childNodes.isEmpty() && tag.isSelfClosing)) {
-            if (out.prettyPrint() && !childNodes.isEmpty() && (tag.formatAsBlock() && !preserveWhitespace(parentNode) || out.outline() && (childNodes.size > 1 || childNodes.size == 1 && childNodes[0] is Element))) indent(
-                accum, depth, out
-            )
+            if (out.prettyPrint() && !childNodes.isEmpty() &&
+                (tag.formatAsBlock && !preserveWhitespace(parentNode) || out.outline() && (childNodes.size > 1 || childNodes.size == 1 && childNodes[0] is Element))) {
+                indent(accum, depth, out)
+            }
+
             accum.append("</").append(tagName()).append('>')
         }
     }
@@ -1613,10 +1610,10 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
         val accum = StringUtil.borrowBuilder()
         html(accum)
         val html = StringUtil.releaseBuilder(accum)
-        return if (NodeUtils.outputSettings(this)!!.prettyPrint()) html!!.trim { it <= ' ' } else html!!
+        return if (NodeUtils.outputSettings(this).prettyPrint()) html.trim() else html
     }
 
-    override fun <T : Appendable?> html(appendable: T): T {
+    override fun <T : Appendable> html(appendable: T): T {
         val size = childNodes.size
         for (i in 0 until size) childNodes[i]!!.outerHtml(appendable)
         return appendable
@@ -1628,7 +1625,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return this element
      * @see .append
      */
-    fun html(html: String?): Element {
+    fun html(html: String): Element {
         empty()
         append(html)
         return this
@@ -1640,8 +1637,12 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
 
     override fun shallowClone(): Element {
         // simpler than implementing a clone version with no child copy
-        return Element(tag, baseUri(), if (attributes == null) null else attributes!!.clone())
+        return Element(tag, baseUri(), attributes?.clone())
     }
+
+    override fun createInstanceForClone(): Node =
+        this::class.java.getDeclaredConstructor(Tag::class.java, String::class.java, Attributes::class.java)
+            .newInstance(tag, baseUri(), attributes)
 
     override fun doClone(parent: Node?): Element {
         val clone = super.doClone(parent) as Element
@@ -1662,20 +1663,24 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
         return this
     }
 
-    override fun removeAttr(attributeKey: String?): Element? {
+    override fun removeAttr(attributeKey: String): Element {
         return super.removeAttr(attributeKey) as Element
     }
 
-    override fun root(): Element? {
+    override fun root(): Element {
         return super.root() as Element // probably a document, but always at least an element
     }
 
-    override fun traverse(nodeVisitor: NodeVisitor): Element? {
+    override fun traverse(nodeVisitor: NodeVisitor): Element {
         return super.traverse(nodeVisitor) as Element
     }
 
-    override fun forEachNode(action: Consumer<in Node?>): Element? {
+    override fun forEachNode(action: (Node) -> Unit): Node {
         return super.forEachNode(action) as Element
+    }
+
+    fun forEachNode(consumer: Consumer<Node>): Node {
+        return forEachNode { node -> consumer.accept(node) }
     }
 
     /**
@@ -1697,7 +1702,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
         return this
     }
 
-    override fun filter(nodeFilter: NodeFilter): Element? {
+    override fun filter(nodeFilter: NodeFilter): Element {
         return super.filter(nodeFilter) as Element
     }
 
@@ -1707,8 +1712,8 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
         }
     }
 
-    private fun isFormatAsBlock(out: Document.OutputSettings?): Boolean {
-        return tag.isBlock || parent() != null && parent()!!.tag()!!.formatAsBlock() || out!!.outline()
+    private fun isFormatAsBlock(out: Document.OutputSettings): Boolean {
+        return tag.isBlock || parent()?.tag()?.formatAsBlock == true || out.outline()
     }
 
     private fun isInlineable(out: Document.OutputSettings?): Boolean {
@@ -1759,13 +1764,13 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
             }
         }
 
-        private fun appendNormalisedText(accum: StringBuilder?, textNode: TextNode) {
+        private fun appendNormalisedText(accum: StringBuilder, textNode: TextNode) {
             val text = textNode.wholeText
-            if (preserveWhitespace(textNode.parentNode) || textNode is CDataNode) accum!!.append(text) else StringUtil.appendNormalisedWhitespace(
-                accum,
-                text,
-                TextNode.Companion.lastCharIsWhitespace(accum)
-            )
+            if (preserveWhitespace(textNode.parentNode) || textNode is CDataNode) {
+                accum.append(text)
+            } else {
+                StringUtil.appendNormalisedWhitespace(accum, text, TextNode.lastCharIsWhitespace(accum))
+            }
         }
 
         fun preserveWhitespace(node: Node?): Boolean {

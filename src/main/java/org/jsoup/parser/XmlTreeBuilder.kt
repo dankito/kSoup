@@ -2,8 +2,9 @@ package org.jsoup.parser
 
 import org.jsoup.helper.Validate
 import org.jsoup.nodes.*
-import java.io.*
-import javax.annotation.ParametersAreNonnullByDefault
+import org.jsoup.parser.Token.StartTag
+import java.io.Reader
+import java.io.StringReader
 
 /**
  * Use the `XmlTreeBuilder` when you want to parse XML without any of the HTML DOM rules being applied to the
@@ -13,30 +14,31 @@ import javax.annotation.ParametersAreNonnullByDefault
  *
  * @author Jonathan Hedley
  */
-class XmlTreeBuilder() : TreeBuilder() {
-    public override fun defaultSettings(): ParseSettings? {
-        return ParseSettings.Companion.preserveCase
+class XmlTreeBuilder : TreeBuilder() {
+
+    override fun defaultSettings(): ParseSettings {
+        return ParseSettings.preserveCase
     }
 
-    @ParametersAreNonnullByDefault
-    override fun initialiseParse(input: Reader, baseUri: String?, parser: Parser) {
+    override fun initialiseParse(input: Reader, baseUri: String, parser: Parser) {
         super.initialiseParse(input, baseUri, parser)
-        stack!!.add((doc)!!) // place the document onto the stack. differs from HtmlTreeBuilder (not on stack)
-        doc!!.outputSettings()
+        stack.add(doc) // place the document onto the stack. differs from HtmlTreeBuilder (not on stack)
+
+        doc.outputSettings()
             .syntax(Document.OutputSettings.Syntax.xml)
             .escapeMode(Entities.EscapeMode.xhtml)
             .prettyPrint(false) // as XML, we don't understand what whitespace is significant or not
     }
 
-    fun parse(input: Reader?, baseUri: String?): Document? {
-        return parse((input)!!, baseUri, Parser(this))
+    fun parse(input: Reader, baseUri: String): Document {
+        return parse((input), baseUri, Parser(this))
     }
 
-    fun parse(input: String?, baseUri: String?): Document? {
+    fun parse(input: String, baseUri: String): Document {
         return parse(StringReader(input), baseUri, Parser(this))
     }
 
-    public override fun newInstance(): XmlTreeBuilder {
+    override fun newInstance(): XmlTreeBuilder {
         return XmlTreeBuilder()
     }
 
@@ -54,53 +56,58 @@ class XmlTreeBuilder() : TreeBuilder() {
         return true
     }
 
-    protected fun insertNode(node: Node?) {
-        currentElement().appendChild(node)
-        onNodeInserted((node)!!, null)
+    protected fun insertNode(node: Node) {
+        insertNode(node, null)
     }
 
-    protected fun insertNode(node: Node?, token: Token?) {
+    protected fun insertNode(node: Node, token: Token?) {
         currentElement().appendChild(node)
-        onNodeInserted((node)!!, token)
+        onNodeInserted((node), token)
     }
 
-    fun insert(startTag: Token.StartTag?): Element {
-        val tag: Tag? = tagFor((startTag!!.name())!!, settings)
+    internal fun insert(startTag: StartTag): Element {
+        val tag = tagFor(startTag.name(), settings)
         // todo: wonder if for xml parsing, should treat all tags as unknown? because it's not html.
-        if (startTag.hasAttributes()) startTag.attributes!!.deduplicate((settings)!!)
-        val el: Element = Element(tag, null, settings!!.normalizeAttributes(startTag.attributes))
+        startTag.attributes?.deduplicate(settings)
+
+        val el = Element(tag, null, settings.normalizeAttributes(startTag.attributes))
         insertNode(el, startTag)
-        if (startTag.isSelfClosing()) {
-            if (!tag!!.isKnownTag()) // unknown tag, remember this is self closing for output. see above.
+
+        if (startTag.isSelfClosing) {
+            if (!tag.isKnownTag) // unknown tag, remember this is self closing for output. see above.
                 tag.setSelfClosing()
         } else {
-            stack!!.add(el)
+            stack.add(el)
         }
+
         return el
     }
 
-    fun insert(commentToken: Token.Comment?) {
-        val comment: Comment = Comment(commentToken!!.getData())
-        var insert: Node? = comment
-        if (commentToken.bogus && comment.isXmlDeclaration()) {
-            // xml declarations are emitted as bogus comments (which is right for html, but not xml)
-            // so we do a bit of a hack and parse the data as an element to pull the attributes out
-            val decl: XmlDeclaration? =
-                comment.asXmlDeclaration() // else, we couldn't parse it as a decl, so leave as a comment
-            if (decl != null) insert = decl
+    fun insert(commentToken: Token.Comment) {
+        val comment = Comment(commentToken.getData())
+
+        // xml declarations are emitted as bogus comments (which is right for html, but not xml)
+        // so we do a bit of a hack and parse the data as an element to pull the attributes out
+        val insert = if (commentToken.bogus && comment.isXmlDeclaration) {
+            comment.asXmlDeclaration() // else, we couldn't parse it as a decl, so leave as a comment
+                ?: comment
+        } else {
+            comment
         }
+
         insertNode(insert, commentToken)
     }
 
-    fun insert(token: Token.Character?) {
-        val data: String? = token.getData()
-        insertNode(if (token!!.isCData()) CDataNode(data) else TextNode((data)!!), token)
+    fun insert(token: Token.Character) {
+        val data = token.data
+        val insert = if (token.isCData) CDataNode(data) else TextNode(data)
+
+        insertNode(insert, token)
     }
 
-    fun insert(d: Token.Doctype?) {
-        val doctypeNode: DocumentType =
-            DocumentType(settings!!.normalizeTag(d!!.getName()), d.getPublicIdentifier(), d.getSystemIdentifier())
-        doctypeNode.setPubSysKey(d.getPubSysKey())
+    internal fun insert(d: Token.Doctype) {
+        val doctypeNode = DocumentType(settings.normalizeTag(d.getName()), d.getPublicIdentifier(), d.getSystemIdentifier())
+        doctypeNode.setPubSysKey(d.pubSysKey)
         insertNode(doctypeNode, d)
     }
 
@@ -110,23 +117,23 @@ class XmlTreeBuilder() : TreeBuilder() {
      *
      * @param endTag tag to close
      */
-    protected fun popStackToClose(endTag: Token.EndTag?) {
+    internal fun popStackToClose(endTag: Token.EndTag) {
         // like in HtmlTreeBuilder - don't scan up forever for very (artificially) deeply nested stacks
-        val elName: String? = settings!!.normalizeTag(endTag!!.tagName)
+        val elName = settings.normalizeTag(endTag.tagName ?: endTag.name())
         var firstFound: Element? = null
-        val bottom: Int = stack!!.size - 1
+        val bottom: Int = stack.size - 1
         val upper: Int = if (bottom >= maxQueueDepth) bottom - maxQueueDepth else 0
-        for (pos in stack!!.size - 1 downTo upper) {
-            val next: Element = stack!!.get(pos)
+        for (pos in stack.size - 1 downTo upper) {
+            val next: Element = stack.get(pos)
             if ((next.nodeName() == elName)) {
                 firstFound = next
                 break
             }
         }
         if (firstFound == null) return  // not found, skip
-        for (pos in stack!!.indices.reversed()) {
-            val next: Element = stack!!.get(pos)
-            stack!!.removeAt(pos)
+        for (pos in stack.indices.reversed()) {
+            val next: Element = stack.get(pos)
+            stack.removeAt(pos)
             if (next === firstFound) {
                 onNodeClosed(next, endTag)
                 break
@@ -134,18 +141,18 @@ class XmlTreeBuilder() : TreeBuilder() {
         }
     }
 
-    fun parseFragment(inputFragment: String?, baseUri: String?, parser: Parser): List<Node?>? {
+    fun parseFragment(inputFragment: String, baseUri: String, parser: Parser): List<Node> {
         initialiseParse(StringReader(inputFragment), baseUri, parser)
         runParser()
-        return doc!!.childNodes()
+        return doc.childNodes()
     }
 
-    public override fun parseFragment(
-        inputFragment: String?,
+    override fun parseFragment(
+        inputFragment: String,
         context: Element?,
-        baseUri: String?,
+        baseUri: String,
         parser: Parser
-    ): List<Node?>? {
+    ): List<Node> {
         return parseFragment(inputFragment, baseUri, parser)
     }
 

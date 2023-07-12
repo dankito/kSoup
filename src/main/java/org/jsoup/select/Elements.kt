@@ -3,8 +3,6 @@ package org.jsoup.select
 import org.jsoup.helper.Validate
 import org.jsoup.internal.StringUtil
 import org.jsoup.nodes.*
-import java.util.*
-import kotlin.collections.ArrayList
 
 /**
  * A list of [Element]s, with methods that act on every element in the list.
@@ -26,11 +24,12 @@ class Elements : ArrayList<Element> {
      * Creates a deep copy of these elements.
      * @return a deep copy
      */
-    public override fun clone(): Elements {
-        val clone: Elements = Elements(size)
+    override fun clone(): Elements {
+        val clone = Elements(size)
         for (e: Element in this) clone.add(e.clone())
         return clone
     }
+
     // attribute methods
     /**
      * Get an attribute value from the first matched element that has the attribute.
@@ -91,7 +90,7 @@ class Elements : ArrayList<Element> {
      * @param attributeKey The attribute to remove.
      * @return this (for chaining)
      */
-    fun removeAttr(attributeKey: String?): Elements {
+    fun removeAttr(attributeKey: String): Elements {
         for (element: Element in this) {
             element.removeAttr(attributeKey)
         }
@@ -151,9 +150,8 @@ class Elements : ArrayList<Element> {
      * @return The form element's value, or empty if not set.
      * @see Element.val
      */
-    fun `val`(): String? {
-        if (size > 0) return first().`val`() // first() != null as size() > 0
-        else return ""
+    fun value(): String {
+        return first()?.value() ?: ""
     }
 
     /**
@@ -161,8 +159,8 @@ class Elements : ArrayList<Element> {
      * @param value The value to set into each matched element
      * @return this (for chaining)
      */
-    fun `val`(value: String): Elements {
-        for (element: Element in this) element.`val`(value)
+    fun value(value: String): Elements {
+        for (element: Element in this) element.value(value)
         return this
     }
 
@@ -176,10 +174,10 @@ class Elements : ArrayList<Element> {
      * @see Element.text
      * @see .eachText
      */
-    fun text(): String? {
-        val sb: StringBuilder? = StringUtil.borrowBuilder()
-        for (element: Element in this) {
-            if (sb.length != 0) sb.append(" ")
+    fun text(): String {
+        val sb = StringUtil.borrowBuilder()
+        for (element in this) {
+            if (sb.isNotEmpty()) sb.append(" ")
             sb.append(element.text())
         }
         return StringUtil.releaseBuilder(sb)
@@ -205,8 +203,8 @@ class Elements : ArrayList<Element> {
      * @see Element.hasText
      * @see .text
      */
-    fun eachText(): List<String?> {
-        val texts: ArrayList<String?> = ArrayList(size)
+    fun eachText(): List<String> {
+        val texts = ArrayList<String>(size)
         for (el: Element in this) {
             if (el.hasText()) texts.add(el.text())
         }
@@ -219,12 +217,16 @@ class Elements : ArrayList<Element> {
      * @see .text
      * @see .outerHtml
      */
-    fun html(): String? {
-        val sb: StringBuilder? = StringUtil.borrowBuilder()
-        for (element: Element in this) {
-            if (sb.length != 0) sb.append("\n")
+    fun html(): String {
+        val sb = StringUtil.borrowBuilder()
+
+        for (element in this) {
+            if (sb.isNotEmpty()) {
+                sb.append("\n")
+            }
             sb.append(element.html())
         }
+
         return StringUtil.releaseBuilder(sb)
     }
 
@@ -234,12 +236,16 @@ class Elements : ArrayList<Element> {
      * @see .text
      * @see .html
      */
-    fun outerHtml(): String? {
-        val sb: StringBuilder? = StringUtil.borrowBuilder()
-        for (element: Element in this) {
-            if (sb.length != 0) sb.append("\n")
+    fun outerHtml(): String {
+        val sb = StringUtil.borrowBuilder()
+
+        for (element in this) {
+            if (sb.isNotEmpty()) {
+                sb.append("\n")
+            }
             sb.append(element.outerHtml())
         }
+
         return StringUtil.releaseBuilder(sb)
     }
 
@@ -249,7 +255,7 @@ class Elements : ArrayList<Element> {
      * @see .text
      * @see .html
      */
-    public override fun toString(): String {
+    override fun toString(): String {
         return outerHtml()
     }
 
@@ -261,8 +267,8 @@ class Elements : ArrayList<Element> {
      * @return this, for chaining
      * @see Element.tagName
      */
-    fun tagName(tagName: String?): Elements {
-        for (element: Element in this) {
+    fun tagName(tagName: String): Elements {
+        for (element in this) {
             element.tagName(tagName)
         }
         return this
@@ -274,7 +280,7 @@ class Elements : ArrayList<Element> {
      * @return this, for chaining
      * @see Element.html
      */
-    fun html(html: String?): Elements {
+    fun html(html: String): Elements {
         for (element: Element in this) {
             element.html(html)
         }
@@ -287,7 +293,7 @@ class Elements : ArrayList<Element> {
      * @return this, for chaining
      * @see Element.prepend
      */
-    fun prepend(html: String?): Elements {
+    fun prepend(html: String): Elements {
         for (element: Element in this) {
             element.prepend(html)
         }
@@ -300,7 +306,7 @@ class Elements : ArrayList<Element> {
      * @return this, for chaining
      * @see Element.append
      */
-    fun append(html: String?): Elements {
+    fun append(html: String): Elements {
         for (element: Element in this) {
             element.append(html)
         }
@@ -342,7 +348,7 @@ class Elements : ArrayList<Element> {
      * @return this (for chaining)
      * @see Element.wrap
      */
-    fun wrap(html: String?): Elements {
+    fun wrap(html: String): Elements {
         Validate.notEmpty(html)
         for (element: Element in this) {
             element.wrap(html)
@@ -421,7 +427,7 @@ class Elements : ArrayList<Element> {
      * @param query A [Selector] query
      * @return the filtered list of elements, or an empty list if none match.
      */
-    fun select(query: String?): Elements? {
+    fun select(query: String?): Elements {
         return Selector.select(query, this)
     }
 
@@ -437,8 +443,8 @@ class Elements : ArrayList<Element> {
      * @param query the selector query whose results should be removed from these elements
      * @return a new elements list that contains only the filtered results
      */
-    fun not(query: String?): Elements? {
-        val out: Elements? = Selector.select(query, this)
+    fun not(query: String): Elements {
+        val out: Elements = Selector.select(query, this)
         return Selector.filterOut(this, out)
     }
 
@@ -459,8 +465,8 @@ class Elements : ArrayList<Element> {
      * @param query A selector
      * @return true if at least one element in the list matches the query.
      */
-    fun `is`(query: String?): Boolean {
-        val eval: Evaluator? = QueryParser.Companion.parse(query)
+    fun `is`(query: String): Boolean {
+        val eval = QueryParser.parse(query)
         for (e: Element in this) {
             if (e.`is`(eval)) return true
         }
@@ -480,7 +486,7 @@ class Elements : ArrayList<Element> {
      * @param query CSS query to match siblings against
      * @return next element siblings.
      */
-    fun next(query: String?): Elements {
+    fun next(query: String): Elements {
         return siblings(query, true, false)
     }
 
@@ -497,7 +503,7 @@ class Elements : ArrayList<Element> {
      * @param query CSS query to match siblings against
      * @return all following element siblings.
      */
-    fun nextAll(query: String?): Elements {
+    fun nextAll(query: String): Elements {
         return siblings(query, true, true)
     }
 
@@ -514,7 +520,7 @@ class Elements : ArrayList<Element> {
      * @param query CSS query to match siblings against
      * @return previous element siblings.
      */
-    fun prev(query: String?): Elements {
+    fun prev(query: String): Elements {
         return siblings(query, false, false)
     }
 
@@ -531,19 +537,19 @@ class Elements : ArrayList<Element> {
      * @param query CSS query to match siblings against
      * @return all previous element siblings.
      */
-    fun prevAll(query: String?): Elements {
+    fun prevAll(query: String): Elements {
         return siblings(query, false, true)
     }
 
     private fun siblings(query: String?, next: Boolean, all: Boolean): Elements {
-        val els: Elements = Elements()
-        val eval: Evaluator? = if (query != null) QueryParser.Companion.parse(query) else null
-        for (e: Element in this) {
+        val els = Elements()
+        val eval: Evaluator? = if (query != null) QueryParser.parse(query) else null
+        for (e in this) {
+            var iterator = e
             do {
-                val sib: Element? = if (next) e.nextElementSibling() else e.previousElementSibling()
-                if (sib == null) break
+                val sib = (if (next) iterator.nextElementSibling() else iterator.previousElementSibling()) ?: break
                 if (eval == null) els.add(sib) else if (sib.`is`(eval)) els.add(sib)
-                e = sib
+                iterator = sib
             } while (all)
         }
         return els
@@ -560,6 +566,7 @@ class Elements : ArrayList<Element> {
         }
         return Elements(combo)
     }
+
     // list-like methods
     /**
      * Get the first matched element.
@@ -603,9 +610,7 @@ class Elements : ArrayList<Element> {
      * no forms.
      */
     fun forms(): List<FormElement> {
-        val forms: ArrayList<FormElement> = ArrayList()
-        for (el: Element? in this) if (el is FormElement) forms.add(el as FormElement)
-        return forms
+        return this.filterIsInstance<FormElement>()
     }
 
     /**
@@ -633,14 +638,20 @@ class Elements : ArrayList<Element> {
         return childNodesOfType(DataNode::class.java)
     }
 
-    private fun <T : Node?> childNodesOfType(tClass: Class<T>): List<T> {
-        val nodes: ArrayList<T> = ArrayList()
-        for (el: Element in this) {
-            for (i in 0 until el.childNodeSize()) {
-                val node: Node? = el.childNode(i)
-                if (tClass.isInstance(node)) nodes.add(tClass.cast(node))
-            }
-        }
-        return nodes
+    private fun <T : Node> childNodesOfType(tClass: Class<T>): List<T> {
+        return this.flatMap {
+            it.childNodes().filter { tClass.isInstance(it) }
+        } as List<T>
+
+//        val nodes = ArrayList<T>()
+//        for (el in this) {
+//            for (i in 0 until el.childNodeSize()) {
+//                val node = el.childNode(i)
+//                if (tClass.isInstance(node)) {
+//                    nodes.add(tClass as T)
+//                }
+//            }
+//        }
+//        return nodes
     }
 }

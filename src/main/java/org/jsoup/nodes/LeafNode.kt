@@ -1,7 +1,8 @@
 package org.jsoup.nodes
 
-abstract class LeafNode : Node() {
+abstract class LeafNode(
     var value: Any? = null // either a string value, or an attribute map (in the rare case multiple attributes are set)
+) : Node() {
 
     override fun hasAttributes(): Boolean {
         return value is Attributes
@@ -21,7 +22,7 @@ abstract class LeafNode : Node() {
         }
     }
 
-    fun coreValue(): String? {
+    fun coreValue(): String {
         return attr(nodeName())
     }
 
@@ -29,9 +30,9 @@ abstract class LeafNode : Node() {
         attr(nodeName(), value)
     }
 
-    override fun attr(key: String): String? {
+    override fun attr(key: String): String {
         return if (!hasAttributes()) {
-            if (nodeName() == key) value as String? else Node.Companion.EmptyString
+            if (nodeName() == key) value as String else EmptyString
         } else super.attr(key)
     }
 
@@ -50,21 +51,21 @@ abstract class LeafNode : Node() {
         return super.hasAttr(key)
     }
 
-    override fun removeAttr(key: String?): Node? {
+    override fun removeAttr(key: String): Node {
         ensureAttributes()
         return super.removeAttr(key)
     }
 
-    override fun absUrl(key: String?): String? {
+    override fun absUrl(key: String): String {
         ensureAttributes()
         return super.absUrl(key)
     }
 
-    override fun baseUri(): String? {
+    override fun baseUri(): String {
         return if (hasParent()) parent()!!.baseUri() else ""
     }
 
-    override fun doSetBaseUri(baseUri: String?) {
+    override fun doSetBaseUri(baseUri: String) {
         // noop
     }
 
@@ -76,9 +77,12 @@ abstract class LeafNode : Node() {
         return this
     }
 
-    public override fun ensureChildNodes(): List<Node?> {
-        return Node.Companion.EmptyNodes
+    public override fun ensureChildNodes(): MutableList<Node> {
+        return Node.EmptyNodes
     }
+
+    override fun createInstanceForClone(): Node =
+        this::class.java.getDeclaredConstructor(String::class.java).newInstance(value as? String)
 
     override fun doClone(parent: Node?): LeafNode {
         val clone = super.doClone(parent) as LeafNode

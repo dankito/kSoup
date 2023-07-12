@@ -1,17 +1,26 @@
 package org.jsoup.helper
 
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
+
 /**
- * Validators to check that method arguments meet expectations.
+ * Simple validation methods. Designed for jsoup internal use
  */
+@OptIn(ExperimentalContracts::class)
 object Validate {
     /**
      * Validates that the object is not null
      * @param obj object to test
-     * @throws ValidationException if the object is null
      */
     @JvmStatic
     fun notNull(obj: Any?) {
-        if (obj == null) throw ValidationException("Object must not be null")
+        contract {
+            returns() implies (obj != null)
+        }
+
+        if (obj == null) {
+            throw ValidationException("Object must not be null")
+        }
     }
 
     /**
@@ -22,18 +31,29 @@ object Validate {
      * @throws ValidationException if the object is null
      */
     @JvmStatic
-    fun notNullParam(obj: Any?, param: String?) {
-        if (obj == null) throw ValidationException(String.format("The parameter '%s' must not be null.", param))
+    fun notNullParam(obj: Any?, param: String) {
+        contract {
+            returns() implies (obj != null)
+        }
+
+        if (obj == null) {
+            throw ValidationException(String.format("The parameter '%s' must not be null.", param))
+        }
     }
 
     /**
      * Validates that the object is not null
      * @param obj object to test
-     * @param msg message to include in the Exception if validation fails
-     * @throws ValidationException if the object is null
+     * @param msg message to output if validation fails
      */
-    fun notNull(obj: Any?, msg: String?) {
-        if (obj == null) throw ValidationException(msg)
+    fun notNull(obj: Any?, msg: String) {
+        contract {
+            returns() implies (obj != null)
+        }
+
+        if (obj == null) {
+            throw ValidationException(msg)
+        }
     }
 
     /**
@@ -44,7 +64,7 @@ object Validate {
      * @throws ValidationException if the object is null
      */
     fun ensureNotNull(obj: Any?): Any {
-        if (obj == null) throw ValidationException("Object must not be null") else return obj
+        return obj ?: throw ValidationException("Object must not be null")
     }
 
     /**
@@ -56,70 +76,77 @@ object Validate {
      * @return the object, or throws an exception if it is null
      * @throws ValidationException if the object is null
      */
-    fun ensureNotNull(obj: Any?, msg: String?, vararg args: Any?): Any {
-        if (obj == null) throw ValidationException(String.format((msg)!!, *args)) else return obj
+    fun ensureNotNull(obj: Any?, msg: String, vararg args: Any): Any {
+        return obj ?: throw ValidationException(String.format(msg, *args))
     }
 
     /**
      * Validates that the value is true
      * @param val object to test
-     * @throws ValidationException if the object is not true
      */
     fun isTrue(`val`: Boolean) {
-        if (!`val`) throw ValidationException("Must be true")
+        isTrue(`val`, "Must be true")
     }
 
     /**
      * Validates that the value is true
      * @param val object to test
-     * @param msg message to include in the Exception if validation fails
-     * @throws ValidationException if the object is not true
+     * @param msg message to output if validation fails
      */
-    fun isTrue(`val`: Boolean, msg: String?) {
-        if (!`val`) throw ValidationException(msg)
+    fun isTrue(`val`: Boolean, msg: String) {
+        if (!`val`) {
+            throw ValidationException(msg)
+        }
     }
 
     /**
      * Validates that the value is false
      * @param val object to test
-     * @throws ValidationException if the object is not false
      */
     fun isFalse(`val`: Boolean) {
-        if (`val`) throw ValidationException("Must be false")
+        isFalse(`val`, "Must be false")
     }
 
     /**
      * Validates that the value is false
      * @param val object to test
-     * @param msg message to include in the Exception if validation fails
-     * @throws ValidationException if the object is not false
+     * @param msg message to output if validation fails
      */
-    fun isFalse(`val`: Boolean, msg: String?) {
-        if (`val`) throw ValidationException(msg)
+    fun isFalse(`val`: Boolean, msg: String) {
+        if (`val`) {
+            throw ValidationException(msg)
+        }
     }
     /**
      * Validates that the array contains no null elements
      * @param objects the array to test
-     * @param msg message to include in the Exception if validation fails
-     * @throws ValidationException if the array contains a null element
+     * @param msg message to output if validation fails
      */
     /**
      * Validates that the array contains no null elements
      * @param objects the array to test
-     * @throws ValidationException if the array contains a null element
      */
     @JvmOverloads
-    fun noNullElements(objects: Array<Any?>, msg: String? = "Array must not contain any null objects") {
-        for (obj: Any? in objects) if (obj == null) throw ValidationException(msg)
+    fun <T : Any?> noNullElements(objects: Array<T>, msg: String = "Array must not contain any null objects") {
+        for (obj in objects) {
+            if (obj == null) {
+                throw ValidationException(msg)
+            }
+        }
     }
 
     /**
      * Validates that the string is not null and is not empty
      * @param string the string to test
-     * @throws ValidationException if the string is null or empty
      */
     fun notEmpty(string: String?) {
-        if (string == null || string.length == 0) throw ValidationException("String must not be empty")
+        contract {
+            returns() implies (string != null)
+        }
+
+        if (string.isNullOrEmpty()) {
+            throw ValidationException("String must not be empty")
+        }
     }
 
     /**
@@ -129,28 +156,33 @@ object Validate {
      * @throws ValidationException if the string is null or empty
      */
     fun notEmptyParam(string: String?, param: String?) {
-        if (string == null || string.length == 0) throw ValidationException(
-            String.format(
-                "The '%s' parameter must not be empty.",
-                param
-            )
-        )
+        contract {
+            returns() implies (string != null)
+        }
+
+        if (string.isNullOrEmpty()) {
+            throw ValidationException(String.format("The '%s' parameter must not be empty.", param))
+        }
     }
 
     /**
      * Validates that the string is not null and is not empty
      * @param string the string to test
-     * @param msg message to include in the Exception if validation fails
-     * @throws ValidationException if the string is null or empty
+     * @param msg message to output if validation fails
      */
-    fun notEmpty(string: String?, msg: String?) {
-        if (string == null || string.length == 0) throw ValidationException(msg)
+    fun notEmpty(string: String?, msg: String) {
+        contract {
+            returns() implies (string != null)
+        }
+
+        if (string.isNullOrEmpty()) {
+            throw ValidationException(msg)
+        }
     }
 
     /**
      * Blow up if we reach an unexpected state.
      * @param msg message to think about
-     * @throws IllegalStateException if we reach this state
      */
     fun wtf(msg: String?) {
         throw IllegalStateException(msg)
@@ -159,9 +191,8 @@ object Validate {
     /**
      * Cause a failure.
      * @param msg message to output.
-     * @throws IllegalStateException if we reach this state
      */
-    fun fail(msg: String?) {
+    fun fail(msg: String) {
         throw ValidationException(msg)
     }
 
@@ -171,7 +202,7 @@ object Validate {
      * @return false, always
      * @throws IllegalStateException if we reach this state
      */
-    fun assertFail(msg: String?): Boolean {
+    fun assertFail(msg: String): Boolean {
         fail(msg)
         return false
     }
@@ -182,7 +213,7 @@ object Validate {
      * @param args the format arguments to the msg
      * @throws IllegalStateException if we reach this state
      */
-    fun fail(msg: String?, vararg args: Any?) {
-        throw ValidationException(String.format((msg)!!, *args))
+    fun fail(msg: String, vararg args: Any) {
+        throw ValidationException(String.format(msg, *args))
     }
 }

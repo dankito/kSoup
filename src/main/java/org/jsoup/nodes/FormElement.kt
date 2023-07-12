@@ -19,7 +19,7 @@ class FormElement
  * @param baseUri    the base URI
  * @param attributes initial attributes
  */
-    (tag: Tag?, baseUri: String?, attributes: Attributes?) : Element(tag, baseUri, attributes) {
+    (tag: Tag, baseUri: String?, attributes: Attributes?) : Element(tag, baseUri, attributes) {
     private val elements = Elements()
 
     /**
@@ -40,7 +40,7 @@ class FormElement
         return this
     }
 
-    override fun removeChild(out: Node?) {
+    override fun removeChild(out: Node) {
         super.removeChild(out)
         elements.remove(out)
     }
@@ -56,7 +56,7 @@ class FormElement
      * @throws IllegalArgumentException if the form's absolute action URL cannot be determined. Make sure you pass the
      * document's base URI when parsing.
      */
-    fun submit(): Connection? {
+    fun submit(): Connection {
         val action = if (hasAttr("action")) absUrl("action") else baseUri()
         Validate.notEmpty(
             action,
@@ -76,36 +76,36 @@ class FormElement
      * list will not be reflected in the DOM.
      * @return a list of key vals
      */
-    fun formData(): List<Connection.KeyVal?> {
-        val data = ArrayList<Connection.KeyVal?>()
+    fun formData(): List<Connection.KeyVal> {
+        val data = ArrayList<Connection.KeyVal>()
 
         // iterate the form control elements and accumulate their values
         for (el in elements) {
-            if (!el.tag()!!.isFormSubmittable) continue  // contents are form listable, superset of submitable
+            if (!el.tag().isFormSubmittable) continue  // contents are form listable, superset of submitable
             if (el.hasAttr("disabled")) continue  // skip disabled form inputs
             val name = el.attr("name")
-            if (name!!.length == 0) continue
+            if (name.length == 0) continue
             val type = el.attr("type")
             if (type.equals("button", ignoreCase = true)) continue  // browsers don't submit these
             if ("select" == el.normalName()) {
                 val options = el.select("option[selected]")
                 var set = false
-                for (option in options!!) {
-                    data.add(HttpConnection.KeyVal.Companion.create(name, option.`val`()))
+                for (option in options) {
+                    data.add(HttpConnection.KeyVal.create(name, option.value()))
                     set = true
                 }
                 if (!set) {
                     val option = el.selectFirst("option")
-                    if (option != null) data.add(HttpConnection.KeyVal.Companion.create(name, option.`val`()))
+                    if (option != null) data.add(HttpConnection.KeyVal.Companion.create(name, option.value()))
                 }
             } else if ("checkbox".equals(type, ignoreCase = true) || "radio".equals(type, ignoreCase = true)) {
                 // only add checkbox or radio if they have the checked attribute
                 if (el.hasAttr("checked")) {
-                    val `val` = if (el.`val`()!!.length > 0) el.`val`() else "on"
+                    val `val` = if (el.value()!!.length > 0) el.value() else "on"
                     data.add(HttpConnection.KeyVal.Companion.create(name, `val`))
                 }
             } else {
-                data.add(HttpConnection.KeyVal.Companion.create(name, el.`val`()))
+                data.add(HttpConnection.KeyVal.Companion.create(name, el.value()))
             }
         }
         return data

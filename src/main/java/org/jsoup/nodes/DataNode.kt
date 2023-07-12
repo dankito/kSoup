@@ -7,24 +7,17 @@ import java.io.IOException
  *
  * @author Jonathan Hedley, jonathan@hedley.net
  */
-class DataNode(data: String) : LeafNode() {
-    /**
-     * Create a new DataNode.
-     * @param data data contents
-     */
-    init {
-        value = data
-    }
+class DataNode(data: String?) : LeafNode(data) {
 
     override fun nodeName(): String {
         return "#data"
     }
 
-    val wholeData: String?
-        /**
-         * Get the data contents of this node. Will be unescaped and with original new lines, space etc.
-         * @return data
-         */
+    /**
+     * Get the data contents of this node. Will be unescaped and with original new lines, space etc.
+     * @return data
+     */
+    val wholeData: String
         get() = coreValue()
 
     /**

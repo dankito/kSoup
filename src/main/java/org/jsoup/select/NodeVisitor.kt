@@ -11,6 +11,7 @@ import org.jsoup.nodes.Node
  * emit a start tag for a node, and `tail` to create the end tag.
  *
  */
+@FunctionalInterface
 interface NodeVisitor {
     /**
      * Callback for when a node is first visited.

@@ -159,23 +159,22 @@ open class Safelist() {
      * @param attributes List of valid attributes for the tag
      * @return this (for chaining)
      */
-    fun addAttributes(tag: String?, vararg attributes: String?): Safelist {
+    fun addAttributes(tag: String, vararg attributes: String): Safelist {
         Validate.notEmpty(tag)
         Validate.notNull(attributes)
         Validate.isTrue(attributes.size > 0, "No attribute names supplied.")
+
         val tagName: TagName = TagName.valueOf(tag)
         tagNames.add(tagName)
-        val attributeSet: MutableSet<AttributeKey> = HashSet()
-        for (key: String? in attributes) {
+
+        val attributeSet = attributes.map { key ->
             Validate.notEmpty(key)
-            attributeSet.add(AttributeKey.valueOf(key))
-        }
-        if (this.attributes.containsKey(tagName)) {
-            val currentSet: MutableSet<AttributeKey> = this.attributes.get(tagName)
-            currentSet.addAll(attributeSet)
-        } else {
-            this.attributes.put(tagName, attributeSet)
-        }
+            AttributeKey.valueOf(key)
+        }.toMutableSet()
+
+        this.attributes[tagName]?.addAll(attributeSet)
+            ?: run { this.attributes[tagName] = attributeSet }
+
         return this
     }
 
@@ -196,32 +195,38 @@ open class Safelist() {
      * @param attributes List of invalid attributes for the tag
      * @return this (for chaining)
      */
-    fun removeAttributes(tag: String, vararg attributes: String?): Safelist {
+    fun removeAttributes(tag: String, vararg attributes: String): Safelist {
         Validate.notEmpty(tag)
         Validate.notNull(attributes)
         Validate.isTrue(attributes.size > 0, "No attribute names supplied.")
+
         val tagName: TagName = TagName.valueOf(tag)
-        val attributeSet: MutableSet<AttributeKey> = HashSet()
-        for (key: String? in attributes) {
+        val attributeSet = attributes.map { key ->
             Validate.notEmpty(key)
-            attributeSet.add(AttributeKey.valueOf(key))
-        }
-        if (tagNames.contains(tagName) && this.attributes.containsKey(tagName)) { // Only look in sub-maps if tag was allowed
-            val currentSet: MutableSet<AttributeKey> = this.attributes.get(tagName)
-            currentSet.removeAll(attributeSet)
-            if (currentSet.isEmpty()) // Remove tag from attribute map if no attributes are allowed for tag
-                this.attributes.remove(tagName)
-        }
-        if ((tag == All)) { // Attribute needs to be removed from all individually set tags
-            val it: MutableIterator<Map.Entry<TagName, MutableSet<AttributeKey>>> = this.attributes.entries.iterator()
-            while (it.hasNext()) {
-                val entry: Map.Entry<TagName, MutableSet<AttributeKey>> = it.next()
-                val currentSet: MutableSet<AttributeKey> = entry.value
+            AttributeKey.valueOf(key)
+        }.toMutableSet()
+
+        if (tagNames.contains(tagName)) { // Only look in sub-maps if tag was allowed
+            this.attributes[tagName]?.let { currentSet ->
                 currentSet.removeAll(attributeSet)
-                if (currentSet.isEmpty()) // Remove tag from attribute map if no attributes are allowed for tag
-                    it.remove()
+                if (currentSet.isEmpty()) { // Remove tag from attribute map if no attributes are allowed for tag
+                    this.attributes.remove(tagName)
+                }
             }
         }
+
+        if (tag == All) { // Attribute needs to be removed from all individually set tags
+            val iterator = this.attributes.entries.iterator()
+            while (iterator.hasNext()) {
+                val entry: Map.Entry<TagName, MutableSet<AttributeKey>> = iterator.next()
+                val currentSet = entry.value
+                currentSet.removeAll(attributeSet)
+                if (currentSet.isEmpty()) { // Remove tag from attribute map if no attributes are allowed for tag
+                    iterator.remove()
+                }
+            }
+        }
+
         return this
     }
 
@@ -243,17 +248,15 @@ open class Safelist() {
         Validate.notEmpty(tag)
         Validate.notEmpty(attribute)
         Validate.notEmpty(value)
+
         val tagName: TagName = TagName.valueOf(tag)
         tagNames.add(tagName)
         val attrKey: AttributeKey = AttributeKey.valueOf(attribute)
         val attrVal: AttributeValue = AttributeValue.valueOf(value)
-        if (enforcedAttributes.containsKey(tagName)) {
-            enforcedAttributes.get(tagName).put(attrKey, attrVal)
-        } else {
-            val attrMap: MutableMap<AttributeKey, AttributeValue> = HashMap()
-            attrMap.put(attrKey, attrVal)
-            enforcedAttributes.put(tagName, attrMap)
-        }
+
+        val attrMap = enforcedAttributes.getOrPut(tagName) { HashMap() }
+        attrMap[attrKey] = attrVal
+
         return this
     }
 
@@ -267,14 +270,17 @@ open class Safelist() {
     fun removeEnforcedAttribute(tag: String?, attribute: String?): Safelist {
         Validate.notEmpty(tag)
         Validate.notEmpty(attribute)
+
         val tagName: TagName = TagName.valueOf(tag)
-        if (tagNames.contains(tagName) && enforcedAttributes.containsKey(tagName)) {
-            val attrKey: AttributeKey = AttributeKey.valueOf(attribute)
-            val attrMap: MutableMap<AttributeKey, AttributeValue> = enforcedAttributes.get(tagName)
+        val attrMap = enforcedAttributes[tagName]
+        if (tagNames.contains(tagName) && attrMap != null) {
+            val attrKey = AttributeKey.valueOf(attribute)
             attrMap.remove(attrKey)
-            if (attrMap.isEmpty()) // Remove tag from enforced attribute map if no enforced attributes are present
+            if (attrMap.isEmpty()) { // Remove tag from enforced attribute map if no enforced attributes are present
                 enforcedAttributes.remove(tagName)
+            }
         }
+
         return this
     }
 
@@ -323,25 +329,16 @@ open class Safelist() {
         Validate.notNull(protocols)
         val tagName: TagName = TagName.valueOf(tag)
         val attrKey: AttributeKey = AttributeKey.valueOf(attribute)
-        val attrMap: MutableMap<AttributeKey, MutableSet<Protocol>>
-        val protSet: MutableSet<Protocol>
-        if (this.protocols.containsKey(tagName)) {
-            attrMap = this.protocols.get(tagName)
-        } else {
-            attrMap = HashMap()
-            this.protocols.put(tagName, attrMap)
-        }
-        if (attrMap.containsKey(attrKey)) {
-            protSet = attrMap.get(attrKey)
-        } else {
-            protSet = HashSet()
-            attrMap.put(attrKey, protSet)
-        }
-        for (protocol: String in protocols) {
+
+        val attrMap = this.protocols.getOrPut(tagName) { HashMap() }
+
+        val protSet = attrMap.getOrPut(attrKey) { HashSet() }
+
+        for (protocol in protocols) {
             Validate.notEmpty(protocol)
-            val prot: Protocol = Protocol.valueOf(protocol)
-            protSet.add(prot)
+            protSet.add(Protocol.valueOf(protocol))
         }
+
         return this
     }
 
@@ -358,19 +355,21 @@ open class Safelist() {
      * @param removeProtocols List of invalid protocols
      * @return this, for chaining
      */
-    fun removeProtocols(tag: String?, attribute: String?, vararg removeProtocols: String): Safelist {
+    fun removeProtocols(tag: String, attribute: String, vararg removeProtocols: String): Safelist {
         Validate.notEmpty(tag)
         Validate.notEmpty(attribute)
         Validate.notNull(removeProtocols)
         val tagName: TagName = TagName.valueOf(tag)
         val attr: AttributeKey = AttributeKey.valueOf(attribute)
 
+        val tagProtocols = protocols[tagName]
         // make sure that what we're removing actually exists; otherwise can open the tag to any data and that can
         // be surprising
-        Validate.isTrue(protocols.containsKey(tagName), "Cannot remove a protocol that is not set.")
-        val tagProtocols: MutableMap<AttributeKey, MutableSet<Protocol>> = protocols.get(tagName)
-        Validate.isTrue(tagProtocols.containsKey(attr), "Cannot remove a protocol that is not set.")
-        val attrProtocols: MutableSet<Protocol> = tagProtocols.get(attr)
+        Validate.notNull(tagProtocols, "Cannot remove a protocol that is not set.")
+
+        val attrProtocols = tagProtocols[attr]
+        Validate.notNull(attrProtocols, "Cannot remove a protocol that is not set.")
+
         for (protocol: String in removeProtocols) {
             Validate.notEmpty(protocol)
             attrProtocols.remove(Protocol.valueOf(protocol))
@@ -380,6 +379,7 @@ open class Safelist() {
             if (tagProtocols.isEmpty()) // Remove entry for tag if empty
                 protocols.remove(tagName)
         }
+
         return this
     }
 
@@ -388,7 +388,7 @@ open class Safelist() {
      * @param tag test tag
      * @return true if allowed
      */
-    open fun isSafeTag(tag: String?): Boolean {
+    open fun isSafeTag(tag: String): Boolean {
         return tagNames.contains(TagName.valueOf(tag))
     }
 
@@ -399,39 +399,46 @@ open class Safelist() {
      * @param attr attribute under test
      * @return true if allowed
      */
-    open fun isSafeAttribute(tagName: String?, el: Element, attr: Attribute): Boolean {
+    open fun isSafeAttribute(tagName: String, el: Element?, attr: Attribute): Boolean { // TODO: el is only set to nullable for test testCopyConstructor_noSideEffectOnAttributes()
         val tag: TagName = TagName.valueOf(tagName)
         val key: AttributeKey = AttributeKey.valueOf(attr.key)
         val okSet: Set<AttributeKey>? = attributes.get(tag)
         if (okSet != null && okSet.contains(key)) {
-            if (protocols.containsKey(tag)) {
-                val attrProts: Map<AttributeKey, MutableSet<Protocol>> = protocols.get(tag)
+            val attrProts = protocols[tag]
+            if (attrProts != null) {
+                val value = attrProts.get(key)
                 // ok if not defined protocol; otherwise test
-                return !attrProts.containsKey(key) || testValidProtocol(el, attr, attrProts.get(key))
+                return value == null || el == null || testValidProtocol(el, attr, value)
             } else { // attribute found, no protocols defined, so OK
                 return true
             }
         }
+
         // might be an enforced attribute?
-        val enforcedSet: Map<AttributeKey, AttributeValue>? = enforcedAttributes.get(tag)
+        val enforcedSet = enforcedAttributes.get(tag)
         if (enforcedSet != null) {
             val expect: Attributes = getEnforcedAttributes(tagName)
-            val attrKey: String? = attr.key
+            val attrKey = attr.key
             if (expect.hasKeyIgnoreCase(attrKey)) {
                 return (expect.getIgnoreCase(attrKey) == attr.value)
             }
         }
+
         // no attributes defined for tag, try :all tag
-        return !(tagName == All) && isSafeAttribute(All, el, attr)
+        return tagName != All && isSafeAttribute(All, el, attr)
     }
 
     private fun testValidProtocol(el: Element, attr: Attribute, protocols: Set<Protocol>): Boolean {
         // try to resolve relative urls to abs, and optionally update the attribute so output html has abs.
         // rels without a baseuri get removed
-        var value: String? = el.absUrl(attr.key)
-        if (value.length == 0) value =
-            attr.value // if it could not be made abs, run as-is to allow custom unknown protocols
-        if (!preserveRelativeLinks) attr.setValue(value)
+        var value = el.absUrl(attr.key)
+        if (value.isEmpty()) { // if it could not be made abs, run as-is to allow custom unknown protocols
+            value = attr.value
+        }
+        if (!preserveRelativeLinks) {
+            attr.setValue(value)
+        }
+
         for (protocol: Protocol in protocols) {
             var prot: String = protocol.toString()
             if ((prot == "#")) { // allows anchor links
@@ -449,26 +456,27 @@ open class Safelist() {
         return false
     }
 
-    private fun isValidAnchor(value: String?): Boolean {
+    private fun isValidAnchor(value: String): Boolean {
         return value.startsWith("#") && !value.matches(".*\\s.*".toRegex())
     }
 
-    fun getEnforcedAttributes(tagName: String?): Attributes {
-        val attrs: Attributes = Attributes()
+    fun getEnforcedAttributes(tagName: String): Attributes {
+        val attrs = Attributes()
         val tag: TagName = TagName.valueOf(tagName)
-        if (enforcedAttributes.containsKey(tag)) {
-            val keyVals: Map<AttributeKey, AttributeValue> = enforcedAttributes.get(tag)
+
+        enforcedAttributes[tag]?.let { keyVals ->
             for (entry: Map.Entry<AttributeKey, AttributeValue> in keyVals.entries) {
                 attrs.put(entry.key.toString(), entry.value.toString())
             }
         }
+
         return attrs
     }
 
     // named types for config. All just hold strings, but here for my sanity.
     internal class TagName(value: String) : TypedValue(value) {
         companion object {
-            fun valueOf(value: String?): TagName {
+            fun valueOf(value: String): TagName {
                 return TagName(value)
             }
         }
@@ -476,7 +484,7 @@ open class Safelist() {
 
     internal class AttributeKey(value: String) : TypedValue(value) {
         companion object {
-            fun valueOf(value: String?): AttributeKey {
+            fun valueOf(value: String): AttributeKey {
                 return AttributeKey(value)
             }
         }

@@ -18,7 +18,7 @@ import java.nio.charset.CharsetEncoder
  * @author Jonathan Hedley, jonathan@hedley.net
  */
 class Document(private val location: String) :
-    Element(Tag.valueOf("#root", ParseSettings.Companion.htmlDefault), location) {
+    Element(Tag.valueOf("#root", ParseSettings.htmlDefault), location) {
     private var connection: Connection? = null // the connection this doc was fetched from, if any
     private var outputSettings = OutputSettings()
     private var parser: Parser // the parser used to parse this document
@@ -270,6 +270,9 @@ class Document(private val location: String) :
         return updateMetaCharset
     }
 
+    override fun createInstanceForClone(): Node =
+        this::class.java.getDeclaredConstructor(String::class.java).newInstance(location)
+
     override fun clone(): Document {
         val clone = super.clone() as Document
         clone.outputSettings = outputSettings.clone()
@@ -317,7 +320,7 @@ class Document(private val location: String) :
                 } else {
                     head()!!.appendElement("meta").attr("charset", charset()!!.displayName())
                 }
-                select("meta[name=charset]")!!.remove() // Remove obsolete elements
+                select("meta[name=charset]")?.remove() // Remove obsolete elements
             } else if (syntax == OutputSettings.Syntax.xml) {
                 val node = ensureChildNodes()[0]!!
                 if (node is XmlDeclaration) {
@@ -356,7 +359,7 @@ class Document(private val location: String) :
         private var escapeMode = Entities.EscapeMode.base
         private var charset = DataUtil.UTF_8
         private val encoderThreadLocal = ThreadLocal<CharsetEncoder>() // initialized by start of OuterHtmlVisitor
-        var coreCharset: Entities.CoreCharset? = null // fast encoders for ascii and utf8
+        internal var coreCharset: Entities.CoreCharset? = null // fast encoders for ascii and utf8
         private var prettyPrint = true
         private var outline = false
         private var indentAmount = 1
@@ -548,7 +551,7 @@ class Document(private val location: String) :
      * Get the document's current output settings.
      * @return the document's current output settings.
      */
-    fun outputSettings(): OutputSettings? {
+    fun outputSettings(): OutputSettings {
         return outputSettings
     }
 

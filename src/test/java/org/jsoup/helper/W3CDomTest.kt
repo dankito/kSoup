@@ -1,8 +1,6 @@
 package org.jsoup.helper
 
-import org.jsoup.Connection.KeyVal.value
 import org.jsoup.Jsoup
-import org.jsoup.Jsoup.parse
 import org.jsoup.TextUtil
 import org.jsoup.helper.W3CDom.Companion.OutputHtml
 import org.jsoup.helper.W3CDom.Companion.OutputXml
@@ -10,9 +8,6 @@ import org.jsoup.helper.W3CDom.Companion.asString
 import org.jsoup.helper.W3CDom.Companion.convert
 import org.jsoup.integration.ParseTest
 import org.jsoup.nodes.*
-import org.jsoup.nodes.Attribute.value
-import org.jsoup.nodes.Element.value
-import org.jsoup.select.Elements.value
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.w3c.dom.Document
@@ -45,7 +40,7 @@ class W3CDomTest {
         Assertions.assertEquals("Text", roundTrip.getElementsByTagName("p").item(0).textContent)
 
         // check we can set properties
-        val properties: MutableMap<String?, String?> = OutputXml()
+        val properties = OutputXml()
         properties[OutputKeys.INDENT] = "yes"
         val furtherOut = asString(wDoc, properties)
         Assertions.assertTrue(furtherOut.length > out.length) // wanted to assert formatting, but actual indentation is platform specific so breaks in CI
@@ -62,7 +57,7 @@ class W3CDomTest {
     fun namespacePreservation() {
         val `in`: File = ParseTest.Companion.getFile("/htmltests/namespaces.xhtml")
         val jsoupDoc: org.jsoup.nodes.Document
-        jsoupDoc = parse(`in`, "UTF-8")
+        jsoupDoc = Jsoup.parse(`in`, "UTF-8")
         val doc: Document
         val jDom = W3CDom()
         doc = jDom.fromJsoup(jsoupDoc)
@@ -187,7 +182,7 @@ class W3CDomTest {
         var html = "<html><body><div>hello</div></body></html>"
         var dom = w3c.fromJsoup(Jsoup.parse(html))
         var nodeList = xpath(dom, "//*[local-name()=\"body\"]") // namespace aware; HTML namespace is default
-        Assertions.assertEquals("div", nodeList.item(0).localName)
+        Assertions.assertEquals("div", nodeList?.item(0)?.localName)
 
         // default output is namespace aware, so query needs to be as well
         html = "<html xmlns='http://www.w3.org/1999/xhtml'><body id='One'><div>hello</div></body></html>"
@@ -197,10 +192,10 @@ class W3CDomTest {
         dom = w3c.fromJsoup(Jsoup.parse(html))
         nodeList = xpath(dom, "//*[local-name()=\"body\"]")
         Assertions.assertNotNull(nodeList)
-        Assertions.assertEquals(1, nodeList.length)
-        Assertions.assertEquals("div", nodeList.item(0).localName)
-        Assertions.assertEquals("http://www.w3.org/1999/xhtml", nodeList.item(0).namespaceURI)
-        Assertions.assertNull(nodeList.item(0).prefix)
+        Assertions.assertEquals(1, nodeList?.length)
+        Assertions.assertEquals("div", nodeList?.item(0)?.localName)
+        Assertions.assertEquals("http://www.w3.org/1999/xhtml", nodeList?.item(0)?.namespaceURI)
+        Assertions.assertNull(nodeList?.item(0)?.prefix)
 
         // get rid of the name space awareness
         val xml = asString(dom)
@@ -224,8 +219,8 @@ class W3CDomTest {
         w3c.namespaceAware(false)
         val dom = w3c.fromJsoup(Jsoup.parse(html))
         val nodeList = xpath(dom, "//body") // no namespace
-        Assertions.assertEquals(1, nodeList.length)
-        Assertions.assertEquals("div", nodeList.item(0).localName)
+        Assertions.assertEquals(1, nodeList?.length)
+        Assertions.assertEquals("div", nodeList?.item(0)?.localName)
     }
 
     @Test
@@ -238,13 +233,13 @@ class W3CDomTest {
         val html = "<html xmlns='http://www.w3.org/1999/xhtml'><body id='One'><div>hello</div></body></html>"
         val dom = w3c.fromJsoup(Jsoup.parse(html))
         val nodeList = xpath(dom, "//body") // no ns, so needs no prefix
-        Assertions.assertEquals("div", nodeList.item(0).localName)
+        Assertions.assertEquals("div", nodeList?.item(0)?.localName)
     }
 
     @Throws(XPathExpressionException::class)
-    private fun xpath(w3cDoc: Document, query: String): NodeList {
+    private fun xpath(w3cDoc: Document, query: String): NodeList? {
         val xpath = XPathFactory.newInstance().newXPath().compile(query)
-        return xpath.evaluate(w3cDoc, XPathConstants.NODE) as NodeList
+        return xpath.evaluate(w3cDoc, XPathConstants.NODE) as? NodeList
     }
 
     @Test
@@ -305,7 +300,7 @@ class W3CDomTest {
     private fun output(`in`: String, modeHtml: Boolean): String {
         val jdoc = Jsoup.parse(`in`)
         val w3c = convert(jdoc)
-        val properties: Map<String?, String?> = if (modeHtml) OutputHtml() else OutputXml()
+        val properties = if (modeHtml) OutputHtml() else OutputXml()
         return TextUtil.normalizeSpaces(asString(w3c, properties))
     }
 

@@ -1,14 +1,10 @@
 package org.jsoup.nodes
 
-import org.jsoup.Connection.KeyVal.value
 import org.jsoup.Jsoup
 import org.jsoup.Jsoup.parse
 import org.jsoup.integration.servlets.FileServlet
-import org.jsoup.nodes.Attribute.value
-import org.jsoup.nodes.Element.value
 import org.jsoup.parser.Parser.Companion.htmlParser
 import org.jsoup.parser.Parser.Companion.xmlParser
-import org.jsoup.select.Elements.value
 import org.jsoup.select.GenericNodeVisitor.Companion.jvmNodeVisitor
 import org.jsoup.select.NodeTraversor.traverse
 import org.junit.jupiter.api.Assertions

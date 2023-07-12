@@ -1,17 +1,20 @@
 package org.jsoup.parser
 
-import org.jsoup.helper.Validate
 import org.jsoup.nodes.Attributes
 
 /**
  * Parse tokens for the Tokeniser.
  */
 abstract class Token private constructor() {
+
     var type: TokenType? = null
-    private var startPos: Int = 0
-    private var endPos: Int = Unset // position in CharacterReader this token was read from
+
+    var startPos: Int = Unset
+
+    var endPos: Int = Unset
+
     fun tokenType(): String {
-        return this.javaClass.getSimpleName()
+        return this::class.simpleName!!
     }
 
     /**
@@ -24,40 +27,23 @@ abstract class Token private constructor() {
         return this
     }
 
-    fun startPos(): Int {
-        return startPos
-    }
-
-    fun startPos(pos: Int) {
-        startPos = pos
-    }
-
-    fun endPos(): Int {
-        return endPos
-    }
-
-    fun endPos(pos: Int) {
-        endPos = pos
-    }
-
-    class Doctype() : Token() {
-        val name: StringBuilder = StringBuilder()
+    internal class Doctype : Token() {
+        val name = StringBuilder()
         var pubSysKey: String? = null
-        val publicIdentifier: StringBuilder = StringBuilder()
-        val systemIdentifier: StringBuilder = StringBuilder()
-        var isForceQuirks: Boolean = false
+        val publicIdentifier = StringBuilder()
+        val systemIdentifier = StringBuilder()
+        var forceQuirks = false
 
         init {
             type = TokenType.Doctype
         }
 
-        public override fun reset(): Token {
-            super.reset()
+        override fun reset(): Token {
             reset(name)
             pubSysKey = null
             reset(publicIdentifier)
             reset(systemIdentifier)
-            isForceQuirks = false
+            forceQuirks = false
             return this
         }
 
@@ -73,27 +59,30 @@ abstract class Token private constructor() {
             return systemIdentifier.toString()
         }
 
-        public override fun toString(): String {
+        override fun toString(): String {
             return "<!doctype " + getName() + ">"
         }
     }
 
-    internal abstract class Tag() : Token() {
+    internal abstract class Tag : Token() {
         var tagName: String? = null
-        var normalName: String? = null // lc version of tag name, for case insensitive tree build
-        private val attrName: StringBuilder = StringBuilder() // try to get attr names and vals in one shot, vs Builder
-        private var attrNameS: String? = null
-        private var hasAttrName: Boolean = false
-        private val attrValue: StringBuilder = StringBuilder()
-        private var attrValueS: String? = null
-        private var hasAttrValue: Boolean = false
-        private var hasEmptyAttrValue: Boolean = false // distinguish boolean attribute from empty string value
-        var isSelfClosing: Boolean = false
-        var attributes: Attributes? =
-            null // start tags get attributes on construction. End tags get attributes on first new attribute (but only for parser convenience, not used).
 
-        public override fun reset(): Tag {
+        /** Lower case  */
+        var normalName : String? = null // lc version of tag name, for case insensitive tree build // lower case, used in tree building for working out where in tree it should go
+            private set
+        private val attrName = StringBuilder() // try to get attr names and vals in one shot, vs Builder
+        private var attrNameS: String? = null
+        private var hasAttrName = false
+        private val attrValue = StringBuilder()
+        private var attrValueS: String? = null
+        private var hasAttrValue = false
+        private var hasEmptyAttrValue = false // distinguish boolean attribute from empty string value
+        var isSelfClosing = false
+        var attributes: Attributes? = null // start tags get attributes on construction. End tags get attributes on first new attribute (but only for parser convenience, not used).
+
+        override fun reset(): Tag {
             super.reset()
+
             tagName = null
             normalName = null
             reset(attrName)
@@ -112,13 +101,11 @@ abstract class Token private constructor() {
             if (attributes == null) attributes = Attributes()
             if (hasAttrName && attributes!!.size() < MaxAttributes) {
                 // the tokeniser has skipped whitespace control chars, but trimming could collapse to empty for other control codes, so verify here
-                var name: String = if (attrName.length > 0) attrName.toString() else (attrNameS)!!
-                name = name.trim({ it <= ' ' })
+                var name = if (attrName.length > 0) attrName.toString() else attrNameS!!
+                name = name.trim { it <= ' ' }
                 if (name.length > 0) {
                     val value: String?
-                    if (hasAttrValue) value =
-                        if (attrValue.length > 0) attrValue.toString() else attrValueS else if (hasEmptyAttrValue) value =
-                        "" else value = null
+                    value = if (hasAttrValue) if (attrValue.length > 0) attrValue.toString() else attrValueS else if (hasEmptyAttrValue) "" else null
                     // note that we add, not put. So that the first is kept, and rest are deduped, once in a context where case sensitivity is known (the appropriate tree builder).
                     attributes!!.add(name, value)
                 }
@@ -148,9 +135,12 @@ abstract class Token private constructor() {
         }
 
         /** Preserves case  */
-        fun name(): String? { // preserves case, for input into Tag.valueOf (which may drop case)
-            Validate.isFalse(tagName == null || tagName!!.length == 0)
-            return tagName
+        fun name(): String { // preserves case, for input into Tag.valueOf (which may drop case)
+            val name = tagName
+            requireNotNull(name)
+            require(name.isNotEmpty())
+
+            return name
         }
 
         /** Lower case  */
@@ -162,29 +152,27 @@ abstract class Token private constructor() {
             return if (tagName != null) tagName!! else "[unset]"
         }
 
-        fun name(name: String?): Tag {
+        fun name(name: String): Tag {
             tagName = name
-            normalName = ParseSettings.Companion.normalName(tagName)
+            normalName = ParseSettings.normalName(name)
             return this
         }
 
         // these appenders are rarely hit in not null state-- caused by null chars.
-        fun appendTagName(append: String?) {
+        fun appendTagName(append: String) {
             // might have null chars - need to replace with null replacement character
-            var append: String? = append
-            append = append!!.replace(TokeniserState.Companion.nullChar, Tokeniser.Companion.replacementChar)
-            tagName = if (tagName == null) append else tagName + append
-            normalName = ParseSettings.Companion.normalName(tagName)
+            val append = append.replace(TokeniserState.nullChar, Tokeniser.replacementChar)
+            val tagName = if (tagName == null) append else tagName + append
+            name(tagName)
         }
 
         fun appendTagName(append: Char) {
             appendTagName(append.toString())
         }
 
-        fun appendAttributeName(append: String?) {
+        fun appendAttributeName(append: String) {
             // might have null chars because we eat in one pass - need to replace with null replacement character
-            var append: String? = append
-            append = append!!.replace(TokeniserState.Companion.nullChar, Tokeniser.Companion.replacementChar)
+            val append = append.replace(TokeniserState.nullChar, Tokeniser.replacementChar)
             ensureAttrName()
             if (attrName.length == 0) {
                 attrNameS = append
@@ -219,8 +207,8 @@ abstract class Token private constructor() {
 
         fun appendAttributeValue(appendCodepoints: IntArray) {
             ensureAttrValue()
-            for (codepoint: Int in appendCodepoints) {
-                attrValue.appendCodePoint(codepoint)
+            for (codepoint in appendCodepoints) {
+                attrValue.append(codepoint.toChar())
             }
         }
 
@@ -250,51 +238,48 @@ abstract class Token private constructor() {
 
         companion object {
             /* Limits runaway crafted HTML from spewing attributes and getting a little sluggish in ensureCapacity.
-        Real-world HTML will P99 around 8 attributes, so plenty of headroom. Implemented here and not in the Attributes
-        object so that API users can add more if ever required. */
-            private val MaxAttributes: Int = 512
+              Real-world HTML will P99 around 8 attributes, so plenty of headroom. Implemented here and not in the Attributes
+              object so that API users can add more if ever required. */
+            private const val MaxAttributes = 512
         }
     }
 
-    class StartTag() : Tag() {
+    internal class StartTag : Tag() {
         init {
             type = TokenType.StartTag
         }
 
-        public override fun reset(): Tag {
+        override fun reset(): Tag {
             super.reset()
             attributes = null
             return this
         }
 
-        fun nameAttr(name: String?, attributes: Attributes?): StartTag {
-            tagName = name
+        fun nameAttr(name: String, attributes: Attributes?): StartTag {
             this.attributes = attributes
-            normalName = ParseSettings.Companion.normalName(tagName)
-            return this
+            return name(name) as StartTag
         }
 
-        public override fun toString(): String {
-            if (hasAttributes() && attributes!!.size() > 0) return "<" + toStringName() + " " + attributes.toString() + ">" else return "<" + toStringName() + ">"
+        override fun toString(): String {
+            return if (hasAttributes() && attributes!!.size() > 0) "<" + toStringName() + " " + attributes.toString() + ">" else "<" + toStringName() + ">"
         }
     }
 
-    class EndTag() : Tag() {
+    internal class EndTag : Tag() {
         init {
             type = TokenType.EndTag
         }
 
-        public override fun toString(): String {
+        override fun toString(): String {
             return "</" + toStringName() + ">"
         }
     }
 
-    class Comment() : Token() {
-        private val data: StringBuilder = StringBuilder()
+    class Comment : Token() {
+        private val data = StringBuilder()
         private var dataS: String? = null // try to get in one shot
-        var bogus: Boolean = false
-        public override fun reset(): Token {
-            super.reset()
+        var bogus = false
+        override fun reset(): Token {
             reset(data)
             dataS = null
             bogus = false
@@ -333,12 +318,12 @@ abstract class Token private constructor() {
             }
         }
 
-        public override fun toString(): String {
+        override fun toString(): String {
             return "<!--" + getData() + "-->"
         }
     }
 
-    open class Character() : Token(), Cloneable {
+    open class Character : Token() {
         var data: String? = null
             private set
 
@@ -346,8 +331,7 @@ abstract class Token private constructor() {
             type = TokenType.Character
         }
 
-        public override fun reset(): Token {
-            super.reset()
+        override fun reset(): Token {
             data = null
             return this
         }
@@ -357,16 +341,22 @@ abstract class Token private constructor() {
             return this
         }
 
-        public override fun toString(): String {
-            return (data)!!
+        // TODO: how to handle all other clone() methods?
+        fun clone() = Character().also {
+            it.data = this.data
+            it.startPos = this.startPos
+            it.endPos = this.endPos
         }
+//        fun clone(): Character {
+//            try {
+//                return super.clone() as Character
+//            } catch (e: CloneNotSupportedException) {
+//                throw RuntimeException(e)
+//            }
+//        }
 
-        public override fun clone(): Character {
-            try {
-                return super.clone() as Character
-            } catch (e: CloneNotSupportedException) {
-                throw RuntimeException(e)
-            }
+        override fun toString(): String {
+            return data!!
         }
     }
 
@@ -375,79 +365,65 @@ abstract class Token private constructor() {
             data(data)
         }
 
-        public override fun toString(): String {
-            return "<![CDATA[" + data + "]]>"
+        override fun toString(): String {
+            return "<![CDATA[$data]]>"
         }
     }
 
-    internal class EOF() : Token() {
+    internal class EOF : Token() {
         init {
             type = TokenType.EOF
         }
 
-        public override fun reset(): Token {
-            super.reset()
+        override fun reset(): Token {
             return this
         }
 
-        public override fun toString(): String {
+        override fun toString(): String {
             return ""
         }
     }
 
     val isDoctype: Boolean
-        get() {
-            return type == TokenType.Doctype
-        }
+        get() = type == TokenType.Doctype
 
-    fun asDoctype(): Doctype {
+    internal fun asDoctype(): Doctype {
         return this as Doctype
     }
 
     val isStartTag: Boolean
-        get() {
-            return type == TokenType.StartTag
-        }
+        get() = type == TokenType.StartTag
 
-    fun asStartTag(): StartTag {
+    internal fun asStartTag(): StartTag {
         return this as StartTag
     }
 
     val isEndTag: Boolean
-        get() {
-            return type == TokenType.EndTag
-        }
+        get() = type == TokenType.EndTag
 
-    fun asEndTag(): EndTag {
+    internal fun asEndTag(): EndTag {
         return this as EndTag
     }
 
     val isComment: Boolean
-        get() {
-            return type == TokenType.Comment
-        }
+        get() = type == TokenType.Comment
 
     fun asComment(): Comment {
         return this as Comment
     }
 
     val isCharacter: Boolean
-        get() {
-            return type == TokenType.Character
-        }
+        get() = type == TokenType.Character
+
     val isCData: Boolean
-        get() {
-            return this is CData
-        }
+        get() = this is CData
 
     fun asCharacter(): Character {
         return this as Character
     }
 
     val isEOF: Boolean
-        get() {
-            return type == TokenType.EOF
-        }
+        get() = type == TokenType.EOF
 
     enum class TokenType {
         Doctype,
@@ -455,17 +431,15 @@ abstract class Token private constructor() {
         EndTag,
         Comment,
         Character,
-
         // note no CData - treated in builder as an extension of Character
         EOF
     }
 
     companion object {
-        val Unset: Int = -1
+        const val Unset = -1
+
         fun reset(sb: StringBuilder?) {
-            if (sb != null) {
-                sb.delete(0, sb.length)
-            }
+            sb?.deleteRange(0, sb.length)
         }
     }
 }

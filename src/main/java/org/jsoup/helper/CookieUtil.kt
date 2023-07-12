@@ -70,7 +70,7 @@ internal object CookieUtil {
     }
 
     @Throws(IOException::class)
-    fun storeCookies(req: HttpConnection.Request, url: URL?, resHeaders: Map<String, MutableList<String>>?) {
+    fun storeCookies(req: HttpConnection.Request, url: URL?, resHeaders: Map<String, MutableList<String?>>) {
         req.cookieManager().put(asUri(url), resHeaders) // stores cookies for session
     }
 }

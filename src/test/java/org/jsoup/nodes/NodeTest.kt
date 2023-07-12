@@ -1,8 +1,14 @@
 package org.jsoup.nodes
 
-import org.jsoup.Jsoupimport
+import org.jsoup.Jsoup
+import org.jsoup.Jsoup.parse
+import org.jsoup.TextUtil
+import org.jsoup.parser.Tag.Companion.valueOf
+import org.jsoup.select.NodeVisitor
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
+import java.util.function.Consumer
 
-org.jsoup.Jsoup.parseimport org.jsoup.TextUtilimport org.jsoup.parser.Tag.Companion.valueOfimport org.jsoup.select.NodeVisitorimport org.junit.jupiter.api.Assertionsimport org.junit.jupiter.api.Testimport java.util.function.Consumer
 /**
  * Tests Nodes
  *

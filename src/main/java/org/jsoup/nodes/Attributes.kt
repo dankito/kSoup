@@ -7,6 +7,8 @@ import org.jsoup.internal.StringUtil
 import org.jsoup.parser.ParseSettings
 import java.io.IOException
 import java.util.*
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 
 /**
  * The attributes of an Element.
@@ -23,12 +25,11 @@ import java.util.*
  *
  * @author Jonathan Hedley, jonathan@hedley.net
  */
-class Attributes : Iterable<Attribute?>, Cloneable {
+class Attributes : Iterable<Attribute>, java.lang.Cloneable {
     // the number of instance fields is kept as low as possible giving an object size of 24 bytes
     private var size = 0 // number of slots used (not total capacity, which is keys.length)
     var keys = arrayOfNulls<String>(InitialCapacity)
-    var vals =
-        arrayOfNulls<Any>(InitialCapacity) // Genericish: all non-internal attribute values must be Strings and are cast on access.
+    var vals = arrayOfNulls<Any>(InitialCapacity)
 
     // check there's room for more
     private fun checkCapacity(minNewSize: Int) {
@@ -37,8 +38,8 @@ class Attributes : Iterable<Attribute?>, Cloneable {
         if (curCap >= minNewSize) return
         var newCap = if (curCap >= InitialCapacity) size * GrowthFactor else InitialCapacity
         if (minNewSize > newCap) newCap = minNewSize
-        keys = Arrays.copyOf(keys, newCap)
-        vals = Arrays.copyOf(vals, newCap)
+        keys = keys.copyOf(newCap)
+        vals = vals.copyOf(newCap)
     }
 
     fun indexOfKey(key: String?): Int {
@@ -49,7 +50,7 @@ class Attributes : Iterable<Attribute?>, Cloneable {
         return NotFound
     }
 
-    private fun indexOfKeyIgnoreCase(key: String?): Int {
+    private fun indexOfKeyIgnoreCase(key: String): Int {
         Validate.notNull(key)
         for (i in 0 until size) {
             if (key.equals(keys[i], ignoreCase = true)) return i
@@ -63,11 +64,17 @@ class Attributes : Iterable<Attribute?>, Cloneable {
      * @return the attribute value if set; or empty string if not set (or a boolean attribute).
      * @see .hasKey
      */
-    operator fun get(key: String?): String {
+    operator fun get(key: String): String {
+        return checkNotNull(getOrNull(key))
+    }
+
+    internal fun getOrNull(key: String): String? {
         val i = indexOfKey(key)
-        return if (i == NotFound) EmptyString else checkNotNull(
-            vals[i]
-        )
+        return if (i == NotFound) {
+            null
+        } else {
+            vals[i] as? String
+        }
     }
 
     /**
@@ -75,11 +82,13 @@ class Attributes : Iterable<Attribute?>, Cloneable {
      * @param key the attribute name
      * @return the first matching attribute value if set; or empty string if not set (ora boolean attribute).
      */
-    fun getIgnoreCase(key: String?): String {
+    fun getIgnoreCase(key: String): String {
         val i = indexOfKeyIgnoreCase(key)
-        return if (i == NotFound) EmptyString else checkNotNull(
-            vals[i]
-        )
+        return if (i == NotFound) {
+            EmptyString
+        } else {
+            checkNotNull(vals[i])
+        }
     }
 
     /**
@@ -88,9 +97,14 @@ class Attributes : Iterable<Attribute?>, Cloneable {
      * @return the object associated to this key, or `null` if not found.
      */
     fun getUserData(key: String): Any? {
-        var key = key
         Validate.notNull(key)
-        if (!isInternalKey(key)) key = internalKey(key)
+
+        val key = if (!isInternalKey(key)) {
+            internalKey(key)
+        } else {
+            key
+        }
+
         val i = indexOfKeyIgnoreCase(key)
         return if (i == NotFound) null else vals[i]
     }
@@ -99,12 +113,12 @@ class Attributes : Iterable<Attribute?>, Cloneable {
      * Adds a new attribute. Will produce duplicates if the key already exists.
      * @see Attributes.put
      */
-    fun add(key: String?, value: String?): Attributes {
+    fun add(key: String, value: String?): Attributes {
         addObject(key, value)
         return this
     }
 
-    private fun addObject(key: String?, value: Any?) {
+    private fun addObject(key: String, value: Any?) {
         checkCapacity(size + 1)
         keys[size] = key
         vals[size] = value
@@ -117,10 +131,16 @@ class Attributes : Iterable<Attribute?>, Cloneable {
      * @param value attribute value (may be null, to set a boolean attribute)
      * @return these attributes, for chaining
      */
-    fun put(key: String?, value: String?): Attributes {
+    fun put(key: String, value: String?): Attributes {
         Validate.notNull(key)
+
         val i = indexOfKey(key)
-        if (i != NotFound) vals[i] = value else add(key, value)
+        if (i != NotFound) {
+            vals[i] = value
+        } else {
+            add(key, value)
+        }
+
         return this
     }
 
@@ -132,16 +152,26 @@ class Attributes : Iterable<Attribute?>, Cloneable {
      * @see .getUserData
      */
     fun putUserData(key: String, value: Any?): Attributes {
-        var key = key
         Validate.notNull(key)
-        if (!isInternalKey(key)) key = internalKey(key)
         Validate.notNull(value)
+
+        val key = if (!isInternalKey(key)) {
+            internalKey(key)
+        } else {
+            key
+        }
+
         val i = indexOfKey(key)
-        if (i != NotFound) vals[i] = value else addObject(key, value)
+        if (i != NotFound) {
+            vals[i] = value
+        } else {
+            addObject(key, value)
+        }
+
         return this
     }
 
-    fun putIgnoreCase(key: String?, value: String?) {
+    fun putIgnoreCase(key: String, value: String?) {
         val i = indexOfKeyIgnoreCase(key)
         if (i != NotFound) {
             vals[i] = value
@@ -156,7 +186,7 @@ class Attributes : Iterable<Attribute?>, Cloneable {
      * @param value attribute value
      * @return these attributes, for chaining
      */
-    fun put(key: String?, value: Boolean): Attributes {
+    fun put(key: String, value: Boolean): Attributes {
         if (value) putIgnoreCase(key, null) else remove(key)
         return this
     }
@@ -180,6 +210,13 @@ class Attributes : Iterable<Attribute?>, Cloneable {
         if (shifted > 0) {
             System.arraycopy(keys, index + 1, keys, index, shifted)
             System.arraycopy(vals, index + 1, vals, index, shifted)
+//            // TODO: does this work?
+//            keys = keys.toMutableList().apply {
+//                IntRange(0, index).forEach { this.removeFirst() }
+//            }.toTypedArray()
+//            vals = vals.toMutableList().apply {
+//                IntRange(0, index).forEach { this.removeFirst() }
+//            }.toTypedArray()
         }
         size--
         keys[size] = null // release hold
@@ -199,7 +236,7 @@ class Attributes : Iterable<Attribute?>, Cloneable {
      * Remove an attribute by key. **Case insensitive.**
      * @param key attribute key to remove
      */
-    fun removeIgnoreCase(key: String?) {
+    fun removeIgnoreCase(key: String) {
         val i = indexOfKeyIgnoreCase(key)
         if (i != NotFound) remove(i)
     }
@@ -218,7 +255,7 @@ class Attributes : Iterable<Attribute?>, Cloneable {
      * @param key key to check for
      * @return true if key exists, false otherwise
      */
-    fun hasKeyIgnoreCase(key: String?): Boolean {
+    fun hasKeyIgnoreCase(key: String): Boolean {
         return indexOfKeyIgnoreCase(key) != NotFound
     }
 
@@ -237,7 +274,7 @@ class Attributes : Iterable<Attribute?>, Cloneable {
      * @param key case-insensitive key to check for
      * @return true if key exists, and it has a value
      */
-    fun hasDeclaredValueForKeyIgnoreCase(key: String?): Boolean {
+    fun hasDeclaredValueForKeyIgnoreCase(key: String): Boolean {
         val i = indexOfKeyIgnoreCase(key)
         return i != NotFound && vals[i] != null
     }
@@ -251,18 +288,18 @@ class Attributes : Iterable<Attribute?>, Cloneable {
         return size
     }
 
+    /**
+     * Test if this Attributes list is empty (size==0).
+     */
     val isEmpty: Boolean
-        /**
-         * Test if this Attributes list is empty (size==0).
-         */
         get() = size == 0
 
     /**
      * Add all the attributes from the incoming set to this set.
      * @param incoming attributes to add to these attributes.
      */
-    fun addAll(incoming: Attributes?) {
-        if (incoming!!.size() == 0) return
+    fun addAll(incoming: Attributes) {
+        if (incoming.size() == 0) return
         checkCapacity(size + incoming.size)
         val needsPut = size != 0 // if this set is empty, no need to check existing set, so can add() vs put()
         // (and save bashing on the indexOfKey()
@@ -272,18 +309,21 @@ class Attributes : Iterable<Attribute?>, Cloneable {
     }
 
     override fun iterator(): MutableIterator<Attribute> {
-        return object : MutableIterator<Attribute?> {
+        return object : MutableIterator<Attribute> {
             var i = 0
             override fun hasNext(): Boolean {
                 while (i < size) {
-                    if (isInternalKey(keys[i])) // skip over internal keys
-                        i++ else break
+                    if (isInternalKey(keys[i])) { // skip over internal keys
+                        i++
+                    } else {
+                        break
+                    }
                 }
                 return i < size
             }
 
             override fun next(): Attribute {
-                val attr = Attribute(keys[i], vals[i] as String?, this@Attributes)
+                val attr = Attribute(keys[i]!!, vals[i], this@Attributes)
                 i++
                 return attr
             }
@@ -296,16 +336,17 @@ class Attributes : Iterable<Attribute?>, Cloneable {
 
     /**
      * Get the attributes as a List, for iteration.
-     * @return a view of the attributes as an unmodifiable List.
+     * @return an view of the attributes as an unmodifiable List.
      */
     fun asList(): List<Attribute> {
         val list = ArrayList<Attribute>(size)
         for (i in 0 until size) {
-            if (isInternalKey(keys[i])) continue  // skip internal keys
-            val attr = Attribute(keys[i], vals[i] as String?, this@Attributes)
+            val key = keys[i]
+            if (key == null || isInternalKey(key)) continue  // skip internal keys
+            val attr = Attribute(key, vals[i], this@Attributes)
             list.add(attr)
         }
-        return Collections.unmodifiableList(list)
+        return list.toList()
     }
 
     /**
@@ -313,7 +354,7 @@ class Attributes : Iterable<Attribute?>, Cloneable {
      * starting with `data-`.
      * @return map of custom data attributes.
      */
-    fun dataset(): Map<String, String> {
+    fun dataset(): Map<String, String?> {
         return Dataset(this)
     }
 
@@ -321,7 +362,7 @@ class Attributes : Iterable<Attribute?>, Cloneable {
      * Get the HTML representation of these attributes.
      * @return HTML
      */
-    fun html(): String? {
+    fun html(): String {
         val sb = StringUtil.borrowBuilder()
         try {
             html(sb, Document("").outputSettings()) // output settings a bit funky, but this html() seldom used
@@ -332,29 +373,30 @@ class Attributes : Iterable<Attribute?>, Cloneable {
     }
 
     @Throws(IOException::class)
-    fun html(accum: Appendable?, out: Document.OutputSettings?) {
+    fun html(accum: Appendable, out: Document.OutputSettings) {
         val sz = size
         for (i in 0 until sz) {
-            if (isInternalKey(keys[i])) continue
-            val key: String = Attribute.Companion.getValidKey(keys[i], out!!.syntax())
-            if (key != null) Attribute.Companion.htmlNoValidate(key, vals[i] as String?, accum!!.append(' '), out)
+            var key = keys[i]
+            if (key == null || isInternalKey(key)) continue
+            key = Attribute.getValidKey(key, out.syntax())
+            if (key != null) Attribute.htmlNoValidate(key, vals[i] as? String, accum.append(' '), out)
         }
     }
 
     override fun toString(): String {
-        return html()!!
+        return html()
     }
 
     /**
      * Checks if these attributes are equal to another set of attributes, by comparing the two sets. Note that the order
      * of the attributes does not impact this equality (as per the Map interface equals()).
-     * @param o attributes to compare with
+     * @param other attributes to compare with
      * @return if both sets of attributes have the same content
      */
-    override fun equals(o: Any?): Boolean {
-        if (this === o) return true
-        if (o == null || javaClass != o.javaClass) return false
-        val that = o as Attributes
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+        val that = other as Attributes
         if (size != that.size) return false
         for (i in 0 until size) {
             val key = keys[i]
@@ -375,21 +417,24 @@ class Attributes : Iterable<Attribute?>, Cloneable {
      */
     override fun hashCode(): Int {
         var result = size
-        result = 31 * result + Arrays.hashCode(keys)
-        result = 31 * result + Arrays.hashCode(vals)
+        result = 31 * result + keys.hashCode()
+        result = 31 * result + vals.hashCode()
         return result
     }
 
-    public override fun clone(): Attributes {
-        val clone: Attributes
-        clone = try {
-            super.clone() as Attributes
-        } catch (e: CloneNotSupportedException) {
-            throw RuntimeException(e)
-        }
+    fun clone(): Attributes {
+        // TODO: does this work?
+        val clone: Attributes = Attributes()
+//        val clone: Attributes
+//        clone = try {
+//            super.clone() as Attributes
+//        } catch (e: CloneNotSupportedException) {
+//            throw RuntimeException(e)
+//        }
+
         clone.size = size
-        clone.keys = Arrays.copyOf(keys, size)
-        clone.vals = Arrays.copyOf(vals, size)
+        clone.keys = arrayOf(*keys)
+        clone.vals = arrayOf(*vals)
         return clone
     }
 
@@ -414,7 +459,7 @@ class Attributes : Iterable<Attribute?>, Cloneable {
         OUTER@ for (i in keys.indices) {
             var j = i + 1
             while (j < keys.size) {
-                if (keys[j] == null) continue@OUTER  // keys.length doesn't shrink when removing, so re-test
+                if (keys[j] == null) continue@OUTER   // keys.length doesn't shrink when removing, so re-test
                 if (preserve && keys[i] == keys[j] || !preserve && keys[i].equals(keys[j], ignoreCase = true)) {
                     dupes++
                     remove(j)
@@ -426,10 +471,10 @@ class Attributes : Iterable<Attribute?>, Cloneable {
         return dupes
     }
 
-    private class Dataset(private val attributes: Attributes) : AbstractMap<String, String?>() {
-        override fun entrySet(): Set<Map.Entry<String, String>> {
-            return EntrySet()
-        }
+    private class Dataset internal constructor(private val attributes: Attributes) : AbstractMutableMap<String, String?>() {
+
+        override val entries: MutableSet<MutableMap.MutableEntry<String, String?>>
+            get() = EntrySet()
 
         override fun put(key: String, value: String?): String? {
             val dataKey = dataKey(key)
@@ -438,31 +483,40 @@ class Attributes : Iterable<Attribute?>, Cloneable {
             return oldValue
         }
 
-        private inner class EntrySet : AbstractSet<Map.Entry<String, String>>() {
-            override fun iterator(): MutableIterator<Map.Entry<String, String>> {
+        private inner class EntrySet : AbstractMutableSet<MutableMap.MutableEntry<String, String?>>() {
+
+            override val size: Int
+                get() {
+                    var count = 0
+                    val iter: Iterator<*> = DatasetIterator()
+                    while (iter.hasNext()) count++
+                    return count
+                }
+
+            override fun iterator(): MutableIterator<MutableMap.MutableEntry<String, String?>> {
                 return DatasetIterator()
             }
 
-            override fun size(): Int {
-                var count = 0
-                val iter: Iterator<*> = DatasetIterator()
-                while (iter.hasNext()) count++
-                return count
+            override fun add(element: MutableMap.MutableEntry<String, String?>): Boolean {
+                put(element.key, element.value)
+                return true
             }
         }
 
-        private inner class DatasetIterator : MutableIterator<Map.Entry<String, String>> {
+        private inner class DatasetIterator : MutableIterator<MutableMap.MutableEntry<String, String?>> {
             private val attrIter: Iterator<Attribute> = attributes.iterator()
             private var attr: Attribute? = null
             override fun hasNext(): Boolean {
                 while (attrIter.hasNext()) {
                     attr = attrIter.next()
-                    if (attr!!.isDataAttribute) return true
+                    if (attr!!.isDataAttribute) {
+                        return true
+                    }
                 }
                 return false
             }
 
-            override fun next(): Map.Entry<String, String> {
+            override fun next(): MutableMap.MutableEntry<String, String?> {
                 return Attribute(attr!!.key.substring(dataPrefix.length), attr!!.value)
             }
 
@@ -472,7 +526,12 @@ class Attributes : Iterable<Attribute?>, Cloneable {
         }
     }
 
+    @OptIn(ExperimentalContracts::class)
     private fun isInternalKey(key: String?): Boolean {
+        contract {
+            returns(true) implies (key != null)
+        }
+
         return key != null && key.length > 1 && key[0] == InternalPrefix
     }
 
@@ -484,8 +543,7 @@ class Attributes : Iterable<Attribute?>, Cloneable {
         // Indicates a jsoup internal key. Can't be set via HTML. (It could be set via accessor, but not too worried about
         // that. Suppressed from list, iter.
         const val InternalPrefix = '/'
-        private const val InitialCapacity =
-            3 // sampling found mean count when attrs present = 1.49; 1.08 overall. 2.6:1 don't have any attrs.
+        private const val InitialCapacity = 3 // sampling found mean count when attrs present = 1.49; 1.08 overall. 2.6:1 don't have any attrs.
 
         // manages the key/val arrays
         private const val GrowthFactor = 2
@@ -494,8 +552,12 @@ class Attributes : Iterable<Attribute?>, Cloneable {
 
         // we track boolean attributes as null in values - they're just keys. so returns empty for consumers
         // casts to String, so only for non-internal attributes
-        fun checkNotNull(`val`: Any?): String {
-            return if (`val` == null) EmptyString else (`val` as String?)!!
+        internal fun checkNotNull(value: Any?): String {
+            return if (value == null) {
+                EmptyString
+            } else {
+                value as String
+            }
         }
 
         private fun dataKey(key: String): String {

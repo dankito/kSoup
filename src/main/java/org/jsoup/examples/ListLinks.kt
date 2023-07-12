@@ -2,7 +2,6 @@ package org.jsoup.examples
 
 import org.jsoup.Jsoup
 import org.jsoup.helper.Validate
-import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 import java.io.IOException
@@ -17,10 +16,10 @@ object ListLinks {
         Validate.isTrue(args.size == 1, "usage: supply url to fetch")
         val url: String = args.get(0)
         print("Fetching %s...", url)
-        val doc: Document? = Jsoup.connect(url).get()
-        val links: Elements? = doc.select("a[href]")
-        val media: Elements? = doc.select("[src]")
-        val imports: Elements? = doc.select("link[href]")
+        val doc = Jsoup.connect(url).get()
+        val links: Elements = doc.select("a[href]")
+        val media: Elements = doc.select("[src]")
+        val imports: Elements = doc.select("link[href]")
         print("\nMedia: (%d)", media.size)
         for (src: Element in media) {
             if ((src.normalName() == "img")) print(
@@ -43,7 +42,7 @@ object ListLinks {
         println(String.format(msg, *args))
     }
 
-    private fun trim(s: String?, width: Int): String? {
+    private fun trim(s: String, width: Int): String {
         if (s.length > width) return s.substring(0, width - 1) + "." else return s
     }
 }

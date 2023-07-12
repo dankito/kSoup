@@ -24,10 +24,12 @@ import javax.annotation.WillClose
  *
  */
 object DataUtil {
+
     private val charsetPattern: Pattern = Pattern.compile("(?i)\\bcharset=\\s*(?:[\"'])?([^\\s,;\"']*)")
+    private val illegalCharsetCharacters = "[\"']".toRegex()
+
     @JvmField
-    val UTF_8: Charset =
-        Charset.forName("UTF-8") // Don't use StandardCharsets, as those only appear in Android API 19, and we target 10.
+    val UTF_8: Charset = Charset.forName("UTF-8") // Don't use StandardCharsets, as those only appear in Android API 19, and we target 10.
     val defaultCharsetName: String = UTF_8.name() // used if not found in header or meta charset
     private val firstReadBufferSize: Int = 1024 * 5
     val bufferSize: Int = 1024 * 32
@@ -35,6 +37,8 @@ object DataUtil {
         "-_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray()
     @JvmField
     val boundaryLength: Int = 32
+
+
     /**
      * Loads and parses a file to a Document. Files that are compressed with gzip (and end in `.gz` or `.z`)
      * are supported in addition to uncompressed files.
@@ -65,12 +69,13 @@ object DataUtil {
     fun load(
         file: File,
         charsetName: String?,
-        baseUri: String?,
-        parser: Parser? = Parser.Companion.htmlParser()
+        baseUri: String,
+        parser: Parser = Parser.htmlParser()
     ): Document {
         var stream: InputStream = FileInputStream(file)
-        val name: String? = Normalizer.lowerCase(file.getName())
-        if (name!!.endsWith(".gz") || name.endsWith(".z")) {
+        val name = Normalizer.lowerCase(file.name)
+
+        if (name.endsWith(".gz") || name.endsWith(".z")) {
             // unfortunately file input streams don't support marks (why not?), so we will close and reopen after read
             val zipped: Boolean
             try {
@@ -80,6 +85,7 @@ object DataUtil {
             }
             stream = if (zipped) GZIPInputStream(FileInputStream(file)) else FileInputStream(file)
         }
+
         return parseInputStream(stream, charsetName, baseUri, parser)
     }
 
@@ -92,8 +98,8 @@ object DataUtil {
      * @throws IOException on IO error
      */
     @Throws(IOException::class)
-    fun load(@WillClose `in`: InputStream?, charsetName: String?, baseUri: String?): Document {
-        return parseInputStream(`in`, charsetName, baseUri, Parser.Companion.htmlParser())
+    fun load(@WillClose `in`: InputStream?, charsetName: String?, baseUri: String): Document {
+        return parseInputStream(`in`, charsetName, baseUri, Parser.htmlParser())
     }
 
     /**
@@ -106,7 +112,7 @@ object DataUtil {
      * @throws IOException on IO error
      */
     @Throws(IOException::class)
-    fun load(@WillClose `in`: InputStream?, charsetName: String?, baseUri: String?, parser: Parser?): Document {
+    fun load(@WillClose `in`: InputStream?, charsetName: String?, baseUri: String, parser: Parser): Document {
         return parseInputStream(`in`, charsetName, baseUri, parser)
     }
 
@@ -127,48 +133,40 @@ object DataUtil {
 
     @JvmStatic
     @Throws(IOException::class)
-    fun parseInputStream(
-        @WillClose input: InputStream?,
-        charsetName: String?,
-        baseUri: String?,
-        parser: Parser?
-    ): Document {
-        var input: InputStream? = input
-        var charsetName: String? = charsetName
-        if (input == null) // empty body
+    fun parseInputStream(@WillClose input: InputStream?, charsetName: String?, baseUri: String, parser: Parser): Document {
+        if (input == null) { // empty body
             return Document(baseUri)
-        input = ConstrainableInputStream.Companion.wrap(input, bufferSize, 0)
+        }
+
+        val input = ConstrainableInputStream.wrap(input, bufferSize, 0)
         var doc: Document? = null
 
         // read the start of the stream and look for a BOM or meta charset
         try {
             input.mark(bufferSize)
-            val firstBytes: ByteBuffer? = readToByteBuffer(
-                input,
-                firstReadBufferSize - 1
-            ) // -1 because we read one more to see if completed. First read is < buffer size, so can't be invalid.
+            val firstBytes = readToByteBuffer(input, firstReadBufferSize - 1) // -1 because we read one more to see if completed. First read is < buffer size, so can't be invalid.
             val fullyRead: Boolean = (input.read() == -1)
             input.reset()
 
             // look for BOM - overrides any other header or input
-            val bomCharset: BomCharset? = detectCharsetFromBom(firstBytes)
-            if (bomCharset != null) charsetName = bomCharset.charset
-            if (charsetName == null) { // determine from meta. safe first parse as UTF-8
+            val bomCharset = detectCharsetFromBom(firstBytes)
+            var foundCharsetName = bomCharset?.charset ?: charsetName
+
+            if (foundCharsetName == null) { // determine from meta. safe first parse as UTF-8
                 try {
                     val defaultDecoded: CharBuffer = UTF_8.decode(firstBytes)
-                    if (defaultDecoded.hasArray()) doc = parser!!.parseInput(
-                        CharArrayReader(
-                            defaultDecoded.array(),
-                            defaultDecoded.arrayOffset(),
-                            defaultDecoded.limit()
-                        ), baseUri
-                    ) else doc = parser!!.parseInput(defaultDecoded.toString(), baseUri)
+                    if (defaultDecoded.hasArray()) {
+                        val reader = CharArrayReader(defaultDecoded.array(), defaultDecoded.arrayOffset(), defaultDecoded.limit())
+                        doc = parser.parseInput(reader, baseUri)
+                    } else {
+                        doc = parser.parseInput(defaultDecoded.toString(), baseUri)
+                    }
                 } catch (e: UncheckedIOException) {
                     throw e.ioException()
                 }
 
                 // look for <meta http-equiv="Content-Type" content="text/html;charset=gb2312"> or HTML5 <meta charset="gb2312">
-                val metaElements: Elements = doc!!.select("meta[http-equiv=content-type], meta[charset]")
+                val metaElements: Elements = doc.select("meta[http-equiv=content-type], meta[charset]")
                 var foundCharset: String? = null // if not found, will keep utf-8 as best attempt
                 for (meta in metaElements) {
                     if (meta.hasAttr("http-equiv")) foundCharset = getCharsetFromContentType(meta.attr("content"))
@@ -178,66 +176,58 @@ object DataUtil {
 
                 // look for <?xml encoding='ISO-8859-1'?>
                 if (foundCharset == null && doc.childNodeSize() > 0) {
-                    val first: Node? = doc.childNode(0)
-                    var decl: XmlDeclaration? = null
-                    if (first is XmlDeclaration) decl = first else if (first is Comment) {
-                        val comment: Comment = first
-                        if (comment.isXmlDeclaration()) decl = comment.asXmlDeclaration()
-                    }
-                    if (decl != null) {
-                        if (decl.name().equals("xml", ignoreCase = true)) foundCharset = decl.attr("encoding")
+                    val first = doc.childNode(0)
+                    val decl = first as? XmlDeclaration ?: (first as? Comment)?.asXmlDeclaration()
+                    if (decl != null && decl.name().equals("xml", ignoreCase = true)) {
+                        foundCharset = decl.attr("encoding")
                     }
                 }
                 foundCharset = validateCharset(foundCharset)
-                if (foundCharset != null && !foundCharset.equals(
-                        defaultCharsetName,
-                        ignoreCase = true
-                    )
-                ) { // need to re-decode. (case insensitive check here to match how validate works)
-                    foundCharset = foundCharset.trim({ it <= ' ' }).replace("[\"']".toRegex(), "")
-                    charsetName = foundCharset
+
+                if (foundCharset != null && !foundCharset.equals(defaultCharsetName, ignoreCase = true)) { // need to re-decode. (case insensitive check here to match how validate works)
+                    foundCharset = foundCharset.trim().replace(illegalCharsetCharacters, "")
+                    foundCharsetName = foundCharset
                     doc = null
                 } else if (!fullyRead) {
                     doc = null
                 }
             } else { // specified by content type header (or by user on file load)
-                Validate.notEmpty(
-                    charsetName,
-                    "Must set charset arg to character set of file to parse. Set to null to attempt to detect from HTML"
-                )
+                Validate.notEmpty(foundCharsetName, "Must set charset arg to character set of file to parse. Set to null to attempt to detect from HTML")
             }
+
             if (doc == null) {
-                if (charsetName == null) charsetName = defaultCharsetName
-                val reader: BufferedReader = BufferedReader(
-                    InputStreamReader(input, Charset.forName(charsetName)),
-                    bufferSize
-                ) // Android level does not allow us try-with-resources
-                try {
+                if (foundCharsetName == null) foundCharsetName = defaultCharsetName
+                val reader = BufferedReader(InputStreamReader(input, Charset.forName(foundCharsetName)), bufferSize) // Android level does not allow us try-with-resources
+
+                reader.use {
                     if (bomCharset != null && bomCharset.offset) { // creating the buffered reader ignores the input pos, so must skip here
                         val skipped: Long = reader.skip(1)
                         Validate.isTrue(skipped == 1L) // WTF if this fails.
                     }
                     try {
-                        doc = parser!!.parseInput(reader, baseUri)
+                        doc = parser.parseInput(reader, baseUri)
                     } catch (e: UncheckedIOException) {
                         // io exception when parsing (not seen before because reading the stream as we go)
                         throw e.ioException()
                     }
-                    val charset: Charset =
-                        if ((charsetName == defaultCharsetName)) UTF_8 else Charset.forName(charsetName)
-                    doc!!.outputSettings()!!.charset(charset)
-                    if (!charset.canEncode()) {
-                        // some charsets can read but not encode; switch to an encodable charset and update the meta el
-                        doc.charset(UTF_8)
+
+                    val charset: Charset = if (foundCharsetName == defaultCharsetName) {
+                        UTF_8
+                    } else {
+                        Charset.forName(foundCharsetName)
                     }
-                } finally {
-                    reader.close()
+
+                    doc!!.outputSettings().charset(charset)
+                    if (!charset.canEncode()) { // some charsets can read but not encode; switch to an encodable charset and update the meta el
+                        doc!!.charset(UTF_8)
+                    }
                 }
             }
         } finally {
             input.close()
         }
-        return doc
+
+        return doc!!
     }
 
     /**
@@ -296,12 +286,14 @@ object DataUtil {
      * Creates a random string, suitable for use as a mime boundary
      */
     @JvmStatic
-    fun mimeBoundary(): String? {
-        val mime: StringBuilder? = StringUtil.borrowBuilder()
-        val rand: Random = Random()
+    fun mimeBoundary(): String {
+        val mime = StringUtil.borrowBuilder()
+        val rand = Random()
+
         for (i in 0 until boundaryLength) {
-            mime!!.append(mimeBoundaryChars.get(rand.nextInt(mimeBoundaryChars.size)))
+            mime.append(mimeBoundaryChars.get(rand.nextInt(mimeBoundaryChars.size)))
         }
+
         return StringUtil.releaseBuilder(mime)
     }
 
@@ -309,11 +301,12 @@ object DataUtil {
         val buffer: Buffer? =
             byteData // .mark and rewind used to return Buffer, now ByteBuffer, so cast for backward compat
         buffer!!.mark()
-        val bom: ByteArray = ByteArray(4)
-        if (byteData!!.remaining() >= bom.size) {
+        val bom = ByteArray(4)
+        if (byteData.remaining() >= bom.size) {
             byteData.get(bom)
             buffer.rewind()
         }
+
         if ((bom.get(0).toInt() == 0x00) && (bom.get(1)
                 .toInt() == 0x00) && (bom.get(2) == 0xFE.toByte()) && (bom.get(3) == 0xFF.toByte()) ||  // BE
             (bom.get(0) == 0xFF.toByte()) && (bom.get(1) == 0xFE.toByte()) && (bom.get(2)
@@ -328,6 +321,7 @@ object DataUtil {
             return BomCharset("UTF-8", true) // in all Javas
             // 16 and 32 decoders consume the BOM to determine be/le; utf-8 should be consumed here
         }
+
         return null
     }
 

@@ -132,14 +132,14 @@ class W3CDom() {
      * @see org.jsoup.helper.W3CDom.fromJsoup
      */
     fun convert(`in`: Element, out: org.w3c.dom.Document) {
-        val builder: W3CBuilder = W3CBuilder(out)
+        val builder = W3CBuilder(out)
         builder.namespaceAware = namespaceAware
         val inDoc: Document? = `in`.ownerDocument()
         if (inDoc != null) {
             if (!StringUtil.isBlank(inDoc.location())) {
                 out.setDocumentURI(inDoc.location())
             }
-            builder.syntax = inDoc.outputSettings()!!.syntax()
+            builder.syntax = inDoc.outputSettings().syntax()
         }
         val rootEl: Element? =
             if (`in` is Document) `in`.firstElementChild() else `in` // skip the #root node if a Document
@@ -152,7 +152,7 @@ class W3CDom() {
      * @param doc the document to evaluate against
      * @return the matches nodes
      */
-    fun selectXpath(xpath: String?, doc: org.w3c.dom.Document?): NodeList {
+    fun selectXpath(xpath: String, doc: org.w3c.dom.Document?): NodeList {
         return selectXpath(xpath, doc as Node?)
     }
 
@@ -162,7 +162,7 @@ class W3CDom() {
      * @param contextNode the context node to evaluate against
      * @return the matches nodes
      */
-    fun selectXpath(xpath: String?, contextNode: Node?): NodeList {
+    fun selectXpath(xpath: String, contextNode: Node?): NodeList {
         Validate.notEmptyParam(xpath, "xpath")
         Validate.notNullParam(contextNode, "contextNode")
         val nodeList: NodeList
@@ -218,12 +218,13 @@ class W3CDom() {
     /**
      * Implements the conversion by walking the input.
      */
-    protected class W3CBuilder(private val doc: org.w3c.dom.Document) : NodeVisitor {
-        val namespaceAware: Boolean = true
+    class W3CBuilder(private val doc: org.w3c.dom.Document) : NodeVisitor {
+        var namespaceAware: Boolean = true
+            internal set
         private val namespacesStack: Stack<HashMap<String, String?>> = Stack() // stack of namespaces, prefix => urn
         private var dest: Node
-        val syntax: Document.OutputSettings.Syntax? =
-            Document.OutputSettings.Syntax.xml // the syntax (to coerce attributes to). From the input doc if available.
+        var syntax = Document.OutputSettings.Syntax.xml // the syntax (to coerce attributes to). From the input doc if available.
+            internal set
         private val contextElement: Element?
 
         init {
@@ -232,19 +233,18 @@ class W3CDom() {
             contextElement =
                 doc.getUserData(ContextProperty) as Element? // Track the context jsoup Element, so we can save the corresponding w3c element
             val inDoc: Document? = contextElement!!.ownerDocument()
-            if (namespaceAware && (inDoc != null) && inDoc.parser().getTreeBuilder() is HtmlTreeBuilder) {
+            if (namespaceAware && (inDoc != null) && inDoc.parser().treeBuilder is HtmlTreeBuilder) {
                 // as per the WHATWG HTML5 spec § 2.1.3, elements are in the HTML namespace by default
                 namespacesStack.peek().put("", xhtmlNs)
             }
         }
 
-        public override fun head(source: org.jsoup.nodes.Node, depth: Int) {
+        override fun head(source: org.jsoup.nodes.Node, depth: Int) {
             namespacesStack.push(HashMap(namespacesStack.peek())) // inherit from above on the stack
             if (source is Element) {
-                val sourceEl: Element = source
-                val prefix: String = updateNamespaces(sourceEl)
+                val prefix = updateNamespaces(source)
                 val namespace: String? = if (namespaceAware) namespacesStack.peek().get(prefix) else null
-                val tagName: String? = sourceEl.tagName()
+                val tagName = source.tagName()
 
                 /* Tag names in XML are quite permissive, but less permissive than HTML. Rather than reimplement the validation,
                 we just try to use it as-is. If it fails, insert as a text node instead. We don't try to normalize the
@@ -252,27 +252,26 @@ class W3CDom() {
                 how browsers handle the situation, also. https://github.com/jhy/jsoup/issues/1093 */
                 try {
                     // use an empty namespace if none is present but the tag name has a prefix
-                    val imputedNamespace: String =
-                        if (namespace == null && tagName!!.contains(":")) "" else (namespace)!!
+                    val imputedNamespace = if (namespace == null && tagName?.contains(":") == true) "" else namespace
                     val el: org.w3c.dom.Element = doc.createElementNS(imputedNamespace, tagName)
-                    copyAttributes(sourceEl, el)
-                    append(el, sourceEl)
-                    if (sourceEl === contextElement) doc.setUserData(ContextNodeProperty, el, null)
+                    copyAttributes(source, el)
+                    append(el, source)
+                    if (source === contextElement) doc.setUserData(ContextNodeProperty, el, null)
                     dest = el // descend
                 } catch (e: DOMException) {
-                    append(doc.createTextNode("<" + tagName + ">"), sourceEl)
+                    append(doc.createTextNode("<" + tagName + ">"), source)
                 }
             } else if (source is TextNode) {
                 val sourceText: TextNode = source
-                val text: Text = doc.createTextNode(sourceText.getWholeText())
+                val text: Text = doc.createTextNode(sourceText.wholeText)
                 append(text, sourceText)
             } else if (source is Comment) {
                 val sourceComment: Comment = source
-                val comment: org.w3c.dom.Comment = doc.createComment(sourceComment.getData())
+                val comment: org.w3c.dom.Comment = doc.createComment(sourceComment.data)
                 append(comment, sourceComment)
             } else if (source is DataNode) {
                 val sourceData: DataNode = source
-                val node: Text = doc.createTextNode(sourceData.getWholeData())
+                val node: Text = doc.createTextNode(sourceData.wholeData)
                 append(node, sourceData)
             } else {
                 // unhandled. note that doctype is not handled here - rather it is used in the initial doc creation
@@ -284,7 +283,7 @@ class W3CDom() {
             dest.appendChild(append)
         }
 
-        public override fun tail(source: org.jsoup.nodes.Node?, depth: Int) {
+        override fun tail(source: org.jsoup.nodes.Node, depth: Int) {
             if (source is Element && dest.getParentNode() is org.w3c.dom.Element) {
                 dest = dest.getParentNode() // undescend
             }
@@ -391,12 +390,13 @@ class W3CDom() {
          * @return Document as string
          * @see W3CDom.asString
          */
+        @JvmStatic
         @JvmOverloads
-        fun asString(doc: org.w3c.dom.Document, properties: Map<String?, String?>? = null): String {
+        fun asString(doc: org.w3c.dom.Document, properties: Map<String, String>? = null): String {
             try {
-                val domSource: DOMSource = DOMSource(doc)
-                val writer: StringWriter = StringWriter()
-                val result: StreamResult = StreamResult(writer)
+                val domSource = DOMSource(doc)
+                val writer = StringWriter()
+                val result = StreamResult(writer)
                 val tf: TransformerFactory = TransformerFactory.newInstance()
                 val transformer: Transformer = tf.newTransformer()
                 if (properties != null) transformer.setOutputProperties(propertiesFromMap(properties))
@@ -421,9 +421,9 @@ class W3CDom() {
             }
         }
 
-        fun propertiesFromMap(map: Map<String?, String?>?): Properties {
-            val props: Properties = Properties()
-            props.putAll((map)!!)
+        fun propertiesFromMap(map: Map<String, String>): Properties {
+            val props = Properties()
+            props.putAll(map)
             return props
         }
 

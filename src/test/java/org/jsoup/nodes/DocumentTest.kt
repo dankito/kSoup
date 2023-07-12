@@ -1,10 +1,19 @@
 package org.jsoup.nodes
 
-import org.jsoup.Connection.KeyVal.valueimport
+import org.jsoup.Jsoup
+import org.jsoup.TextUtil
+import org.jsoup.integration.ParseTest
+import org.jsoup.parser.ParseSettings
+import org.jsoup.parser.Parser.Companion.htmlParser
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
+import java.io.ByteArrayInputStream
+import java.io.IOException
+import java.io.StringWriter
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 
-org.jsoup.Jsoupimport org.jsoup.Jsoup.parseimport org.jsoup.TextUtilimport org.jsoup.integration.ParseTestimport org.jsoup.nodes.Attribute.valueimport org.jsoup.nodes.Document.Companion.createShellimport org.jsoup.nodes.Element.valueimport org.jsoup.parser.ParseSettingsimport org.jsoup.parser.Parser.Companion.htmlParserimport org.jsoup.select.Elements.valueimport org.junit.jupiter.api.Assertionsimport org.junit.jupiter.api.Testimport java.io.*import java.nio.charset.Charsetimport
 
-java.nio.charset.StandardCharsets
 /**
  * Tests for Document.
  *
@@ -137,8 +146,8 @@ class DocumentTest {
     @Throws(IOException::class)
     fun testLocation() {
         // tests location vs base href
-        val `in`: File = ParseTest.Companion.getFile("/htmltests/basehref.html")
-        val doc = parse(`in`, "UTF-8", "http://example.com/")
+        val `in` = ParseTest.getFile("/htmltests/basehref.html")
+        val doc = Jsoup.parse(`in`, "UTF-8", "http://example.com/")
         val location = doc.location()
         val baseUri = doc.baseUri()
         Assertions.assertEquals("http://example.com/", location)
@@ -269,7 +278,7 @@ class DocumentTest {
 
     @Test
     fun testMetaCharsetUpdateNoCharset() {
-        val docNoCharset = createShell("")
+        val docNoCharset = Document.createShell("")
         docNoCharset.updateMetaCharsetElement(true)
         docNoCharset.charset(Charset.forName(charsetUtf8))
         Assertions.assertEquals(
@@ -287,7 +296,7 @@ class DocumentTest {
 
     @Test
     fun testMetaCharsetUpdateDisabled() {
-        val docDisabled = createShell("")
+        val docDisabled = Document.createShell("")
         val htmlNoCharset = """<html>
  <head></head>
  <body></body>
@@ -413,7 +422,7 @@ class DocumentTest {
     }
 
     private fun createHtmlDocument(charset: String): Document {
-        val doc = createShell("")
+        val doc = Document.createShell("")
         doc.head().appendElement("meta").attr("charset", charset)
         doc.head().appendElement("meta").attr("name", "charset").attr("content", charset)
         return doc
@@ -443,8 +452,8 @@ class DocumentTest {
                 + "before&nbsp;after"
                 + "</body>"
                 + "</html>")
-        val `is`: InputStream = ByteArrayInputStream(input.toByteArray(StandardCharsets.US_ASCII))
-        val doc = parse(`is`, null, "http://example.com")
+        val `is` = ByteArrayInputStream(input.toByteArray(StandardCharsets.US_ASCII))
+        val doc = Jsoup.parse(`is`, null, "http://example.com")
         doc.outputSettings().escapeMode(Entities.EscapeMode.xhtml)
         val output = String(doc.html().toByteArray(doc.outputSettings().charset()!!), doc.outputSettings().charset()!!)
         Assertions.assertFalse(output.contains("?"), "Should not have contained a '?'.")

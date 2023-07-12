@@ -46,7 +46,8 @@ class HttpConnection : Connection {
 
     private var req: Request
     private var res: Connection.Response? = null
-    public override fun newRequest(): Connection {
+    
+    override fun newRequest(): Connection {
         // copy the prototype request for the different settings, cookie manager, etc
         return HttpConnection(req)
     }
@@ -57,12 +58,12 @@ class HttpConnection : Connection {
         this.res = res
     }
 
-    public override fun url(url: URL?): Connection {
+    override fun url(url: URL): Connection {
         req.url(url)
         return this
     }
 
-    public override fun url(url: String?): Connection {
+    override fun url(url: String): Connection {
         Validate.notEmptyParam(url, "url")
         try {
             req.url(URL(url))
@@ -77,92 +78,92 @@ class HttpConnection : Connection {
         return this
     }
 
-    public override fun proxy(proxy: Proxy?): Connection {
+    override fun proxy(proxy: Proxy?): Connection {
         req.proxy(proxy)
         return this
     }
 
-    public override fun proxy(host: String?, port: Int): Connection {
+    override fun proxy(host: String, port: Int): Connection {
         req.proxy(host, port)
         return this
     }
 
-    public override fun userAgent(userAgent: String?): Connection {
+    override fun userAgent(userAgent: String): Connection {
         Validate.notNullParam(userAgent, "userAgent")
         req.header(USER_AGENT, userAgent)
         return this
     }
 
-    public override fun timeout(millis: Int): Connection {
+    override fun timeout(millis: Int): Connection {
         req.timeout(millis)
         return this
     }
 
-    public override fun maxBodySize(bytes: Int): Connection {
+    override fun maxBodySize(bytes: Int): Connection {
         req.maxBodySize(bytes)
         return this
     }
 
-    public override fun followRedirects(followRedirects: Boolean): Connection {
+    override fun followRedirects(followRedirects: Boolean): Connection {
         req.followRedirects(followRedirects)
         return this
     }
 
-    public override fun referrer(referrer: String?): Connection {
+    override fun referrer(referrer: String): Connection {
         Validate.notNullParam(referrer, "referrer")
         req.header("Referer", referrer)
         return this
     }
 
-    public override fun method(method: Connection.Method?): Connection {
+    override fun method(method: Connection.Method): Connection {
         req.method((method)!!)
         return this
     }
 
-    public override fun ignoreHttpErrors(ignoreHttpErrors: Boolean): Connection {
+    override fun ignoreHttpErrors(ignoreHttpErrors: Boolean): Connection {
         req.ignoreHttpErrors(ignoreHttpErrors)
         return this
     }
 
-    public override fun ignoreContentType(ignoreContentType: Boolean): Connection {
+    override fun ignoreContentType(ignoreContentType: Boolean): Connection {
         req.ignoreContentType(ignoreContentType)
         return this
     }
 
-    public override fun data(key: String?, value: String?): Connection {
+    override fun data(key: String, value: String): Connection {
         req.data(KeyVal.create(key, value))
         return this
     }
 
-    public override fun sslSocketFactory(sslSocketFactory: SSLSocketFactory?): Connection {
+    override fun sslSocketFactory(sslSocketFactory: SSLSocketFactory): Connection {
         req.sslSocketFactory(sslSocketFactory)
         return this
     }
 
-    public override fun data(key: String?, filename: String?, inputStream: InputStream?): Connection {
+    override fun data(key: String, filename: String, inputStream: InputStream): Connection {
         req.data(KeyVal.create(key, filename, inputStream))
         return this
     }
 
-    public override fun data(
-        key: String?,
-        filename: String?,
-        inputStream: InputStream?,
-        contentType: String?
+    override fun data(
+        key: String,
+        filename: String,
+        inputStream: InputStream,
+        contentType: String
     ): Connection {
         req.data(KeyVal.create(key, filename, inputStream).contentType(contentType))
         return this
     }
 
-    public override fun data(data: Map<String?, String?>): Connection {
+    override fun data(data: Map<String, String>): Connection {
         Validate.notNullParam(data, "data")
-        for (entry: Map.Entry<String?, String?> in data.entries) {
+        for (entry in data.entries) {
             req.data(KeyVal.create(entry.key, entry.value))
         }
         return this
     }
 
-    public override fun data(vararg keyvals: String?): Connection {
+    override fun data(vararg keyvals: String): Connection {
         Validate.notNullParam(keyvals, "keyvals")
         Validate.isTrue(keyvals.size % 2 == 0, "Must supply an even number of key value pairs")
         var i: Int = 0
@@ -177,15 +178,15 @@ class HttpConnection : Connection {
         return this
     }
 
-    public override fun data(data: Collection<Connection.KeyVal?>): Connection {
+    override fun data(data: Collection<Connection.KeyVal>): Connection {
         Validate.notNullParam(data, "data")
-        for (entry: Connection.KeyVal? in data) {
+        for (entry in data) {
             req.data(entry)
         }
         return this
     }
 
-    public override fun data(key: String): Connection.KeyVal? {
+    override fun data(key: String): Connection.KeyVal? {
         Validate.notEmptyParam(key, "key")
         for (keyVal: Connection.KeyVal? in request().data()) {
             if ((keyVal!!.key() == key)) return keyVal
@@ -193,54 +194,54 @@ class HttpConnection : Connection {
         return null
     }
 
-    public override fun requestBody(body: String?): Connection {
+    override fun requestBody(body: String): Connection {
         req.requestBody(body)
         return this
     }
 
-    public override fun header(name: String?, value: String?): Connection {
-        req.header((name)!!, value)
+    override fun header(name: String, value: String): Connection {
+        req.header((name), value)
         return this
     }
 
-    public override fun headers(headers: Map<String?, String?>): Connection {
+    override fun headers(headers: Map<String, String>): Connection {
         Validate.notNullParam(headers, "headers")
-        for (entry: Map.Entry<String?, String?> in headers.entries) {
-            req.header((entry.key)!!, entry.value)
+        for (entry in headers.entries) {
+            req.header((entry.key), entry.value)
         }
         return this
     }
 
-    public override fun cookie(name: String?, value: String?): Connection {
-        req.cookie((name)!!, (value)!!)
+    override fun cookie(name: String, value: String): Connection {
+        req.cookie((name), (value))
         return this
     }
 
-    public override fun cookies(cookies: Map<String?, String?>): Connection {
+    override fun cookies(cookies: Map<String, String>): Connection {
         Validate.notNullParam(cookies, "cookies")
-        for (entry: Map.Entry<String?, String?> in cookies.entries) {
-            req.cookie((entry.key)!!, (entry.value)!!)
+        for (entry: Map.Entry<String, String> in cookies.entries) {
+            req.cookie((entry.key), (entry.value))
         }
         return this
     }
 
-    public override fun cookieStore(cookieStore: CookieStore?): Connection {
+    override fun cookieStore(cookieStore: CookieStore): Connection {
         // create a new cookie manager using the new store
         req.cookieManager = CookieManager(cookieStore, null)
         return this
     }
 
-    public override fun cookieStore(): CookieStore? {
-        return req.cookieManager.getCookieStore()
+    override fun cookieStore(): CookieStore {
+        return req.cookieManager.cookieStore
     }
 
-    public override fun parser(parser: Parser?): Connection {
+    override fun parser(parser: Parser): Connection {
         req.parser(parser)
         return this
     }
 
     @Throws(IOException::class)
-    public override fun get(): Document? {
+    override fun get(): Document {
         req.method(Connection.Method.GET)
         execute()
         Validate.notNull(res)
@@ -248,58 +249,58 @@ class HttpConnection : Connection {
     }
 
     @Throws(IOException::class)
-    public override fun post(): Document? {
+    override fun post(): Document {
         req.method(Connection.Method.POST)
         execute()
-        Validate.notNull(res)
-        return res!!.parse()
+
+        val response = res
+        Validate.notNull(response)
+        return response.parse()
     }
 
     @Throws(IOException::class)
-    public override fun execute(): Connection.Response? {
-        res = execute(req)
-        return res
+    override fun execute(): Connection.Response {
+        return Response.execute(req).also {
+            res = it
+        }
     }
 
-    public override fun request(): Connection.Request {
+    override fun request(): Connection.Request {
         return req
     }
 
-    public override fun request(request: Connection.Request): Connection {
+    override fun request(request: Connection.Request): Connection {
         req =
             request as Request // will throw a class-cast exception if the user has extended some but not all of Connection; that's desired
         return this
     }
 
-    public override fun response(): Connection.Response {
-        if (res == null) {
-            throw IllegalArgumentException("You must execute the request before getting a response.")
-        }
-        return res
+    override fun response(): Connection.Response {
+        return res ?: throw IllegalArgumentException("You must execute the request before getting a response.")
     }
 
-    public override fun response(response: Connection.Response?): Connection {
+    override fun response(response: Connection.Response): Connection {
         res = response
         return this
     }
 
-    public override fun postDataCharset(charset: String?): Connection {
+    override fun postDataCharset(charset: String): Connection {
         req.postDataCharset(charset)
         return this
     }
 
-    abstract class Base<T : Connection.Base<T>?> : Connection.Base<T> {
-        var url: URL? = UnsetUrl
+    abstract class Base<T : Connection.Base<T>> : Connection.Base<T> {
+        var url = UnsetUrl
         var method: Connection.Method = Connection.Method.GET
-        var headers: MutableMap<String, List<String>>
+        var headers: MutableMap<String, MutableList<String>>
         var cookies: MutableMap<String, String>
 
-        private constructor() {
+        protected constructor() {
             headers = LinkedHashMap()
             cookies = LinkedHashMap()
         }
 
-        private constructor(copy: Base<T>) {
+        protected constructor(copy: Base<T>) {
             url = copy.url // unmodifiable object
             method = copy.method
             headers = LinkedHashMap()
@@ -310,28 +311,31 @@ class HttpConnection : Connection {
             cookies.putAll(copy.cookies) // just holds strings
         }
 
-        public override fun url(): URL? {
-            if (url === UnsetUrl) throw IllegalArgumentException("URL not set. Make sure to call #url(...) before executing the request.")
-            return url
+        override fun url(): URL {
+            return if (url === UnsetUrl) {
+                throw IllegalArgumentException("URL not set. Make sure to call #url(...) before executing the request.")
+            } else {
+                url
+            }
         }
 
-        public override fun url(url: URL?): T {
+        override fun url(url: URL): T {
             Validate.notNullParam(url, "url")
             this.url = UrlBuilder(url).build()
             return this as T
         }
 
-        public override fun method(): Connection.Method {
+        override fun method(): Connection.Method {
             return method
         }
 
-        public override fun method(method: Connection.Method): T {
+        override fun method(method: Connection.Method): T {
             Validate.notNullParam(method, "method")
             this.method = method
             return this as T
         }
 
-        public override fun header(name: String): String? {
+        override fun header(name: String): String? {
             Validate.notNullParam(name, "name")
             val vals: List<String> = getHeadersCaseInsensitive(name)
             if (vals.size > 0) {
@@ -341,32 +345,33 @@ class HttpConnection : Connection {
             return null
         }
 
-        public override fun addHeader(name: String, value: String?): T {
-            var value: String? = value
+        override fun addHeader(name: String, value: String?): T {
             Validate.notEmptyParam(name, "name")
-            value = if (value == null) "" else value
-            var values: List<String> = headers(name)
+            val value = value ?: ""
+
+            var values = headers(name)
             if (values.isEmpty()) {
                 values = ArrayList()
                 headers.put(name, values)
             }
             values.add(fixHeaderEncoding(value))
+
             return this as T
         }
 
-        public override fun headers(name: String): List<String> {
+        override fun headers(name: String): MutableList<String> {
             Validate.notEmptyParam(name, "name")
             return getHeadersCaseInsensitive(name)
         }
 
-        public override fun header(name: String, value: String?): T {
+        override fun header(name: String, value: String): T {
             Validate.notEmptyParam(name, "name")
             removeHeader(name) // ensures we don't get an "accept-encoding" and a "Accept-Encoding"
             addHeader(name, value)
             return this as T
         }
 
-        public override fun hasHeader(name: String): Boolean {
+        override fun hasHeader(name: String): Boolean {
             Validate.notEmptyParam(name, "name")
             return !getHeadersCaseInsensitive(name).isEmpty()
         }
@@ -374,7 +379,7 @@ class HttpConnection : Connection {
         /**
          * Test if the request has a header with this value (case insensitive).
          */
-        public override fun hasHeaderWithValue(name: String, value: String): Boolean {
+        override fun hasHeaderWithValue(name: String, value: String): Boolean {
             Validate.notEmpty(name)
             Validate.notEmpty(value)
             val values: List<String> = headers(name)
@@ -384,14 +389,14 @@ class HttpConnection : Connection {
             return false
         }
 
-        public override fun removeHeader(name: String?): T {
+        override fun removeHeader(name: String): T {
             Validate.notEmptyParam(name, "name")
             val entry: Map.Entry<String, List<String>>? = scanHeaders(name) // remove is case-insensitive too
             if (entry != null) headers.remove(entry.key) // ensures correct case
             return this as T
         }
 
-        public override fun headers(): Map<String, String> {
+        override fun headers(): Map<String, String> {
             val map: LinkedHashMap<String, String> = LinkedHashMap(headers.size)
             for (entry: Map.Entry<String, List<String>> in headers.entries) {
                 val header: String = entry.key
@@ -401,63 +406,60 @@ class HttpConnection : Connection {
             return map
         }
 
-        public override fun multiHeaders(): Map<String, List<String>> {
+        override fun multiHeaders(): Map<String, List<String>> {
             return headers
         }
 
-        private fun getHeadersCaseInsensitive(name: String): List<String> {
+        private fun getHeadersCaseInsensitive(name: String): MutableList<String> {
             Validate.notNull(name)
-            for (entry: Map.Entry<String, List<String>> in headers.entries) {
-                if (name.equals(entry.key, ignoreCase = true)) return entry.value
+
+            for (entry in headers.entries) {
+                if (name.equals(entry.key, ignoreCase = true)) {
+                    return entry.value
+                }
             }
-            return emptyList()
+
+            return mutableListOf() // emptyList() // TODO: make immutable
         }
 
-        private fun scanHeaders(name: String?): Map.Entry<String, List<String>>? {
-            val lc: String? = Normalizer.lowerCase(name)
+        private fun scanHeaders(name: String): Map.Entry<String, List<String>>? {
+            val lc = Normalizer.lowerCase(name)
             for (entry: Map.Entry<String, List<String>> in headers.entries) {
                 if ((Normalizer.lowerCase(entry.key) == lc)) return entry
             }
             return null
         }
 
-        public override fun cookie(name: String): String? {
+        override fun cookie(name: String): String? {
             Validate.notEmptyParam(name, "name")
             return cookies.get(name)
         }
 
-        public override fun cookie(name: String, value: String): T {
+        override fun cookie(name: String, value: String): T {
             Validate.notEmptyParam(name, "name")
             Validate.notNullParam(value, "value")
             cookies.put(name, value)
             return this as T
         }
 
-        public override fun hasCookie(name: String): Boolean {
+        override fun hasCookie(name: String): Boolean {
             Validate.notEmptyParam(name, "name")
             return cookies.containsKey(name)
         }
 
-        public override fun removeCookie(name: String): T {
+        override fun removeCookie(name: String): T {
             Validate.notEmptyParam(name, "name")
             cookies.remove(name)
             return this as T
         }
 
-        public override fun cookies(): Map<String, String> {
+        override fun cookies(): Map<String, String> {
             return cookies
         }
 
         companion object {
-            private val UnsetUrl: URL? = null // only used if you created a new Request()
 
-            init {
-                try {
-                    UnsetUrl = URL("http://undefined/")
-                } catch (e: MalformedURLException) {
-                    throw IllegalStateException(e)
-                }
-            }
+            private val UnsetUrl = URL("http://undefined/") // only used if you created a new Request()
 
             private fun fixHeaderEncoding(`val`: String): String {
                 val bytes: ByteArray = `val`.toByteArray(ISO_8859_1)
@@ -509,18 +511,18 @@ class HttpConnection : Connection {
         }
     }
 
-    class Request : Base<Connection.Request?>, Connection.Request {
+    class Request : Base<Connection.Request>, Connection.Request {
         private var proxy: Proxy? = null
         private var timeoutMilliseconds: Int
         private var maxBodySizeBytes: Int
         private var followRedirects: Boolean
-        private val data: MutableCollection<Connection.KeyVal?>
+        private val data: MutableCollection<Connection.KeyVal>
         private var body: String? = null
         private var ignoreHttpErrors: Boolean = false
         private var ignoreContentType: Boolean = false
-        private var parser: Parser?
+        private var parser: Parser
         var parserDefined: Boolean = false // called parser(...) vs initialized in ctor
-        private var postDataCharset: String? = DataUtil.defaultCharsetName
+        private var postDataCharset = DataUtil.defaultCharsetName
         private var sslSocketFactory: SSLSocketFactory? = null
         var cookieManager: CookieManager
 
@@ -535,7 +537,7 @@ class HttpConnection : Connection {
             method = Connection.Method.GET
             addHeader("Accept-Encoding", "gzip")
             addHeader(USER_AGENT, DEFAULT_UA)
-            parser = Parser.Companion.htmlParser()
+            parser = Parser.htmlParser()
             cookieManager = CookieManager() // creates a default InMemoryCookieStore
         }
 
@@ -549,119 +551,119 @@ class HttpConnection : Connection {
             //body not copied
             ignoreHttpErrors = copy.ignoreHttpErrors
             ignoreContentType = copy.ignoreContentType
-            parser = copy.parser!!.newInstance() // parsers and their tree-builders maintain state, so need a fresh copy
+            parser = copy.parser.newInstance() // parsers and their tree-builders maintain state, so need a fresh copy
             parserDefined = copy.parserDefined
             sslSocketFactory = copy.sslSocketFactory // these are all synchronized so safe to share
             cookieManager = copy.cookieManager
             executing = false
         }
 
-        public override fun proxy(): Proxy? {
+        override fun proxy(): Proxy? {
             return proxy
         }
 
-        public override fun proxy(proxy: Proxy?): Request {
+        override fun proxy(proxy: Proxy?): Request {
             this.proxy = proxy
             return this
         }
 
-        public override fun proxy(host: String?, port: Int): Request {
+        override fun proxy(host: String, port: Int): Request {
             proxy = Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved(host, port))
             return this
         }
 
-        public override fun timeout(): Int {
+        override fun timeout(): Int {
             return timeoutMilliseconds
         }
 
-        public override fun timeout(millis: Int): Request {
+        override fun timeout(millis: Int): Request {
             Validate.isTrue(millis >= 0, "Timeout milliseconds must be 0 (infinite) or greater")
             timeoutMilliseconds = millis
             return this
         }
 
-        public override fun maxBodySize(): Int {
+        override fun maxBodySize(): Int {
             return maxBodySizeBytes
         }
 
-        public override fun maxBodySize(bytes: Int): Connection.Request {
+        override fun maxBodySize(bytes: Int): Connection.Request {
             Validate.isTrue(bytes >= 0, "maxSize must be 0 (unlimited) or larger")
             maxBodySizeBytes = bytes
             return this
         }
 
-        public override fun followRedirects(): Boolean {
+        override fun followRedirects(): Boolean {
             return followRedirects
         }
 
-        public override fun followRedirects(followRedirects: Boolean): Connection.Request {
+        override fun followRedirects(followRedirects: Boolean): Connection.Request {
             this.followRedirects = followRedirects
             return this
         }
 
-        public override fun ignoreHttpErrors(): Boolean {
+        override fun ignoreHttpErrors(): Boolean {
             return ignoreHttpErrors
         }
 
-        public override fun sslSocketFactory(): SSLSocketFactory? {
+        override fun sslSocketFactory(): SSLSocketFactory? {
             return sslSocketFactory
         }
 
-        public override fun sslSocketFactory(sslSocketFactory: SSLSocketFactory?) {
+        override fun sslSocketFactory(sslSocketFactory: SSLSocketFactory) {
             this.sslSocketFactory = sslSocketFactory
         }
 
-        public override fun ignoreHttpErrors(ignoreHttpErrors: Boolean): Connection.Request {
+        override fun ignoreHttpErrors(ignoreHttpErrors: Boolean): Connection.Request {
             this.ignoreHttpErrors = ignoreHttpErrors
             return this
         }
 
-        public override fun ignoreContentType(): Boolean {
+        override fun ignoreContentType(): Boolean {
             return ignoreContentType
         }
 
-        public override fun ignoreContentType(ignoreContentType: Boolean): Connection.Request {
+        override fun ignoreContentType(ignoreContentType: Boolean): Connection.Request {
             this.ignoreContentType = ignoreContentType
             return this
         }
 
-        public override fun data(keyval: Connection.KeyVal?): Request {
+        override fun data(keyval: Connection.KeyVal): Request {
             Validate.notNullParam(keyval, "keyval")
             data.add(keyval)
             return this
         }
 
-        public override fun data(): MutableCollection<Connection.KeyVal?> {
+        override fun data(): MutableCollection<Connection.KeyVal> {
             return data
         }
 
-        public override fun requestBody(body: String?): Connection.Request {
+        override fun requestBody(body: String?): Connection.Request {
             this.body = body
             return this
         }
 
-        public override fun requestBody(): String? {
+        override fun requestBody(): String? {
             return body
         }
 
-        public override fun parser(parser: Parser?): Request {
+        override fun parser(parser: Parser): Request {
             this.parser = parser
             parserDefined = true
             return this
         }
 
-        public override fun parser(): Parser? {
+        override fun parser(): Parser {
             return parser
         }
 
-        public override fun postDataCharset(charset: String?): Connection.Request {
+        override fun postDataCharset(charset: String): Connection.Request {
             Validate.notNullParam(charset, "charset")
             if (!Charset.isSupported(charset)) throw IllegalCharsetNameException(charset)
             postDataCharset = charset
             return this
         }
 
-        public override fun postDataCharset(): String? {
+        override fun postDataCharset(): String {
             return postDataCharset
         }
 
@@ -677,7 +679,7 @@ class HttpConnection : Connection {
         }
     }
 
-    class Response : Base<Connection.Response?>, Connection.Response {
+    class Response : Base<Connection.Response>, Connection.Response {
         private val statusCode: Int
         private val statusMessage: String
         private var byteData: ByteBuffer? = null
@@ -701,29 +703,29 @@ class HttpConnection : Connection {
             contentType = null
         }
 
-        public override fun statusCode(): Int {
+        override fun statusCode(): Int {
             return statusCode
         }
 
-        public override fun statusMessage(): String {
+        override fun statusMessage(): String {
             return statusMessage
         }
 
-        public override fun charset(): String? {
+        override fun charset(): String? {
             return charset
         }
 
-        public override fun charset(charset: String?): Response {
+        override fun charset(charset: String): Response {
             this.charset = charset
             return this
         }
 
-        public override fun contentType(): String? {
+        override fun contentType(): String? {
             return contentType
         }
 
         @Throws(IOException::class)
-        public override fun parse(): Document? {
+        override fun parse(): Document {
             Validate.isTrue(
                 executed,
                 "Request must be executed (with .execute(), .get(), or .post() before parsing response"
@@ -733,24 +735,16 @@ class HttpConnection : Connection {
                 inputStreamRead = false // ok to reparse if in bytes
             }
             Validate.isFalse(inputStreamRead, "Input stream already read and parsed, cannot re-read.")
-            val doc: Document? = DataUtil.parseInputStream(bodyStream, charset, url!!.toExternalForm(), req.parser())
-            doc!!.connection(
-                HttpConnection(
-                    req,
-                    this
-                )
-            ) // because we're static, don't have the connection obj. // todo - maybe hold in the req?
-            charset = doc.outputSettings()!!.charset()!!.name() // update charset from meta-equiv, possibly
+            val doc = DataUtil.parseInputStream(bodyStream, charset, url!!.toExternalForm(), req.parser())
+            doc.connection(HttpConnection(req, this)) // because we're static, don't have the connection obj. // todo - maybe hold in the req?
+            charset = doc.outputSettings().charset()!!.name() // update charset from meta-equiv, possibly
             inputStreamRead = true
             safeClose()
             return doc
         }
 
         private fun prepareByteData() {
-            Validate.isTrue(
-                executed,
-                "Request must be executed (with .execute(), .get(), or .post() before getting response body"
-            )
+            Validate.isTrue(executed, "Request must be executed (with .execute(), .get(), or .post() before getting response body")
             if (bodyStream != null && byteData == null) {
                 Validate.isFalse(inputStreamRead, "Request has already been read (with .parse())")
                 try {
@@ -764,7 +758,7 @@ class HttpConnection : Connection {
             }
         }
 
-        public override fun body(): String {
+        override fun body(): String {
             prepareByteData()
             Validate.notNull(byteData)
             // charset gets set from header on execute, and from meta-equiv on parse. parse may not have happened yet
@@ -774,22 +768,19 @@ class HttpConnection : Connection {
             return body
         }
 
-        public override fun bodyAsBytes(): ByteArray {
+        override fun bodyAsBytes(): ByteArray {
             prepareByteData()
             Validate.notNull(byteData)
             return byteData!!.array()
         }
 
-        public override fun bufferUp(): Connection.Response {
+        override fun bufferUp(): Connection.Response {
             prepareByteData()
             return this
         }
 
-        public override fun bodyStream(): BufferedInputStream {
-            Validate.isTrue(
-                executed,
-                "Request must be executed (with .execute(), .get(), or .post() before getting response body"
-            )
+        override fun bodyStream(): BufferedInputStream {
+            Validate.isTrue(executed, "Request must be executed (with .execute(), .get(), or .post() before getting response body")
             Validate.isFalse(inputStreamRead, "Request has already been read")
             inputStreamRead = true
             return ConstrainableInputStream.Companion.wrap(bodyStream, DataUtil.bufferSize, req.maxBodySize())
@@ -824,7 +815,7 @@ class HttpConnection : Connection {
             statusCode = conn.getResponseCode()
             statusMessage = conn.getResponseMessage()
             contentType = conn.getContentType()
-            val resHeaders: Map<String, MutableList<String>> = createHeaderMap(conn)
+            val resHeaders = createHeaderMap(conn)
             processResponseHeaders(resHeaders) // includes cookie key/val read during header scan
             CookieUtil.storeCookies(req, url, resHeaders) // add set cookies to cookie store
             if (previousResponse != null) { // was redirected
@@ -845,11 +836,11 @@ class HttpConnection : Connection {
             }
         }
 
-        fun processResponseHeaders(resHeaders: Map<String, MutableList<String>>) {
-            for (entry: Map.Entry<String, List<String>> in resHeaders.entries) {
-                val name: String? = entry.key
+        fun processResponseHeaders(resHeaders: Map<String, MutableList<String?>>) {
+            for (entry in resHeaders.entries) {
+                val name = entry.key
                 if (name == null) continue  // http/1.1 line
-                val values: List<String> = entry.value
+                val values: List<String?> = entry.value
                 if (name.equals("Set-Cookie", ignoreCase = true)) {
                     for (value: String? in values) {
                         if (value == null) continue
@@ -862,7 +853,7 @@ class HttpConnection : Connection {
                             cookie(cookieName, cookieVal)
                     }
                 }
-                for (value: String? in values) {
+                for (value in values) {
                     addHeader(name, value)
                 }
             }
@@ -878,7 +869,7 @@ class HttpConnection : Connection {
             private val xmlContentTypeRxp: Pattern = Pattern.compile("(application|text)/\\w*\\+?xml.*")
             @JvmOverloads
             @Throws(IOException::class)
-            fun execute(req: Request, previousResponse: Response? = null): Response? {
+            fun execute(req: Request, previousResponse: Response? = null): Response {
                 synchronized(req, {
                     Validate.isFalse(
                         req.executing,
@@ -889,7 +880,7 @@ class HttpConnection : Connection {
                 Validate.notNullParam(req, "req")
                 val url: URL = (req.url())!!
                 Validate.notNull(url, "URL must be specified to connect")
-                val protocol: String = url.getProtocol()
+                val protocol = url.getProtocol()
                 if (!(protocol == "http") && !(protocol == "https")) throw MalformedURLException("Only http & https protocols supported")
                 val methodHasBody: Boolean = req.method().hasBody()
                 val hasRequestBody: Boolean = req.requestBody() != null
@@ -933,7 +924,7 @@ class HttpConnection : Connection {
                         Validate.notNull(location)
                         if (location.startsWith("http:/") && location.get(6) != '/') // fix broken Location: http:/temp/AAG_New/en/index.php
                             location = location.substring(6)
-                        val redir: URL? = StringUtil.resolve((req.url())!!, location)
+                        val redir = StringUtil.resolve((req.url()), location)
                         req.url(redir)
                         req.executing = false
                         return execute(req, res)
@@ -1010,9 +1001,9 @@ class HttpConnection : Connection {
                 return conn
             }
 
-            private fun createHeaderMap(conn: HttpURLConnection): LinkedHashMap<String, MutableList<String>> {
+            private fun createHeaderMap(conn: HttpURLConnection): LinkedHashMap<String, MutableList<String?>> {
                 // the default sun impl of conn.getHeaderFields() returns header values out of order
-                val headers: LinkedHashMap<String, MutableList<String>> = LinkedHashMap()
+                val headers = LinkedHashMap<String, MutableList<String?>>()
                 var i: Int = 0
                 while (true) {
                     val key: String? = conn.getHeaderFieldKey(i)
@@ -1021,7 +1012,7 @@ class HttpConnection : Connection {
                     i++
                     if (key == null || `val` == null) continue  // skip http1.1 line
                     if (headers.containsKey(key)) headers.get(key)!!.add(`val`) else {
-                        val vals: ArrayList<String> = ArrayList()
+                        val vals: ArrayList<String?> = ArrayList()
                         vals.add(`val`)
                         headers.put(key, vals)
                     }
@@ -1106,7 +1097,7 @@ class HttpConnection : Connection {
             // for get url reqs, serialise the data map into the url
             @Throws(IOException::class)
             private fun serialiseRequestUrl(req: Connection.Request) {
-                val `in`: UrlBuilder = UrlBuilder(req.url())
+                val `in` = UrlBuilder(req.url())
                 for (keyVal: Connection.KeyVal? in req.data()) {
                     Validate.isFalse(keyVal!!.hasInputStream(), "InputStream data not supported in URL query string.")
                     `in`.appendKeyVal(keyVal)
@@ -1117,75 +1108,72 @@ class HttpConnection : Connection {
         }
     }
 
-    class KeyVal private constructor(key: String?, value: String?) : Connection.KeyVal {
-        private var key: String?
-        private var value: String?
+    class KeyVal private constructor(private var key: String, private var value: String) : Connection.KeyVal {
+
         private var stream: InputStream? = null
         private var contentType: String? = null
 
         init {
             Validate.notEmptyParam(key, "key")
             Validate.notNullParam(value, "value")
-            this.key = key
-            this.value = value
         }
 
-        public override fun key(key: String?): KeyVal {
+        override fun key(key: String): KeyVal {
             Validate.notEmptyParam(key, "key")
             this.key = key
             return this
         }
 
-        public override fun key(): String? {
+        override fun key(): String {
             return key
         }
 
-        public override fun value(value: String?): KeyVal {
+        override fun value(value: String): KeyVal {
             Validate.notNullParam(value, "value")
             this.value = value
             return this
         }
 
-        public override fun value(): String? {
+        override fun value(): String {
             return value
         }
 
-        public override fun inputStream(inputStream: InputStream?): KeyVal {
+        override fun inputStream(inputStream: InputStream): KeyVal {
             Validate.notNullParam(value, "inputStream")
             stream = inputStream
             return this
         }
 
-        public override fun inputStream(): InputStream? {
+        override fun inputStream(): InputStream? {
             return stream
         }
 
-        public override fun hasInputStream(): Boolean {
+        override fun hasInputStream(): Boolean {
             return stream != null
         }
 
-        public override fun contentType(contentType: String?): Connection.KeyVal {
+        override fun contentType(contentType: String): Connection.KeyVal {
             Validate.notEmpty(contentType)
             this.contentType = contentType
             return this
         }
 
-        public override fun contentType(): String? {
+        override fun contentType(): String? {
             return contentType
         }
 
-        public override fun toString(): String {
+        override fun toString(): String {
             return key + "=" + value
         }
 
         companion object {
             @JvmStatic
-            fun create(key: String?, value: String?): KeyVal {
+            fun create(key: String, value: String): KeyVal {
                 return KeyVal(key, value)
             }
 
             @JvmStatic
-            fun create(key: String?, filename: String?, stream: InputStream?): KeyVal {
+            fun create(key: String, filename: String, stream: InputStream): KeyVal {
                 return KeyVal(key, filename)
                     .inputStream(stream)
             }
@@ -1218,7 +1206,7 @@ class HttpConnection : Connection {
          * @return a new Connection object
          */
         @JvmStatic
-        fun connect(url: String?): Connection {
+        fun connect(url: String): Connection {
             val con: Connection = HttpConnection()
             con.url(url)
             return con
@@ -1230,7 +1218,7 @@ class HttpConnection : Connection {
          * @return a new Connection object
          */
         @JvmStatic
-        fun connect(url: URL?): Connection {
+        fun connect(url: URL): Connection {
             val con: Connection = HttpConnection()
             con.url(url)
             return con

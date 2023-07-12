@@ -2,25 +2,15 @@ package org.jsoup.nodes
 
 import org.jsoup.helper.Validate
 import org.jsoup.internal.StringUtil
-import java.io.IOException
 
 /**
  * A text node.
  *
  * @author Jonathan Hedley, jonathan@hedley.net
  */
-open class TextNode(text: String) : LeafNode() {
-    /**
-     * Create a new TextNode representing the supplied (unencoded) text).
-     *
-     * @param text raw text
-     * @see .createFromEncoded
-     */
-    init {
-        value = text
-    }
+open class TextNode(text: String?) : LeafNode(text) {
 
-    override fun nodeName(): String? {
+    override fun nodeName(): String {
         return "#text"
     }
 
@@ -29,7 +19,7 @@ open class TextNode(text: String) : LeafNode() {
      * @return Unencoded, normalised text.
      * @see TextNode.getWholeText
      */
-    open fun text(): String? {
+    open fun text(): String {
         return StringUtil.normaliseWhitespace(wholeText)
     }
 
@@ -38,22 +28,23 @@ open class TextNode(text: String) : LeafNode() {
      * @param text unencoded text
      * @return this, for chaining
      */
-    fun text(text: String?): TextNode {
+    fun text(text: String): TextNode {
         coreValue(text)
         return this
     }
 
-    val wholeText: String?
-        /**
-         * Get the (unencoded) text of this text node, including any newlines and spaces present in the original.
-         * @return text
-         */
+    /**
+     * Get the (unencoded) text of this text node, including any newlines and spaces present in the original.
+     * @return text
+     */
+    val wholeText: String
         get() = coreValue()
+
+    /**
+     * Test if this text node is blank -- that is, empty or only whitespace (including newlines).
+     * @return true if this document is empty or only whitespace, false if it contains any text content.
+     */
     val isBlank: Boolean
-        /**
-         * Test if this text node is blank -- that is, empty or only whitespace (including newlines).
-         * @return true if this document is empty or only whitespace, false if it contains any text content.
-         */
         get() = StringUtil.isBlank(coreValue())
 
     val isNotBlank: Boolean
@@ -68,21 +59,21 @@ open class TextNode(text: String) : LeafNode() {
     fun splitText(offset: Int): TextNode {
         val text = coreValue()
         Validate.isTrue(offset >= 0, "Split offset must be not be negative")
-        Validate.isTrue(offset < text!!.length, "Split offset must not be greater than current text length")
+        Validate.isTrue(offset < text.length, "Split offset must not be greater than current text length")
         val head = text.substring(0, offset)
         val tail = text.substring(offset)
         text(head)
         val tailNode = TextNode(tail)
-        if (parentNode != null) parentNode!!.addChildren(siblingIndex() + 1, tailNode)
+        parentNode?.addChildren(siblingIndex + 1, tailNode)
+
         return tailNode
     }
 
-    @Throws(IOException::class)
     override fun outerHtmlHead(accum: Appendable, depth: Int, out: Document.OutputSettings) {
         val prettyPrint = out.prettyPrint()
-        val parent = if (parentNode is Element) parentNode as Element? else null
-        val normaliseWhite = prettyPrint && !Element.Companion.preserveWhitespace(parentNode)
-        val trimLikeBlock = parent != null && (parent.tag()!!.isBlock || parent.tag()!!.formatAsBlock())
+        val parent = parentNode as? Element
+        val normaliseWhite = prettyPrint && !Element.preserveWhitespace(parentNode)
+        val trimLikeBlock = parent != null && (parent.tag().isBlock || parent.tag().formatAsBlock)
         var trimLeading = false
         var trimTrailing = false
         if (normaliseWhite) {
@@ -93,27 +84,23 @@ open class TextNode(text: String) : LeafNode() {
             val next = nextSibling()
             val prev = previousSibling()
             val isBlank = isBlank
-            val couldSkip =
-                next is Element && next.shouldIndent(out) || next is TextNode && next.isBlank || prev is Element && (prev.isBlock || prev.isNode(
-                    "br"
-                )) // br is a bit special - make sure we don't get a dangling blank line, but not a block otherwise wraps in head
+            val couldSkip = next is Element && next.shouldIndent(out)
+                    || next is TextNode && next.isBlank
+                    || prev is Element && (prev.isBlock || prev.isNode("br")) // br is a bit special - make sure we don't get a dangling blank line, but not a block otherwise wraps in head
             if (couldSkip && isBlank) return
-            if (siblingIndex == 0 && parent != null && parent.tag()!!
-                    .formatAsBlock() && !isBlank || out.outline() && siblingNodes().size > 0 && !isBlank || siblingIndex > 0 && Node.Companion.isNode(
-                    prev,
-                    "br"
-                ) // special case wrap on inline <br> - doesn't make sense as a block tag
-            ) indent(accum, depth, out)
+            if (siblingIndex == 0 && parent != null && parent.tag().formatAsBlock && !isBlank
+                || out.outline() && siblingNodes().size > 0 && !isBlank || siblingIndex > 0 && isNode(prev, "br") // special case wrap on inline <br> - doesn't make sense as a block tag
+            ) {
+                indent(accum, depth, out)
+            }
         }
         Entities.escape(accum, coreValue(), out, false, normaliseWhite, trimLeading, trimTrailing)
     }
 
-    @Throws(IOException::class)
-    override fun outerHtmlTail(accum: Appendable, depth: Int, out: Document.OutputSettings) {
-    }
+    override fun outerHtmlTail(accum: Appendable, depth: Int, out: Document.OutputSettings) { }
 
     override fun toString(): String {
-        return outerHtml()!!
+        return outerHtml()
     }
 
     override fun clone(): TextNode {
@@ -127,25 +114,22 @@ open class TextNode(text: String) : LeafNode() {
          * @return TextNode containing unencoded data (e.g. `<`)
          */
         @JvmStatic
-        fun createFromEncoded(encodedText: String?): TextNode {
-            val text = Entities.unescape(encodedText)
-            return TextNode(text!!)
+        fun createFromEncoded(encodedText: String): TextNode {
+            val text: String = Entities.unescape(encodedText)
+            return TextNode(text)
         }
 
         @JvmStatic
-        fun normaliseWhitespace(text: String?): String? {
-            var text = text
-            text = StringUtil.normaliseWhitespace(text)
-            return text
-        }
+        fun normaliseWhitespace(text: String) =
+            StringUtil.normaliseWhitespace(text)
 
         @JvmStatic
         fun stripLeadingWhitespace(text: String): String {
             return text.replaceFirst("^\\s+".toRegex(), "")
         }
 
-        fun lastCharIsWhitespace(sb: StringBuilder?): Boolean {
-            return sb!!.length != 0 && sb[sb.length - 1] == ' '
+        fun lastCharIsWhitespace(sb: StringBuilder): Boolean {
+            return sb.isNotEmpty() && sb.last() == ' '
         }
     }
 }

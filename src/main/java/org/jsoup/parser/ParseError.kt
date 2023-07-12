@@ -31,10 +31,10 @@ class ParseError {
         errorMessage = errorMsg
     }
 
-    internal constructor(reader: CharacterReader?, errorFormat: String?, vararg args: Any?) {
+    internal constructor(reader: CharacterReader?, errorFormat: String, vararg args: Any?) {
         position = reader!!.pos()
         cursorPos = reader.cursorPos()
-        errorMessage = String.format((errorFormat)!!, *args)
+        errorMessage = String.format(errorFormat, *args)
     }
 
     internal constructor(pos: Int, errorMsg: String) {

@@ -2,12 +2,8 @@ package org.jsoup.nodes
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import org.jsoup.Connection.KeyVal.value
 import org.jsoup.Jsoup
 import org.jsoup.integration.UrlConnectTest
-import org.jsoup.nodes.Attribute.value
-import org.jsoup.nodes.Element.value
-import org.jsoup.select.Elements.value
 import java.io.FileWriter
 import java.io.IOException
 import java.nio.file.Files
@@ -46,17 +42,17 @@ internal object BuildEntities {
             }
             ref.name = name
         }
-        base.sort(byName)
-        full.sort(byName)
+        base.sortWith(byName)
+        full.sortWith(byName)
 
         // now determine code point order
         val baseByCode = ArrayList(base)
         val fullByCode = ArrayList(full)
-        baseByCode.sort(byCode)
-        fullByCode.sort(byCode)
+        baseByCode.sortWith(byCode)
+        fullByCode.sortWith(byCode)
 
         // and update their codepoint index.
-        val codelists: Array<ArrayList<CharacterRef>> = arrayOf<ArrayList<*>>(baseByCode, fullByCode)
+        val codelists: Array<ArrayList<CharacterRef>> = arrayOf(baseByCode, fullByCode)
         for (codelist in codelists) {
             for (i in codelist.indices) {
                 codelist[i].codeIndex = i
@@ -90,7 +86,7 @@ internal object BuildEntities {
     private val byCode = ByCode()
 
     private class CharacterRef {
-        var codepoints: IntArray
+        var codepoints: IntArray = intArrayOf()
         var name: String? = null
         var codeIndex = 0
         override fun toString(): String {

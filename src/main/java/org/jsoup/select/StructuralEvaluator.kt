@@ -1,14 +1,13 @@
 package org.jsoup.select
 
 import org.jsoup.nodes.Element
-import org.jsoup.nodes.Node
 import java.util.*
 import java.util.function.Supplier
 
 /**
  * Base structural evaluator.
  */
-internal abstract class StructuralEvaluator(val evaluator: Evaluator?) : Evaluator() {
+internal abstract class StructuralEvaluator(val evaluator: Evaluator) : Evaluator() {
     // Memoize inner matches, to save repeated re-evaluations of parent, sibling etc.
     // root + element: Boolean matches. ThreadLocal in case the Evaluator is compiled then reused across multi threads
     @JvmField
@@ -38,8 +37,9 @@ internal abstract class StructuralEvaluator(val evaluator: Evaluator?) : Evaluat
         super.reset()
     }
 
-    internal class Root() : Evaluator() {
-        public override fun matches(root: Element?, element: Element?): Boolean {
+    internal class Root : Evaluator() {
+
+        override fun matches(root: Element, element: Element): Boolean {
             return root === element
         }
 
@@ -47,24 +47,21 @@ internal abstract class StructuralEvaluator(val evaluator: Evaluator?) : Evaluat
             return 1
         }
 
-        public override fun toString(): String {
+        override fun toString(): String {
             return ""
         }
     }
 
-    internal class Has(evaluator: Evaluator?) : StructuralEvaluator(evaluator) {
-        val finder: Collector.FirstFinder
+    internal class Has(evaluator: Evaluator) : StructuralEvaluator(evaluator) {
 
-        init {
-            finder = Collector.FirstFinder(evaluator)
-        }
+        override fun matches(root: Element, element: Element): Boolean {
+            val finder = Collector.FirstFinder(evaluator, element)
 
-        public override fun matches(root: Element?, element: Element?): Boolean {
             // for :has, we only want to match children (or below), not the input element. And we want to minimize GCs
             for (i in 0 until element.childNodeSize()) {
-                val node: Node? = element.childNode(i)
+                val node = element.childNode(i)
                 if (node is Element) {
-                    val match: Element? = finder.find(element, node as Element)
+                    val match = finder.find(node)
                     if (match != null) return true
                 }
             }
@@ -80,8 +77,9 @@ internal abstract class StructuralEvaluator(val evaluator: Evaluator?) : Evaluat
         }
     }
 
-    internal class Not(evaluator: Evaluator?) : StructuralEvaluator(evaluator) {
-        public override fun matches(root: Element?, element: Element?): Boolean {
+    internal class Not(evaluator: Evaluator) : StructuralEvaluator(evaluator) {
+
+        override fun matches(root: Element, element: Element): Boolean {
             return !memoMatches(root, element)
         }
 
@@ -89,13 +87,14 @@ internal abstract class StructuralEvaluator(val evaluator: Evaluator?) : Evaluat
             return 2 + evaluator.cost()
         }
 
-        public override fun toString(): String {
+        override fun toString(): String {
             return String.format(":not(%s)", evaluator)
         }
     }
 
-    internal class Parent(evaluator: Evaluator?) : StructuralEvaluator(evaluator) {
-        public override fun matches(root: Element?, element: Element?): Boolean {
+    internal class Parent(evaluator: Evaluator) : StructuralEvaluator(evaluator) {
+
+        override fun matches(root: Element, element: Element): Boolean {
             if (root === element) return false
             var parent: Element? = element.parent()
             while (parent != null) {
@@ -110,13 +109,14 @@ internal abstract class StructuralEvaluator(val evaluator: Evaluator?) : Evaluat
             return 2 * evaluator.cost()
         }
 
-        public override fun toString(): String {
+        override fun toString(): String {
             return String.format("%s ", evaluator)
         }
     }
 
-    internal class ImmediateParent(evaluator: Evaluator?) : StructuralEvaluator(evaluator) {
-        public override fun matches(root: Element?, element: Element?): Boolean {
+    internal class ImmediateParent(evaluator: Evaluator) : StructuralEvaluator(evaluator) {
+
+        override fun matches(root: Element, element: Element): Boolean {
             if (root === element) return false
             val parent: Element? = element.parent()
             return parent != null && memoMatches(root, parent)
@@ -126,13 +126,14 @@ internal abstract class StructuralEvaluator(val evaluator: Evaluator?) : Evaluat
             return 1 + evaluator.cost()
         }
 
-        public override fun toString(): String {
+        override fun toString(): String {
             return String.format("%s > ", evaluator)
         }
     }
 
-    internal class PreviousSibling(evaluator: Evaluator?) : StructuralEvaluator(evaluator) {
-        public override fun matches(root: Element?, element: Element?): Boolean {
+    internal class PreviousSibling(evaluator: Evaluator) : StructuralEvaluator(evaluator) {
+
+        override fun matches(root: Element, element: Element): Boolean {
             if (root === element) return false
             var sibling: Element? = element.firstElementSibling()
             while (sibling != null) {
@@ -147,13 +148,14 @@ internal abstract class StructuralEvaluator(val evaluator: Evaluator?) : Evaluat
             return 3 * evaluator.cost()
         }
 
-        public override fun toString(): String {
+        override fun toString(): String {
             return String.format("%s ~ ", evaluator)
         }
     }
 
-    internal class ImmediatePreviousSibling(evaluator: Evaluator?) : StructuralEvaluator(evaluator) {
-        public override fun matches(root: Element?, element: Element?): Boolean {
+    internal class ImmediatePreviousSibling(evaluator: Evaluator) : StructuralEvaluator(evaluator) {
+
+        override fun matches(root: Element, element: Element): Boolean {
             if (root === element) return false
             val prev: Element? = element.previousElementSibling()
             return prev != null && memoMatches(root, prev)
@@ -163,7 +165,7 @@ internal abstract class StructuralEvaluator(val evaluator: Evaluator?) : Evaluat
             return 2 + evaluator.cost()
         }
 
-        public override fun toString(): String {
+        override fun toString(): String {
             return String.format("%s + ", evaluator)
         }
     }

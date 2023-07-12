@@ -106,7 +106,7 @@ object Selector {
      */
     fun select(query: String?, root: Element?): Elements {
         Validate.notEmpty(query)
-        return select(QueryParser.Companion.parse(query), root)
+        return select(QueryParser.parse(query), root)
     }
 
     /**
@@ -149,9 +149,9 @@ object Selector {
 
     // exclude set. package open so that Elements can implement .not() selector.
     fun filterOut(elements: Collection<Element>, outs: Collection<Element>): Elements {
-        val output: Elements = Elements()
+        val output = Elements()
         for (el: Element in elements) {
-            var found: Boolean = false
+            var found = false
             for (out: Element in outs) {
                 if ((el == out)) {
                     found = true
@@ -171,12 +171,12 @@ object Selector {
      */
     fun selectFirst(cssQuery: String?, root: Element): Element? {
         Validate.notEmpty(cssQuery)
-        return Collector.findFirst(QueryParser.Companion.parse(cssQuery), root)
+        return Collector.findFirst(QueryParser.parse(cssQuery), root)
     }
 
     class SelectorParseException : IllegalStateException {
         constructor(msg: String?) : super(msg)
         constructor(msg: String, vararg msgArgs: Any) : super(String.format(msg, *msgArgs))
-        constructor(cause: Throwable?, msg: String, vararg msgArgs: Any) : super(String.format(msg, *msgArgs), cause)
+        constructor(cause: Throwable?, msg: String, vararg msgArgs: Any?) : super(String.format(msg, *msgArgs), cause)
     }
 }

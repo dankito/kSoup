@@ -9,20 +9,29 @@ import java.util.*
  *
  * @author Jonathan Hedley
  */
-class TokenQueue(data: String?) {
-    private var queue: String?
+class TokenQueue(private var queue: String) {
+    
     private var pos: Int = 0
+
+    /**
+     * Is the queue empty?
+     * @return true if no data left in queue.
+     */
     val isEmpty: Boolean
-        /**
-         * Is the queue empty?
-         * @return true if no data left in queue.
-         */
         get() {
             return remainingLength() == 0
         }
 
+    /**
+     * Create a new TokenQueue.
+     * @param data string of data to back queue.
+     */
+    init {
+        Validate.notNull(queue)
+    }
+
     private fun remainingLength(): Int {
-        return queue!!.length - pos
+        return queue.length - pos
     }
 
     /**
@@ -31,7 +40,7 @@ class TokenQueue(data: String?) {
      */
     fun addFirst(seq: String) {
         // not very performant, but an edge case
-        queue = seq + queue!!.substring(pos)
+        queue = seq + queue.substring(pos)
         pos = 0
     }
 
@@ -41,7 +50,7 @@ class TokenQueue(data: String?) {
      * @return true if the next characters match.
      */
     fun matches(seq: String): Boolean {
-        return queue!!.regionMatches(pos, seq, 0, seq.length, ignoreCase = true)
+        return queue.regionMatches(pos, seq, 0, seq.length, ignoreCase = true)
     }
 
     /**
@@ -59,7 +68,7 @@ class TokenQueue(data: String?) {
     fun matchesAny(vararg seq: Char): Boolean {
         if (isEmpty) return false
         for (c: Char in seq) {
-            if (queue!!.get(pos) == c) return true
+            if (queue.get(pos) == c) return true
         }
         return false
     }
@@ -84,7 +93,7 @@ class TokenQueue(data: String?) {
      * @return if starts with whitespace
      */
     fun matchesWhitespace(): Boolean {
-        return !isEmpty && StringUtil.isWhitespace(queue!!.get(pos).code)
+        return !isEmpty && StringUtil.isWhitespace(queue.get(pos).code)
     }
 
     /**
@@ -92,7 +101,7 @@ class TokenQueue(data: String?) {
      * @return if matches a word character
      */
     fun matchesWord(): Boolean {
-        return !isEmpty && Character.isLetterOrDigit(queue!!.get(pos))
+        return !isEmpty && Character.isLetterOrDigit(queue.get(pos))
     }
 
     /**
@@ -107,7 +116,7 @@ class TokenQueue(data: String?) {
      * @return first character on queue.
      */
     fun consume(): Char {
-        return queue!!.get(pos++)
+        return queue.get(pos++)
     }
 
     /**
@@ -131,9 +140,9 @@ class TokenQueue(data: String?) {
      * @return The matched data consumed from queue.
      */
     fun consumeTo(seq: String?): String {
-        val offset: Int = queue!!.indexOf((seq)!!, pos)
+        val offset: Int = queue.indexOf((seq)!!, pos)
         if (offset != -1) {
-            val consumed: String = queue!!.substring(pos, offset)
+            val consumed: String = queue.substring(pos, offset)
             pos += consumed.length
             return consumed
         } else {
@@ -149,13 +158,13 @@ class TokenQueue(data: String?) {
         while (!isEmpty) {
             if (matches(seq)) break
             if (canScan) {
-                val skip: Int = queue!!.indexOf(first, pos) - pos
+                val skip: Int = queue.indexOf(first, pos) - pos
                 if (skip == 0) // this char is the skip char, but not match, so force advance of pos
                     pos++ else if (skip < 0) // no chance of finding, grab to end
-                    pos = queue!!.length else pos += skip
+                    pos = queue.length else pos += skip
             } else pos++
         }
-        return queue!!.substring(start, pos)
+        return queue.substring(start, pos)
     }
 
     /**
@@ -165,12 +174,12 @@ class TokenQueue(data: String?) {
      */
     // todo: method name. not good that consumeTo cares for case, and consume to any doesn't. And the only use for this
     // is a case sensitive time...
-    fun consumeToAny(vararg seq: String?): String {
+    fun consumeToAny(vararg seq: String): String {
         val start: Int = pos
         while (!isEmpty && !matchesAny(*seq)) {
             pos++
         }
-        return queue!!.substring(start, pos)
+        return queue.substring(start, pos)
     }
 
     /**
@@ -233,7 +242,7 @@ class TokenQueue(data: String?) {
             if (depth > 0 && last.code != 0) end = pos // don't include the outer match pair in the return
             last = c
         } while (depth > 0)
-        val out: String = if ((end >= 0)) queue!!.substring(start, end) else ""
+        val out: String = if ((end >= 0)) queue.substring(start, end) else ""
         if (depth > 0) { // ran out of queue before seeing enough )
             Validate.fail("Did not find balanced marker at '" + out + "'")
         }
@@ -260,7 +269,7 @@ class TokenQueue(data: String?) {
     fun consumeWord(): String {
         val start: Int = pos
         while (matchesWord()) pos++
-        return queue!!.substring(start, pos)
+        return queue.substring(start, pos)
     }
 
     /**
@@ -268,7 +277,7 @@ class TokenQueue(data: String?) {
      *
      * @return tag name
      */
-    fun consumeElementSelector(): String? {
+    fun consumeElementSelector(): String {
         return consumeEscapedCssIdentifier(*ElementSelectorChars)
     }
 
@@ -277,24 +286,15 @@ class TokenQueue(data: String?) {
      * http://www.w3.org/TR/CSS2/syndata.html#value-def-identifier
      * @return identifier
      */
-    fun consumeCssIdentifier(): String? {
+    fun consumeCssIdentifier(): String {
         return consumeEscapedCssIdentifier(*CssIdentifierChars)
     }
 
-    /**
-     * Create a new TokenQueue.
-     * @param data string of data to back queue.
-     */
-    init {
-        Validate.notNull(data)
-        queue = data
-    }
-
-    private fun consumeEscapedCssIdentifier(vararg matches: String): String? {
+    private fun consumeEscapedCssIdentifier(vararg matches: String): String {
         val start: Int = pos
         var escaped: Boolean = false
         while (!isEmpty) {
-            if (queue!!.get(pos) == ESC && remainingLength() > 1) {
+            if (queue.get(pos) == ESC && remainingLength() > 1) {
                 escaped = true
                 pos += 2 // skip the escape and the escaped
             } else if (matchesCssIdentifier(*matches)) {
@@ -303,7 +303,7 @@ class TokenQueue(data: String?) {
                 break
             }
         }
-        val consumed: String = queue!!.substring(start, pos)
+        val consumed: String = queue.substring(start, pos)
         return if (escaped) unescape(consumed) else consumed
     }
 
@@ -316,13 +316,13 @@ class TokenQueue(data: String?) {
      * @return remained of queue.
      */
     fun remainder(): String {
-        val remainder: String = queue!!.substring(pos)
-        pos = queue!!.length
+        val remainder: String = queue.substring(pos)
+        pos = queue.length
         return remainder
     }
 
     public override fun toString(): String {
-        return queue!!.substring(pos)
+        return queue.substring(pos)
     }
 
     companion object {
@@ -334,18 +334,24 @@ class TokenQueue(data: String?) {
          * @return unescaped string
          */
         @JvmStatic
-        fun unescape(`in`: String?): String? {
-            val out: StringBuilder? = StringUtil.borrowBuilder()
+        fun unescape(`in`: String?): String {
+            val out = StringUtil.borrowBuilder()
             var last: Char = 0.toChar()
+
             for (c: Char in `in`!!.toCharArray()) {
-                if (c == ESC) {
+                var char = c
+                if (char == ESC) {
                     if (last == ESC) {
-                        out!!.append(c)
-                        c = 0.toChar()
+                        out.append(char)
+                        char = 0.toChar()
                     }
-                } else out!!.append(c)
-                last = c
+                } else {
+                    out.append(char)
+                }
+
+                last = char
             }
+
             return StringUtil.releaseBuilder(out)
         }
 
@@ -354,14 +360,14 @@ class TokenQueue(data: String?) {
     valid in a selector.
      */
         @JvmStatic
-        fun escapeCssIdentifier(`in`: String?): String? {
-            val out: StringBuilder? = StringUtil.borrowBuilder()
-            val q: TokenQueue = TokenQueue(`in`)
+        fun escapeCssIdentifier(`in`: String): String {
+            val out = StringUtil.borrowBuilder()
+            val q = TokenQueue(`in`)
             while (!q.isEmpty) {
                 if (q.matchesCssIdentifier(*ElementSelectorChars)) {
-                    out!!.append(q.consume())
+                    out.append(q.consume())
                 } else {
-                    out!!.append(ESC).append(q.consume())
+                    out.append(ESC).append(q.consume())
                 }
             }
             return StringUtil.releaseBuilder(out)

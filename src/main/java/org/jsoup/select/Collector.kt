@@ -15,15 +15,16 @@ object Collector {
      * @param root root of tree to descend
      * @return list of matches; empty if none
      */
-    fun collect(eval: Evaluator?, root: Element?): Elements {
+    fun collect(eval: Evaluator, root: Element): Elements {
         eval.reset()
-        val elements: Elements = Elements()
-        NodeTraversor.traverse(NodeVisitor({ node: Node?, depth: Int ->
-            if (node is Element) {
-                val el: Element = node as Element
-                if (eval.matches(root, el)) elements.add(el)
+        val elements = Elements()
+
+        NodeTraversor.traverse(GenericNodeVisitor { node ->
+            if (node is Element && eval.matches(root, node)) {
+                elements.add(node)
             }
-        }), root)
+        }, root)
+
         return elements
     }
 
@@ -34,30 +35,28 @@ object Collector {
      * @param root root of tree to descend
      * @return the first match; `null` if none
      */
-    fun findFirst(eval: Evaluator?, root: Element): Element? {
+    fun findFirst(eval: Evaluator, root: Element): Element? {
         eval.reset()
-        val finder: FirstFinder = FirstFinder(eval)
-        return finder.find(root, root)
+        val finder = FirstFinder(eval, root)
+        return finder.find(root)
     }
 
-    internal class FirstFinder(private val eval: Evaluator) : NodeFilter {
-        private var evalRoot: Element? = null
+    internal class FirstFinder(private val eval: Evaluator, private val root: Element) : NodeFilter {
+
         private var match: Element? = null
-        fun find(root: Element?, start: Element): Element? {
-            evalRoot = root
+
+        fun find(start: Element): Element? {
             match = null
             NodeTraversor.filter(this, start)
             return match
         }
 
         override fun head(node: Node, depth: Int): NodeFilter.FilterResult {
-            if (node is Element) {
-                val el: Element = node as Element
-                if (eval.matches(evalRoot, el)) {
-                    match = el
-                    return NodeFilter.FilterResult.STOP
-                }
+            if (node is Element && eval.matches(root, node)) {
+                match = node
+                return NodeFilter.FilterResult.STOP
             }
+
             return NodeFilter.FilterResult.CONTINUE
         }
     }

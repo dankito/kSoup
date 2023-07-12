@@ -1,18 +1,12 @@
 package org.jsoup.nodes
 
 import org.jsoup.Connection
-import org.jsoup.Connection.KeyVal.value
-import org.jsoup.Connection.get
 import org.jsoup.Jsoup
 import org.jsoup.Jsoup.parse
 import org.jsoup.integration.TestServer
 import org.jsoup.integration.servlets.CookieServlet
 import org.jsoup.integration.servlets.EchoServlet
 import org.jsoup.integration.servlets.FileServlet
-import org.jsoup.nodes.Attribute.value
-import org.jsoup.nodes.Attributes.get
-import org.jsoup.nodes.Element.value
-import org.jsoup.select.Elements.value
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test

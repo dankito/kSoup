@@ -1,10 +1,20 @@
 package org.jsoup.nodes
 
-import org.jsoup.Connection.KeyVal.valueimport
+import org.jsoup.Jsoup
+import org.jsoup.TextUtil
+import org.jsoup.helper.ValidationException
+import org.jsoup.parser.ParseSettings
+import org.jsoup.parser.Parser
+import org.jsoup.parser.Tag
+import org.jsoup.select.*
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.stream.Stream
 
-org.jsoup.Jsoupimport org.jsoup.Jsoup.parseimport org.jsoup.TextUtilimport org.jsoup.helper.ValidationExceptionimport org.jsoup.nodes.Attribute.valueimport org.jsoup.nodes.Attributes.putimport org.jsoup.nodes.Attributes.removeimport org.jsoup.nodes.Element.valueimport org.jsoup.nodes.Node.removeimport org.jsoup.parser.ParseSettingsimport org.jsoup.parser.Parser.Companion.htmlParserimport org.jsoup.parser.Parser.Companion.xmlParserimport org.jsoup.parser.Tag.Companion.valueOfimport org.jsoup.select.*import org.jsoup.select.Elements.removeimport
 
-org.jsoup.select.Elements.valueimport org.jsoup.select.GenericNodeFilter.Companion.jvmNodeFilterimport org.jsoup.select.GenericNodeVisitor.Companion.jvmNodeVisitorimport org.junit.jupiter.api.Assertionsimport org.junit.jupiter.api.Testimport org.junit.jupiter.params.ParameterizedTestimport org.junit.jupiter.params.provider.MethodSourceimport java.util.concurrent.atomic.AtomicIntegerimport java.util.stream.Stream
 /**
  * Tests for Element (DOM stuff mostly).
  *
@@ -138,7 +148,7 @@ class ElementTest {
 
     @Test
     fun testBrHasSpaceCaseSensitive() {
-        var doc = parse("<p>Hello<br>there<BR>now</p>", htmlParser().settings(ParseSettings.preserveCase))
+        var doc = Jsoup.parse("<p>Hello<br>there<BR>now</p>", Parser.htmlParser().settings(ParseSettings.preserveCase))
         Assertions.assertEquals("Hello there now", doc.text())
         Assertions.assertEquals("Hello there now", doc.select("p").first()!!.ownText())
         doc = Jsoup.parse("<p>Hello <br> there <BR> now</p>")
@@ -337,7 +347,7 @@ class ElementTest {
 
     @Test
     fun testHasClassDomMethods() {
-        val tag = valueOf("a")
+        val tag = Tag.valueOf("a")
         val attribs = Attributes()
         val el = Element(tag, "", attribs)
         attribs.put("class", "toto")
@@ -596,7 +606,7 @@ class ElementTest {
 
     @Test
     fun testAddBooleanAttribute() {
-        val div = Element(valueOf("div"), "")
+        val div = Element(Tag.valueOf("div"), "")
         div.attr("true", true)
         div.attr("false", "value")
         div.attr("false", false)
@@ -676,7 +686,7 @@ class ElementTest {
         Assertions.assertThrows(NullPointerException::class.java) {
             val doc = Jsoup.parse("<div id=1><p>Hello</p></div>")
             val div = doc.getElementById("1")
-            div!!.appendText(null)
+            div!!.appendText(null as String)
         }
     }
 
@@ -685,7 +695,7 @@ class ElementTest {
         Assertions.assertThrows(NullPointerException::class.java) {
             val doc = Jsoup.parse("<div id=1><p>Hello</p></div>")
             val div = doc.getElementById("1")
-            div!!.prependText(null)
+            div!!.prependText(null as String)
         }
     }
 
@@ -887,7 +897,7 @@ class ElementTest {
     fun dataset() {
         val doc = Jsoup.parse("<div id=1 data-name=jsoup class=new data-package=jar>Hello</div><p id=2>Hello</p>")
         val div = doc.select("div").first()
-        val dataset = div!!.dataset()
+        val dataset = div!!.dataset() as MutableMap
         val attributes = div.attributes()
 
         // size, get, set, add, remove
@@ -978,7 +988,7 @@ class ElementTest {
     @Test
     fun testShallowClone() {
         val base = "http://example.com/"
-        val doc = parse("<div id=1 class=one><p id=2 class=two>One", base)
+        val doc = Jsoup.parse("<div id=1 class=one><p id=2 class=two>One", base)
         val d = doc.selectFirst("div")
         val p = doc.selectFirst("p")
         val t = p!!.textNodes()[0]
@@ -1121,7 +1131,7 @@ class ElementTest {
         } catch (e: IllegalArgumentException) {
         }
         try {
-            div2.insertChildren(0, null as Collection<Node?>?)
+            div2.insertChildren(0, null as Collection<Node>)
             Assertions.fail<Any>()
         } catch (e: NullPointerException) {
         }
@@ -1139,8 +1149,8 @@ class ElementTest {
         Assertions.assertEquals(4, div2.childNodeSize())
         Assertions.assertEquals(3, p1s[1].siblingIndex) // should be last
         val els: MutableList<Node> = ArrayList()
-        val el1 = Element(valueOf("span"), "").text("Span1")
-        val el2 = Element(valueOf("span"), "").text("Span2")
+        val el1 = Element(Tag.valueOf("span"), "").text("Span1")
+        val el2 = Element(Tag.valueOf("span"), "").text("Span2")
         val tn1 = TextNode("Text4")
         els.add(el1)
         els.add(el2)
@@ -1321,7 +1331,7 @@ class ElementTest {
     fun testRelativeUrls() {
         val html =
             "<body><a href='./one.html'>One</a> <a href='two.html'>two</a> <a href='../three.html'>Three</a> <a href='//example2.com/four/'>Four</a> <a href='https://example2.com/five/'>Five</a> <a>Six</a> <a href=''>Seven</a>"
-        val doc = parse(html, "http://example.com/bar/")
+        val doc = Jsoup.parse(html, "http://example.com/bar/")
         val els = doc.select("a")
         Assertions.assertEquals("http://example.com/bar/one.html", els[0].absUrl("href"))
         Assertions.assertEquals("http://example.com/bar/two.html", els[1].absUrl("href"))
@@ -1336,7 +1346,7 @@ class ElementTest {
     fun testRelativeIdnUrls() {
         val idn = "https://www.测试.测试/"
         val idnFoo = idn + "foo.html?bar"
-        val doc = parse("<a href=''>One</a><a href='/bar.html?qux'>Two</a>", idnFoo)
+        val doc = Jsoup.parse("<a href=''>One</a><a href='/bar.html?qux'>Two</a>", idnFoo)
         val els = doc.select("a")
         val one = els[0]
         val two = els[1]
@@ -1365,11 +1375,11 @@ class ElementTest {
 
     @Test
     fun testHashcodeIsStableWithContentChanges() {
-        val root = Element(valueOf("root"), "")
+        val root = Element(Tag.valueOf("root"), "")
         val set = HashSet<Element>()
         // Add root node:
         set.add(root)
-        root.appendChild(Element(valueOf("a"), ""))
+        root.appendChild(Element(Tag.valueOf("a"), ""))
         Assertions.assertTrue(set.contains(root))
     }
 
@@ -1377,7 +1387,7 @@ class ElementTest {
     fun testNamespacedElements() {
         // Namespaces with ns:tag in HTML must be translated to ns|tag in CSS.
         val html = "<html><body><fb:comments /></body></html>"
-        val doc = parse(html, "http://example.com/bar/")
+        val doc = Jsoup.parse(html, "http://example.com/bar/")
         val els = doc.select("fb|comments")
         Assertions.assertEquals(1, els.size)
         Assertions.assertEquals("html > body > fb|comments", els[0].cssSelector())
@@ -1387,7 +1397,7 @@ class ElementTest {
     fun testChainedRemoveAttributes() {
         val html = "<a one two three four>Text</a>"
         val doc = Jsoup.parse(html)
-        val a = doc.select("a").first()
+        val a = doc.select("a").first()!!
         a
             .removeAttr("zero")
             .removeAttr("one")
@@ -1395,7 +1405,7 @@ class ElementTest {
             .removeAttr("three")
             .removeAttr("four")
             .removeAttr("five")
-        Assertions.assertEquals("<a>Text</a>", a!!.outerHtml())
+        Assertions.assertEquals("<a>Text</a>", a.outerHtml())
     }
 
     @Test
@@ -1629,7 +1639,7 @@ class ElementTest {
 
     @Test
     fun testRemoveBeforeIndex() {
-        val doc = parse(
+        val doc = Jsoup.parse(
             "<html><body><div><p>before1</p><p>before2</p><p>XXX</p><p>after1</p><p>after2</p></div></body></html>",
             ""
         )
@@ -1649,7 +1659,7 @@ class ElementTest {
 
     @Test
     fun testRemoveAfterIndex() {
-        val doc2 = parse(
+        val doc2 = Jsoup.parse(
             "<html><body><div><p>before1</p><p>before2</p><p>XXX</p><p>after1</p><p>after2</p></div></body></html>",
             ""
         )
@@ -1669,7 +1679,7 @@ class ElementTest {
 
     @Test
     fun whiteSpaceClassElement() {
-        val tag = valueOf("a")
+        val tag = Tag.valueOf("a")
         val attribs = Attributes()
         val el = Element(tag, "", attribs)
         attribs.put("class", "abc ")
@@ -1854,7 +1864,7 @@ class ElementTest {
         val div = doc.selectFirst("div")
         Assertions.assertNotNull(div)
         val counter = AtomicInteger(0)
-        val div2 = div!!.traverse(jvmNodeVisitor { node: Node? -> counter.incrementAndGet() })
+        val div2 = div!!.traverse(GenericNodeVisitor.jvmNodeVisitor { node: Node? -> counter.incrementAndGet() })
         Assertions.assertEquals(7, counter.get())
         Assertions.assertEquals(div2, div)
     }
@@ -1880,7 +1890,7 @@ class ElementTest {
     @Test
     fun testFilterAsLambda() {
         val doc = Jsoup.parse("<div><p>One<p id=2>Two<p>Three")
-        doc.filter(jvmNodeFilter { node: Node -> if (node.attr("id") == "2") NodeFilter.FilterResult.REMOVE else NodeFilter.FilterResult.CONTINUE })
+        doc.filter(GenericNodeFilter.jvmNodeFilter { node: Node -> if (node.attr("id") == "2") NodeFilter.FilterResult.REMOVE else NodeFilter.FilterResult.CONTINUE })
         Assertions.assertEquals("<div><p>One</p><p>Three</p></div>", TextUtil.stripNewlines(doc.body().html()))
     }
 
@@ -2014,7 +2024,7 @@ class ElementTest {
         validateScriptContents(src, el)
 
         // XML, no special treatment, get escaped correctly
-        val xml = xmlParser().parseInput(html, "")
+        val xml = Parser.xmlParser().parseInput(html, "")
         val xEl = xml.selectFirst("script")
         Assertions.assertNotNull(xEl)
         src = "var foo = 5 < 2;\nvar bar = 1 && 2;"
@@ -2213,7 +2223,7 @@ class ElementTest {
     @MethodSource("testOutputSettings")
     fun prettySerializationRoundTrips(settings: Document.OutputSettings?) {
         // https://github.com/jhy/jsoup/issues/1688
-        // tests that repeated html() and parse() does not accumulate errant spaces / newlines
+        // tests that repeated html() and Jsoup.parse() does not accumulate errant spaces / newlines
         val doc = Jsoup.parse("<div>\nFoo\n<p>\nBar\nqux</p></div>\n<script>\n alert('Hello!');\n</script>")
         doc.outputSettings(settings!!)
         val html = doc.html()
@@ -2768,6 +2778,7 @@ class ElementTest {
             Assertions.assertEquals("", el.data())
         }
 
+        @JvmStatic
         private fun testOutputSettings(): Stream<Document.OutputSettings> {
             return Stream.of(
                 Document.OutputSettings().prettyPrint(true).indentAmount(4),

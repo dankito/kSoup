@@ -22,15 +22,18 @@ object NodeTraversor {
         Validate.notNull(visitor)
         Validate.notNull(root)
         var node: Node? = root
-        var depth: Int = 0
+        var depth = 0
+
         while (node != null) {
-            val parent: Node? = node.parentNode() // remember parent to find nodes that get replaced in .head
+            val parent: Node? = node.parentNode // remember parent to find nodes that get replaced in .head
             val origSize: Int = if (parent != null) parent.childNodeSize() else 0
             val next: Node? = node.nextSibling()
+
             visitor.head(node, depth) // visit current node
+
             if (parent != null && !node.hasParent()) { // removed or replaced
                 if (origSize == parent.childNodeSize()) { // replaced
-                    node = parent.childNode(node.siblingIndex()) // replace ditches parent but keeps sibling index
+                    node = parent.childNode(node.siblingIndex) // replace ditches parent but keeps sibling index
                 } else { // removed
                     node = next
                     if (node == null) { // last one, go up
@@ -40,20 +43,19 @@ object NodeTraversor {
                     continue  // don't tail removed
                 }
             }
+
             if (node.childNodeSize() > 0) { // descend
                 node = node.childNode(0)
                 depth++
             } else {
                 while (true) {
-                    assert(
-                        node != null // as depth > 0, will have parent
-                    )
+                    Validate.notNull(node) // as depth > 0, will have parent
                     if (!(node.nextSibling() == null && depth > 0)) break
                     visitor.tail(node, depth) // when no more siblings, ascend
-                    node = node.parentNode()
+                    node = node.parentNode
                     depth--
                 }
-                visitor.tail(node, depth)
+                visitor.tail(node!!, depth)
                 if (node === root) break
                 node = node.nextSibling()
             }
@@ -91,30 +93,29 @@ object NodeTraversor {
             }
             // No siblings, move upwards:
             while (true) {
-                assert(
-                    node != null // depth > 0, so has parent
-                )
+                Validate.notNull(node) // as depth > 0, will have parent
                 if (!(node.nextSibling() == null && depth > 0)) break
                 // 'tail' current node:
                 if (result == NodeFilter.FilterResult.CONTINUE || result == NodeFilter.FilterResult.SKIP_CHILDREN) {
                     result = filter.tail(node, depth)
                     if (result == NodeFilter.FilterResult.STOP) return result
                 }
-                val prev: Node? = node // In case we need to remove it below.
-                node = node.parentNode()
+                val prev = node // In case we need to remove it below.
+                node = node.parentNode
                 depth--
                 if (result == NodeFilter.FilterResult.REMOVE) prev.remove() // Remove AFTER finding parent.
                 result = NodeFilter.FilterResult.CONTINUE // Parent was not pruned.
             }
+
             // 'tail' current node, then proceed with siblings:
             if (result == NodeFilter.FilterResult.CONTINUE || result == NodeFilter.FilterResult.SKIP_CHILDREN) {
-                result = filter.tail(node, depth)
+                result = filter.tail(node!!, depth)
                 if (result == NodeFilter.FilterResult.STOP) return result
             }
             if (node === root) return result
             val prev: Node? = node // In case we need to remove it below.
-            node = node.nextSibling()
-            if (result == NodeFilter.FilterResult.REMOVE) prev.remove() // Remove AFTER finding sibling.
+            node = node?.nextSibling()
+            if (result == NodeFilter.FilterResult.REMOVE) prev?.remove() // Remove AFTER finding sibling.
         }
         // root == null?
         return NodeFilter.FilterResult.CONTINUE

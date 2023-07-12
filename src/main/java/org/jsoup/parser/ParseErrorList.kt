@@ -5,9 +5,8 @@ package org.jsoup.parser
  *
  * @author Jonathan Hedley
  */
-class ParseErrorList internal constructor(private val initialCapacity: Int, val maxSize: Int) : ArrayList<ParseError?>(
-    initialCapacity
-) {
+class ParseErrorList internal constructor(private val initialCapacity: Int, val maxSize: Int)
+    : ArrayList<ParseError>(initialCapacity) {
 
     /**
      * Create a new ParseErrorList with the same settings, but no errors in the list
@@ -19,7 +18,7 @@ class ParseErrorList internal constructor(private val initialCapacity: Int, val 
         return size < maxSize
     }
 
-    public override fun clone(): Any {
+    override fun clone(): Any {
         // all class fields are primitive, so native clone is enough.
         return super.clone()
     }
