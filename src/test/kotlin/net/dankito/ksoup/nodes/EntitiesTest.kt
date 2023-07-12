@@ -81,14 +81,13 @@ class EntitiesTest {
         Assertions.assertEquals("quot", Entities.EscapeMode.xhtml.nameForCodepoint(34))
     }
 
-    @get:Test
-    val byName: Unit
-        get() {
-            Assertions.assertEquals("≫⃒", getByName("nGt"))
-            Assertions.assertEquals("fj", getByName("fjlig"))
-            Assertions.assertEquals("≫", getByName("gg"))
-            Assertions.assertEquals("©", getByName("copy"))
-        }
+    @Test
+    fun byName() {
+        Assertions.assertEquals("≫⃒", getByName("nGt"))
+        Assertions.assertEquals("fj", getByName("fjlig"))
+        Assertions.assertEquals("≫", getByName("gg"))
+        Assertions.assertEquals("©", getByName("copy"))
+    }
 
     @Test
     fun escapeSupplementaryCharacter() {

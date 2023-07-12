@@ -39,35 +39,33 @@ class ElementTest {
         Assertions.assertEquals("Foo", el.id())
     }
 
-    @get:Test
-    val elementsByTagName: Unit
-        get() {
-            val doc = Jsoup.parse(reference)
-            val divs: List<Element> = doc.getElementsByTag("div")
-            Assertions.assertEquals(2, divs.size)
-            Assertions.assertEquals("div1", divs[0].id())
-            Assertions.assertEquals("div2", divs[1].id())
-            val ps: List<Element> = doc.getElementsByTag("p")
-            Assertions.assertEquals(2, ps.size)
-            Assertions.assertEquals("Hello", (ps[0].childNode(0) as TextNode).wholeText)
-            Assertions.assertEquals("Another ", (ps[1].childNode(0) as TextNode).wholeText)
-            val ps2: List<Element> = doc.getElementsByTag("P")
-            Assertions.assertEquals(ps, ps2)
-            val imgs: List<Element> = doc.getElementsByTag("img")
-            Assertions.assertEquals("foo.png", imgs[0].attr("src"))
-            val empty: List<Element> = doc.getElementsByTag("wtf")
-            Assertions.assertEquals(0, empty.size)
-        }
+    @Test
+    fun elementsByTagName() {
+        val doc = Jsoup.parse(reference)
+        val divs: List<Element> = doc.getElementsByTag("div")
+        Assertions.assertEquals(2, divs.size)
+        Assertions.assertEquals("div1", divs[0].id())
+        Assertions.assertEquals("div2", divs[1].id())
+        val ps: List<Element> = doc.getElementsByTag("p")
+        Assertions.assertEquals(2, ps.size)
+        Assertions.assertEquals("Hello", (ps[0].childNode(0) as TextNode).wholeText)
+        Assertions.assertEquals("Another ", (ps[1].childNode(0) as TextNode).wholeText)
+        val ps2: List<Element> = doc.getElementsByTag("P")
+        Assertions.assertEquals(ps, ps2)
+        val imgs: List<Element> = doc.getElementsByTag("img")
+        Assertions.assertEquals("foo.png", imgs[0].attr("src"))
+        val empty: List<Element> = doc.getElementsByTag("wtf")
+        Assertions.assertEquals(0, empty.size)
+    }
 
-    @get:Test
-    val namespacedElementsByTag: Unit
-        get() {
-            val doc = Jsoup.parse("<div><abc:def id=1>Hello</abc:def></div>")
-            val els = doc.getElementsByTag("abc:def")
-            Assertions.assertEquals(1, els.size)
-            Assertions.assertEquals("1", els.first()!!.id())
-            Assertions.assertEquals("abc:def", els.first()!!.tagName())
-        }
+    @Test
+    fun namespacedElementsByTag() {
+        val doc = Jsoup.parse("<div><abc:def id=1>Hello</abc:def></div>")
+        val els = doc.getElementsByTag("abc:def")
+        Assertions.assertEquals(1, els.size)
+        Assertions.assertEquals("1", els.first()!!.id())
+        Assertions.assertEquals("abc:def", els.first()!!.tagName())
+    }
 
     @Test
     fun testGetElementById() {
@@ -1997,15 +1995,14 @@ class ElementTest {
         Assertions.assertEquals(5, row.childNodeSize())
     }
 
-    @get:Test
-    val isBlock: Unit
-        get() {
-            val html = "<div><p><span>Hello</span>"
-            val doc = Jsoup.parse(html)
-            Assertions.assertTrue(doc.selectFirst("div")!!.isBlock)
-            Assertions.assertTrue(doc.selectFirst("p")!!.isBlock)
-            Assertions.assertFalse(doc.selectFirst("span")!!.isBlock)
-        }
+    @Test
+    fun isBlock() {
+        val html = "<div><p><span>Hello</span>"
+        val doc = Jsoup.parse(html)
+        Assertions.assertTrue(doc.selectFirst("div")!!.isBlock)
+        Assertions.assertTrue(doc.selectFirst("p")!!.isBlock)
+        Assertions.assertFalse(doc.selectFirst("span")!!.isBlock)
+    }
 
     @Test
     fun testScriptTextHtmlSetAsData() {
@@ -2546,155 +2543,140 @@ class ElementTest {
         Assertions.assertNull(el.previousElementSibling())
     }
 
-    @get:Test
-    val elementsByAttributeStarting: Unit
-        get() {
-            val doc = Jsoup.parse("<div data-one=1 data-two=2 id=1><p data-one=3 id=2>Text</div><div>")
-            val els = doc.getElementsByAttributeStarting(" data- ")
-            Assertions.assertEquals(2, els.size)
-            Assertions.assertEquals("1", els[0].id())
-            Assertions.assertEquals("2", els[1].id())
-            Assertions.assertEquals(0, doc.getElementsByAttributeStarting("not-data").size)
-        }
+    @Test
+    fun elementsByAttributeStarting() {
+        val doc = Jsoup.parse("<div data-one=1 data-two=2 id=1><p data-one=3 id=2>Text</div><div>")
+        val els = doc.getElementsByAttributeStarting(" data- ")
+        Assertions.assertEquals(2, els.size)
+        Assertions.assertEquals("1", els[0].id())
+        Assertions.assertEquals("2", els[1].id())
+        Assertions.assertEquals(0, doc.getElementsByAttributeStarting("not-data").size)
+    }
 
-    @get:Test
-    val elementsByAttributeValueNot: Unit
-        get() {
-            val doc = Jsoup.parse("<div data-one=1 data-two=2 id=1><p data-one=3 id=2>Text</div><div id=3>")
-            val els = doc.body().getElementsByAttributeValueNot("data-one", "1")
-            Assertions.assertEquals(3, els.size) // the body, p, and last div
-            Assertions.assertEquals("body", els[0].normalName())
-            Assertions.assertEquals("2", els[1].id())
-            Assertions.assertEquals("3", els[2].id())
-        }
+    @Test
+    fun elementsByAttributeValueNot() {
+        val doc = Jsoup.parse("<div data-one=1 data-two=2 id=1><p data-one=3 id=2>Text</div><div id=3>")
+        val els = doc.body().getElementsByAttributeValueNot("data-one", "1")
+        Assertions.assertEquals(3, els.size) // the body, p, and last div
+        Assertions.assertEquals("body", els[0].normalName())
+        Assertions.assertEquals("2", els[1].id())
+        Assertions.assertEquals("3", els[2].id())
+    }
 
-    @get:Test
-    val elementsByAttributeValueStarting: Unit
-        get() {
-            val doc = Jsoup.parse("<a href=one1></a><a href=one2></a><a href=else</a>")
-            val els = doc.getElementsByAttributeValueStarting("href", "one")
-            Assertions.assertEquals(2, els.size)
-            Assertions.assertEquals("one1", els[0].attr("href"))
-            Assertions.assertEquals("one2", els[1].attr("href"))
-        }
+    @Test
+    fun elementsByAttributeValueStarting() {
+        val doc = Jsoup.parse("<a href=one1></a><a href=one2></a><a href=else</a>")
+        val els = doc.getElementsByAttributeValueStarting("href", "one")
+        Assertions.assertEquals(2, els.size)
+        Assertions.assertEquals("one1", els[0].attr("href"))
+        Assertions.assertEquals("one2", els[1].attr("href"))
+    }
 
-    @get:Test
-    val elementsByAttributeValueEnding: Unit
-        get() {
-            val doc = Jsoup.parse("<a href=1one></a><a href=2one></a><a href=else</a>")
-            val els = doc.getElementsByAttributeValueEnding("href", "one")
-            Assertions.assertEquals(2, els.size)
-            Assertions.assertEquals("1one", els[0].attr("href"))
-            Assertions.assertEquals("2one", els[1].attr("href"))
-        }
+    @Test
+    fun elementsByAttributeValueEnding() {
+        val doc = Jsoup.parse("<a href=1one></a><a href=2one></a><a href=else</a>")
+        val els = doc.getElementsByAttributeValueEnding("href", "one")
+        Assertions.assertEquals(2, els.size)
+        Assertions.assertEquals("1one", els[0].attr("href"))
+        Assertions.assertEquals("2one", els[1].attr("href"))
+    }
 
-    @get:Test
-    val elementsByAttributeValueContaining: Unit
-        get() {
-            val doc = Jsoup.parse("<a href=1one></a><a href=2one></a><a href=else</a>")
-            val els = doc.getElementsByAttributeValueContaining("href", "on")
-            Assertions.assertEquals(2, els.size)
-            Assertions.assertEquals("1one", els[0].attr("href"))
-            Assertions.assertEquals("2one", els[1].attr("href"))
-        }
+    @Test
+    fun elementsByAttributeValueContaining() {
+        val doc = Jsoup.parse("<a href=1one></a><a href=2one></a><a href=else</a>")
+        val els = doc.getElementsByAttributeValueContaining("href", "on")
+        Assertions.assertEquals(2, els.size)
+        Assertions.assertEquals("1one", els[0].attr("href"))
+        Assertions.assertEquals("2one", els[1].attr("href"))
+    }
 
-    @get:Test
-    val elementsByAttributeValueMatchingPattern: Unit
-        get() {
-            val doc = Jsoup.parse("<a href=1one></a><a href=2one></a><a href=else</a>")
-            val els = doc.getElementsByAttributeValueMatching("href", Regex("^\\d\\w+"))
-            Assertions.assertEquals(2, els.size)
-            Assertions.assertEquals("1one", els[0].attr("href"))
-            Assertions.assertEquals("2one", els[1].attr("href"))
-        }
+    @Test
+    fun elementsByAttributeValueMatchingPattern() {
+        val doc = Jsoup.parse("<a href=1one></a><a href=2one></a><a href=else</a>")
+        val els = doc.getElementsByAttributeValueMatching("href", Regex("^\\d\\w+"))
+        Assertions.assertEquals(2, els.size)
+        Assertions.assertEquals("1one", els[0].attr("href"))
+        Assertions.assertEquals("2one", els[1].attr("href"))
+    }
 
-    @get:Test
-    val elementsByAttributeValueMatching: Unit
-        get() {
-            val doc = Jsoup.parse("<a href=1one></a><a href=2one></a><a href=else</a>")
-            val els = doc.getElementsByAttributeValueMatching("href", "^\\d\\w+")
-            Assertions.assertEquals(2, els.size)
-            Assertions.assertEquals("1one", els[0].attr("href"))
-            Assertions.assertEquals("2one", els[1].attr("href"))
-        }
+    @Test
+    fun elementsByAttributeValueMatching() {
+        val doc = Jsoup.parse("<a href=1one></a><a href=2one></a><a href=else</a>")
+        val els = doc.getElementsByAttributeValueMatching("href", "^\\d\\w+")
+        Assertions.assertEquals(2, els.size)
+        Assertions.assertEquals("1one", els[0].attr("href"))
+        Assertions.assertEquals("2one", els[1].attr("href"))
+    }
 
-    @get:Test
-    val elementsByAttributeValueMatchingValidation: Unit
-        get() {
-            val doc = Jsoup.parse(reference)
-            val ex: Throwable = Assertions.assertThrows(
-                IllegalArgumentException::class.java
-            ) { doc.getElementsByAttributeValueMatching("key", "\\x") }
-            Assertions.assertEquals("Pattern syntax error: \\x", ex.message)
-        }
+    @Test
+    fun elementsByAttributeValueMatchingValidation() {
+        val doc = Jsoup.parse(reference)
+        val ex: Throwable = Assertions.assertThrows(
+            IllegalArgumentException::class.java
+        ) { doc.getElementsByAttributeValueMatching("key", "\\x") }
+        Assertions.assertEquals("Pattern syntax error: \\x", ex.message)
+    }
 
-    @get:Test
-    val elementsByIndexEquals: Unit
-        get() {
-            val doc = Jsoup.parse("<a href=1one></a><a href=2one></a><a href=else</a>")
-            val els = doc.body().getElementsByIndexEquals(1)
-            Assertions.assertEquals(2, els.size)
-            Assertions.assertEquals("body", els[0].normalName())
-            Assertions.assertEquals("2one", els[1].attr("href"))
-        }
+    @Test
+    fun elementsByIndexEquals() {
+        val doc = Jsoup.parse("<a href=1one></a><a href=2one></a><a href=else</a>")
+        val els = doc.body().getElementsByIndexEquals(1)
+        Assertions.assertEquals(2, els.size)
+        Assertions.assertEquals("body", els[0].normalName())
+        Assertions.assertEquals("2one", els[1].attr("href"))
+    }
 
-    @get:Test
-    val elementsContainingText: Unit
-        get() {
-            val doc = Jsoup.parse("<div id=1>One</div><div>Two</div>")
-            val els = doc.body().getElementsContainingText("one")
-            Assertions.assertEquals(2, els.size)
-            Assertions.assertEquals("body", els[0].normalName())
-            Assertions.assertEquals("1", els[1].id())
-        }
+    @Test
+    fun elementsContainingText() {
+        val doc = Jsoup.parse("<div id=1>One</div><div>Two</div>")
+        val els = doc.body().getElementsContainingText("one")
+        Assertions.assertEquals(2, els.size)
+        Assertions.assertEquals("body", els[0].normalName())
+        Assertions.assertEquals("1", els[1].id())
+    }
 
-    @get:Test
-    val elementsContainingOwnText: Unit
-        get() {
-            val doc = Jsoup.parse("<div id=1>One</div><div>Two</div>")
-            val els = doc.body().getElementsContainingOwnText("one")
-            Assertions.assertEquals(1, els.size)
-            Assertions.assertEquals("1", els[0].id())
-        }
+    @Test
+    fun elementsContainingOwnText() {
+        val doc = Jsoup.parse("<div id=1>One</div><div>Two</div>")
+        val els = doc.body().getElementsContainingOwnText("one")
+        Assertions.assertEquals(1, els.size)
+        Assertions.assertEquals("1", els[0].id())
+    }
 
-    @get:Test
-    val elementsMatchingTextValidation: Unit
-        get() {
-            val doc = Jsoup.parse(reference)
-            val ex: Throwable = Assertions.assertThrows(
-                IllegalArgumentException::class.java
-            ) { doc.getElementsMatchingText("\\x") }
-            Assertions.assertEquals("Pattern syntax error: \\x", ex.message)
-        }
+    @Test
+    fun elementsMatchingTextValidation() {
+        val doc = Jsoup.parse(reference)
+        val ex: Throwable = Assertions.assertThrows(
+            IllegalArgumentException::class.java
+        ) { doc.getElementsMatchingText("\\x") }
+        Assertions.assertEquals("Pattern syntax error: \\x", ex.message)
+    }
 
-    @get:Test
-    val elementsMatchingText: Unit
-        get() {
-            val doc = Jsoup.parse("<div id=1>One</div><div>Two</div>")
-            val els = doc.body().getElementsMatchingText("O\\w+")
-            Assertions.assertEquals(2, els.size)
-            Assertions.assertEquals("body", els[0].normalName())
-            Assertions.assertEquals("1", els[1].id())
-        }
+    @Test
+    fun elementsMatchingText() {
+        val doc = Jsoup.parse("<div id=1>One</div><div>Two</div>")
+        val els = doc.body().getElementsMatchingText("O\\w+")
+        Assertions.assertEquals(2, els.size)
+        Assertions.assertEquals("body", els[0].normalName())
+        Assertions.assertEquals("1", els[1].id())
+    }
 
-    @get:Test
-    val elementsMatchingOwnText: Unit
-        get() {
-            val doc = Jsoup.parse("<div id=1>One</div><div>Two</div>")
-            val els = doc.body().getElementsMatchingOwnText("O\\w+")
-            Assertions.assertEquals(1, els.size)
-            Assertions.assertEquals("1", els[0].id())
-        }
+    @Test
+    fun elementsMatchingOwnText() {
+        val doc = Jsoup.parse("<div id=1>One</div><div>Two</div>")
+        val els = doc.body().getElementsMatchingOwnText("O\\w+")
+        Assertions.assertEquals(1, els.size)
+        Assertions.assertEquals("1", els[0].id())
+    }
 
-    @get:Test
-    val elementsMatchingOwnTextValidation: Unit
-        get() {
-            val doc = Jsoup.parse(reference)
-            val ex: Throwable = Assertions.assertThrows(
-                IllegalArgumentException::class.java
-            ) { doc.getElementsMatchingOwnText("\\x") }
-            Assertions.assertEquals("Pattern syntax error: \\x", ex.message)
-        }
+    @Test
+    fun elementsMatchingOwnTextValidation() {
+        val doc = Jsoup.parse(reference)
+        val ex: Throwable = Assertions.assertThrows(
+            IllegalArgumentException::class.java
+        ) { doc.getElementsMatchingOwnText("\\x") }
+        Assertions.assertEquals("Pattern syntax error: \\x", ex.message)
+    }
 
     @Test
     fun hasText() {

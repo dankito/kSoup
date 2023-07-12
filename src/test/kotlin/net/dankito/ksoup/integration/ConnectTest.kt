@@ -454,15 +454,14 @@ class ConnectTest {
         Assertions.assertEquals("there", ihVal("Hello", doc))
     }
 
-    @get:Throws(IOException::class)
-    @get:Test
-    val utf8Bom: Unit
-        get() {
-            val con = Jsoup.connect(FileServlet.Companion.urlTo("/bomtests/bom_utf8.html"))
-            val doc = con.get()
-            Assertions.assertEquals("UTF-8", con.response().charset())
-            Assertions.assertEquals("OK", doc.title())
-        }
+    @Throws(IOException::class)
+    @Test
+    fun utf8Bom() {
+        val con = Jsoup.connect(FileServlet.Companion.urlTo("/bomtests/bom_utf8.html"))
+        val doc = con.get()
+        Assertions.assertEquals("UTF-8", con.response().charset())
+        Assertions.assertEquals("OK", doc.title())
+    }
 
     @Test
     fun testBinaryContentTypeThrowsException() {

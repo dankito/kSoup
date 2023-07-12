@@ -12,11 +12,10 @@ class CommentTest {
         Assertions.assertEquals("#comment", comment.nodeName())
     }
 
-    @get:Test
-    val data: Unit
-        get() {
-            Assertions.assertEquals(" This is one heck of a comment! ", comment.data)
-        }
+    @Test
+    fun data() {
+        Assertions.assertEquals(" This is one heck of a comment! ", comment.data)
+    }
 
     @Test
     fun testToString() {
@@ -64,12 +63,11 @@ class CommentTest {
         Assertions.assertNotEquals(c1.data, comment.data)
     }
 
-    @get:Test
-    val isXmlDeclaration: Unit
-        get() {
-            Assertions.assertFalse(comment.isXmlDeclaration)
-            Assertions.assertTrue(decl.isXmlDeclaration)
-        }
+    @Test
+    fun isXmlDeclaration() {
+        Assertions.assertFalse(comment.isXmlDeclaration)
+        Assertions.assertTrue(decl.isXmlDeclaration)
+    }
 
     @Test
     fun asXmlDeclaration() {
