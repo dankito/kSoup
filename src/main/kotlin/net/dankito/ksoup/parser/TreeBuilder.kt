@@ -1,11 +1,11 @@
 package net.dankito.ksoup.parser
 
 import net.dankito.ksoup.helper.Validate
+import net.dankito.ksoup.jvm.Reader
 import net.dankito.ksoup.nodes.*
 import net.dankito.ksoup.nodes.Range.Position
 import net.dankito.ksoup.parser.Token.EndTag
 import net.dankito.ksoup.parser.Token.StartTag
-import java.io.Reader
 
 /**
  * @author Jonathan Hedley

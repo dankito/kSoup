@@ -1,10 +1,10 @@
 package net.dankito.ksoup.parser
 
+import net.dankito.ksoup.jvm.Reader
+import net.dankito.ksoup.jvm.StringReader
 import net.dankito.ksoup.nodes.Document
 import net.dankito.ksoup.nodes.Element
 import net.dankito.ksoup.nodes.Node
-import java.io.Reader
-import java.io.StringReader
 
 /**
  * Parses HTML or XML into a [net.dankito.ksoup.nodes.Document]. Generally, it is simpler to use one of the parse methods in

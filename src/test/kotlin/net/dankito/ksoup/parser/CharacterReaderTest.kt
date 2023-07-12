@@ -2,6 +2,7 @@ package net.dankito.ksoup.parser
 
 import net.dankito.ksoup.UncheckedIOException
 import net.dankito.ksoup.integration.ParseTest
+import net.dankito.ksoup.jvm.StringReader
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.io.*
@@ -380,8 +381,7 @@ class CharacterReaderTest {
             sb.append("!")
         }
         val s = sb.toString()
-        val br = BufferedReader(StringReader(s))
-        val r = CharacterReader(br)
+        val r = CharacterReader(StringReader(s))
         for (i in 0 until loopCount) {
             val pull = r.consumeTo('!')
             Assertions.assertEquals(note, pull)

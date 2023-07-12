@@ -1,8 +1,8 @@
 package net.dankito.ksoup.parser
 
+import net.dankito.ksoup.jvm.Reader
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.io.Reader
 
 class HtmlTreeBuilderTest {
     @Test

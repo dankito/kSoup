@@ -1,10 +1,10 @@
 package net.dankito.ksoup.parser
 
 import net.dankito.ksoup.helper.Validate
+import net.dankito.ksoup.jvm.Reader
+import net.dankito.ksoup.jvm.StringReader
 import net.dankito.ksoup.nodes.*
 import net.dankito.ksoup.parser.Token.StartTag
-import java.io.Reader
-import java.io.StringReader
 
 /**
  * Use the `XmlTreeBuilder` when you want to parse XML without any of the HTML DOM rules being applied to the

@@ -4,6 +4,7 @@ import net.dankito.ksoup.UncheckedIOException
 import net.dankito.ksoup.internal.ConstrainableInputStream
 import net.dankito.ksoup.internal.Normalizer
 import net.dankito.ksoup.internal.StringUtil
+import net.dankito.ksoup.jvm.JavaIoReaderWrapper
 import net.dankito.ksoup.nodes.*
 import net.dankito.ksoup.parser.Parser
 import net.dankito.ksoup.select.Elements
@@ -157,7 +158,7 @@ object DataUtil {
                     val defaultDecoded: CharBuffer = UTF_8.decode(firstBytes)
                     if (defaultDecoded.hasArray()) {
                         val reader = CharArrayReader(defaultDecoded.array(), defaultDecoded.arrayOffset(), defaultDecoded.limit())
-                        doc = parser.parseInput(reader, baseUri)
+                        doc = parser.parseInput(JavaIoReaderWrapper(reader), baseUri)
                     } else {
                         doc = parser.parseInput(defaultDecoded.toString(), baseUri)
                     }
@@ -205,7 +206,7 @@ object DataUtil {
                         Validate.isTrue(skipped == 1L) // WTF if this fails.
                     }
                     try {
-                        doc = parser.parseInput(reader, baseUri)
+                        doc = parser.parseInput(JavaIoReaderWrapper(reader), baseUri)
                     } catch (e: UncheckedIOException) {
                         // io exception when parsing (not seen before because reading the stream as we go)
                         throw e.ioException()

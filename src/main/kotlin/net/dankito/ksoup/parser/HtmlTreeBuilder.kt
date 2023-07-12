@@ -3,11 +3,11 @@ package net.dankito.ksoup.parser
 import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.internal.StringUtil
 import net.dankito.ksoup.internal.StringUtil.inSorted
+import net.dankito.ksoup.jvm.Reader
+import net.dankito.ksoup.jvm.StringReader
 import net.dankito.ksoup.nodes.*
 import net.dankito.ksoup.parser.HtmlTreeBuilderState.Constants.InTableFoster
 import net.dankito.ksoup.parser.Token.StartTag
-import java.io.Reader
-import java.io.StringReader
 
 /**
  * HTML Tree Builder; creates a DOM from Tokens.

@@ -55,8 +55,8 @@ class ConstrainableInputStream private constructor(`in`: InputStream?, bufferSiz
         Validate.isTrue(max >= 0, "maxSize must be 0 (unlimited) or larger")
         val localCapped: Boolean = max > 0 // still possibly capped in total stream
         val bufferSize: Int = if (localCapped && max < DefaultSize) max else DefaultSize
-        val readBuffer: ByteArray = ByteArray(bufferSize)
-        val outStream: ByteArrayOutputStream = ByteArrayOutputStream(bufferSize)
+        val readBuffer = ByteArray(bufferSize)
+        val outStream = ByteArrayOutputStream(bufferSize)
         var read: Int
         var remaining: Int = max
         while (true) {
@@ -75,7 +75,7 @@ class ConstrainableInputStream private constructor(`in`: InputStream?, bufferSiz
     }
 
     @Throws(IOException::class)
-    public override fun reset() {
+    override fun reset() {
         super.reset()
         remaining = maxSize - markpos
     }

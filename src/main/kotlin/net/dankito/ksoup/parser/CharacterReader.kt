@@ -2,9 +2,9 @@ package net.dankito.ksoup.parser
 
 import net.dankito.ksoup.UncheckedIOException
 import net.dankito.ksoup.helper.Validate
+import net.dankito.ksoup.jvm.Reader
+import net.dankito.ksoup.jvm.StringReader
 import java.io.IOException
-import java.io.Reader
-import java.io.StringReader
 import kotlin.math.abs
 import kotlin.math.min
 
