@@ -215,11 +215,12 @@ class TokenQueue(private var queue: String) {
     fun chompBalanced(open: Char, close: Char): String {
         var start: Int = -1
         var end: Int = -1
-        var depth: Int = 0
+        var depth = 0
         var last: Char = 0.toChar()
-        var inSingleQuote: Boolean = false
-        var inDoubleQuote: Boolean = false
-        var inRegexQE: Boolean = false // regex \Q .. \E escapes from Pattern.quote()
+        var inSingleQuote = false
+        var inDoubleQuote = false
+        var inRegexQE = false // regex \Q .. \E escapes from Regex.escape()
+
         do {
             if (isEmpty) break
             val c: Char = consume()

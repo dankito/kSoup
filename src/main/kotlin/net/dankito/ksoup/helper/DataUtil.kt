@@ -15,8 +15,6 @@ import java.nio.CharBuffer
 import java.nio.charset.Charset
 import java.nio.charset.IllegalCharsetNameException
 import java.util.*
-import java.util.regex.Matcher
-import java.util.regex.Pattern
 import java.util.zip.GZIPInputStream
 import javax.annotation.WillClose
 
@@ -26,7 +24,7 @@ import javax.annotation.WillClose
  */
 object DataUtil {
 
-    private val charsetPattern: Pattern = Pattern.compile("(?i)\\bcharset=\\s*(?:[\"'])?([^\\s,;\"']*)")
+    private val charsetRegex = Regex("(?i)\\bcharset=\\s*(?:[\"'])?([^\\s,;\"']*)")
     private val illegalCharsetCharacters = "[\"']".toRegex()
 
     @JvmField
@@ -254,9 +252,9 @@ object DataUtil {
     @JvmStatic
     fun getCharsetFromContentType(contentType: String?): String? {
         if (contentType == null) return null
-        val m: Matcher = charsetPattern.matcher(contentType)
-        if (m.find()) {
-            var charset: String = m.group(1).trim({ it <= ' ' })
+        val matchResult = charsetRegex.find(contentType)
+        if (matchResult != null) {
+            var charset: String = matchResult.groupValues[1].trim()
             charset = charset.replace("charset=", "")
             return validateCharset(charset)
         }

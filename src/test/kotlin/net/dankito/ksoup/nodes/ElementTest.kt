@@ -2590,7 +2590,7 @@ class ElementTest {
     }
 
     @Test
-    fun elementsByAttributeValueMatchingPattern() {
+    fun elementsByAttributeValueMatchingRegex() {
         val doc = Jsoup.parse("<a href=1one></a><a href=2one></a><a href=else</a>")
         val els = doc.getElementsByAttributeValueMatching("href", Regex("^\\d\\w+"))
         Assertions.assertEquals(2, els.size)
@@ -2613,7 +2613,7 @@ class ElementTest {
         val ex: Throwable = Assertions.assertThrows(
             IllegalArgumentException::class.java
         ) { doc.getElementsByAttributeValueMatching("key", "\\x") }
-        Assertions.assertEquals("Pattern syntax error: \\x", ex.message)
+        Assertions.assertEquals("Regex syntax error: \\x", ex.message)
     }
 
     @Test
@@ -2648,7 +2648,7 @@ class ElementTest {
         val ex: Throwable = Assertions.assertThrows(
             IllegalArgumentException::class.java
         ) { doc.getElementsMatchingText("\\x") }
-        Assertions.assertEquals("Pattern syntax error: \\x", ex.message)
+        Assertions.assertEquals("Regex syntax error: \\x", ex.message)
     }
 
     @Test
@@ -2674,7 +2674,7 @@ class ElementTest {
         val ex: Throwable = Assertions.assertThrows(
             IllegalArgumentException::class.java
         ) { doc.getElementsMatchingOwnText("\\x") }
-        Assertions.assertEquals("Pattern syntax error: \\x", ex.message)
+        Assertions.assertEquals("Regex syntax error: \\x", ex.message)
     }
 
     @Test

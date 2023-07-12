@@ -89,7 +89,7 @@ import java.util.*
 </table> *
  *
  *
- * A word on using regular expressions in these selectors: depending on the content of the regex, you will need to quote the pattern using **`Pattern.quote("regex")`** for it to parse correctly through both the selector parser and the regex parser. E.g. `String query = "div:matches(" + Pattern.quote(regex) + ");"`.
+ * A word on using regular expressions in these selectors: depending on the content of the regex, you will need to escape the pattern using **`Regex.escape("regex")`** for it to parse correctly through both the selector parser and the regex parser. E.g. `String query = "div:matches(" + Pattern.quote(regex) + ");"`.
  *
  * **Escaping special characters:** to match a tag, ID, or other selector that does not follow the regular CSS syntax, the query must be escaped with the `\` character. For example, to match by ID `<p id="i.d">`, use `document.select("#i\\.d")`.
  *

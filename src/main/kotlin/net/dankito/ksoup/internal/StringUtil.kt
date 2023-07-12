@@ -3,7 +3,6 @@ package net.dankito.ksoup.internal
 import net.dankito.ksoup.helper.Validate
 import java.net.*
 import java.util.*
-import java.util.regex.Pattern
 import kotlin.math.min
 
 /**
@@ -11,6 +10,7 @@ import kotlin.math.min
  * notice.
  */
 object StringUtil {
+
     // memoised padding up to 21 (blocks 0 to 20 spaces)
     @JvmField
     val padding = arrayOf(
@@ -297,7 +297,7 @@ object StringUtil {
         return plane < 17
     }
 
-    private val extraDotSegmentsPattern = Regex("^/((\\.{1,2}/)+)")
+    private val extraDotSegmentsRegex = Regex("^/((\\.{1,2}/)+)")
 
     /**
      * Create a new absolute URL, from a provided existing absolute URL and a relative URL component.
@@ -314,7 +314,7 @@ object StringUtil {
     }
     // workaround: //example.com + ./foo = //example.com/./foo, not //example.com/foo
     val url = URL(base, relUrl)
-    var fixedFile = extraDotSegmentsPattern.replaceFirst(url.file, "/")
+    var fixedFile = extraDotSegmentsRegex.replaceFirst(url.file, "/")
     if (url.ref != null) {
       fixedFile = fixedFile + "#" + url.ref
     }
@@ -357,10 +357,10 @@ object StringUtil {
     private val validUriScheme = Regex("^[a-zA-Z][a-zA-Z0-9+-.]*:")
 
 
-    private val controlChars = Pattern.compile("[\\x00-\\x1f]*") // matches ascii 0 - 31, to strip from url
+    private val controlChars = Regex("[\\x00-\\x1f]*") // matches ascii 0 - 31, to strip from url
 
-    private fun stripControlChars(input: String?): String {
-        return controlChars.matcher(input).replaceAll("")
+    private fun stripControlChars(input: String): String {
+        return controlChars.replace(input, "")
     }
 
     private val threadLocalBuilders: ThreadLocal<Stack<StringBuilder>> = object : ThreadLocal<Stack<StringBuilder>>() {

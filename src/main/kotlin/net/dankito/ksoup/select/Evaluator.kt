@@ -229,12 +229,12 @@ abstract class Evaluator protected constructor() {
     /**
      * Evaluator for attribute name/value matching (value regex matching)
      */
-    class AttributeWithValueMatching(key: String?, private val pattern: Regex) : Evaluator() {
+    class AttributeWithValueMatching(key: String?, private val regex: Regex) : Evaluator() {
 
         val key = Normalizer.normalize(key)
 
         override fun matches(root: Element, element: Element): Boolean {
-            return element.hasAttr(key) && pattern.find(element.attr(key)) != null
+            return element.hasAttr(key) && regex.find(element.attr(key)) != null
         }
 
         override fun cost(): Int {
@@ -242,7 +242,7 @@ abstract class Evaluator protected constructor() {
         }
 
         override fun toString(): String {
-            return "[$key~=$pattern]"
+            return "[$key~=$regex]"
         }
     }
 

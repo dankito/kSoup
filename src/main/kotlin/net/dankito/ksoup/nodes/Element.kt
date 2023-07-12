@@ -12,8 +12,7 @@ import java.lang.ref.WeakReference
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
-import java.util.regex.Pattern
-import java.util.regex.PatternSyntaxException
+import kotlin.collections.LinkedHashSet
 
 /**
  * An HTML Element consists of a tag name, attributes, and child nodes (including text nodes and other elements).
@@ -1098,11 +1097,11 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
     /**
      * Find elements that have an attribute whose value matches the supplied regular expression.
      * @param key name of the attribute
-     * @param pattern compiled regular expression to match against attribute values
+     * @param Regex compiled regular expression to match against attribute values
      * @return elements that have attributes matching this regular expression
      */
-    fun getElementsByAttributeValueMatching(key: String, pattern: Regex): Elements {
-        return Collector.collect(Evaluator.AttributeWithValueMatching(key, pattern), this)
+    fun getElementsByAttributeValueMatching(key: String, regex: Regex): Elements {
+        return Collector.collect(Evaluator.AttributeWithValueMatching(key, regex), this)
     }
 
     /**
@@ -1114,8 +1113,8 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
     fun getElementsByAttributeValueMatching(key: String, regex: String): Elements {
         val regex = try {
             Regex(regex)
-        } catch (e: PatternSyntaxException) {
-            throw IllegalArgumentException("Pattern syntax error: $regex", e)
+        } catch (e: Exception) {
+            throw IllegalArgumentException("Regex syntax error: $regex", e)
         }
         return getElementsByAttributeValueMatching(key, regex)
     }
@@ -1171,12 +1170,12 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
 
     /**
      * Find elements whose text matches the supplied regular expression.
-     * @param pattern regular expression to match text against
+     * @param Regex regular expression to match text against
      * @return elements matching the supplied regular expression.
      * @see Element.text
      */
-    fun getElementsMatchingText(pattern: Regex): Elements {
-        return Collector.collect(Evaluator.Matches(pattern), this)
+    fun getElementsMatchingText(regex: Regex): Elements {
+        return Collector.collect(Evaluator.Matches(regex), this)
     }
 
     /**
@@ -1188,20 +1187,20 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
     fun getElementsMatchingText(regex: String): Elements {
         val regex = try {
             Regex(regex)
-        } catch (e: PatternSyntaxException) {
-            throw IllegalArgumentException("Pattern syntax error: $regex", e)
+        } catch (e: Exception) {
+            throw IllegalArgumentException("Regex syntax error: $regex", e)
         }
         return getElementsMatchingText(regex)
     }
 
     /**
      * Find elements whose own text matches the supplied regular expression.
-     * @param pattern regular expression to match text against
+     * @param Regex regular expression to match text against
      * @return elements matching the supplied regular expression.
      * @see Element.ownText
      */
-    fun getElementsMatchingOwnText(pattern: Regex): Elements {
-        return Collector.collect(Evaluator.MatchesOwn(pattern), this)
+    fun getElementsMatchingOwnText(regex: Regex): Elements {
+        return Collector.collect(Evaluator.MatchesOwn(regex), this)
     }
 
     /**
@@ -1213,8 +1212,8 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
     fun getElementsMatchingOwnText(regex: String): Elements {
         val regex = try {
             Regex(regex)
-        } catch (e: PatternSyntaxException) {
-            throw IllegalArgumentException("Pattern syntax error: $regex", e)
+        } catch (e: Exception) {
+            throw IllegalArgumentException("Regex syntax error: $regex", e)
         }
         return getElementsMatchingOwnText(regex)
     }
@@ -1417,7 +1416,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      */
     fun classNames(): MutableSet<String> {
         val names = ClassSplit.split(className())
-        val classNames: MutableSet<String> = LinkedHashSet(Arrays.asList(*names))
+        val classNames = LinkedHashSet(names)
         classNames.remove("") // if classNames() was empty, would include an empty class
         return classNames
     }
@@ -1722,9 +1721,9 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
     }
 
     companion object {
-        private val EmptyChildren: List<Element> = emptyList<Element>()
-        private val ClassSplit = Pattern.compile("\\s+")
-        private val BaseUriKey: String = Attributes.Companion.internalKey("baseUri")
+        private val EmptyChildren: List<Element> = emptyList()
+        private val ClassSplit = Regex("\\s+")
+        private val BaseUriKey: String = Attributes.internalKey("baseUri")
 
         private fun searchUpForAttribute(start: Element, key: String): String {
             var element: Element? = start

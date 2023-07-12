@@ -2,7 +2,6 @@ package net.dankito.ksoup.helper
 
 import net.dankito.ksoup.Connection
 import net.dankito.ksoup.HttpStatusException
-import net.dankito.ksoup.UncheckedIOException
 import net.dankito.ksoup.UnsupportedMimeTypeException
 import net.dankito.ksoup.internal.ConstrainableInputStream
 import net.dankito.ksoup.internal.Normalizer
@@ -16,7 +15,6 @@ import java.nio.Buffer
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
 import java.nio.charset.IllegalCharsetNameException
-import java.util.regex.Pattern
 import java.util.zip.GZIPInputStream
 import java.util.zip.Inflater
 import java.util.zip.InflaterInputStream
@@ -857,7 +855,7 @@ class HttpConnection : Connection {
             /*
          * Matches XML content types (like text/xml, application/xhtml+xml;charset=UTF8, etc)
          */
-            private val xmlContentTypeRxp: Pattern = Pattern.compile("(application|text)/\\w*\\+?xml.*")
+            private val xmlContentTypeRegex = Regex("(application|text)/\\w*\\+?xml.*")
 
             @JvmOverloads
             fun execute(req: Request, previousResponse: Response? = null): Response {
@@ -928,19 +926,17 @@ class HttpConnection : Connection {
 
                     // check that we can handle the returned content type; if not, abort before fetching it
                     val contentType: String? = res.contentType()
-                    if (((contentType != null
-                                ) && !req.ignoreContentType()
-                                && !contentType.startsWith("text/")
-                                && !xmlContentTypeRxp.matcher(contentType).matches())
-                    ) throw UnsupportedMimeTypeException(
-                        "Unhandled content type. Must be text/*, application/xml, or application/*+xml",
-                        contentType, req.url().toString()
-                    )
+                    if (contentType != null && !req.ignoreContentType() && !contentType.startsWith("text/") && xmlContentTypeRegex.find(contentType) == null) {
+                        throw UnsupportedMimeTypeException("Unhandled content type. Must be text/*, application/xml, or application/*+xml", contentType, req.url().toString())
+                    }
 
                     // switch to the XML parser if content type is xml and not parser not explicitly set
-                    if (contentType != null && xmlContentTypeRxp.matcher(contentType).matches()) {
-                        if (!req.parserDefined) req.parser(Parser.Companion.xmlParser())
+                    if (contentType != null && xmlContentTypeRegex.find(contentType) != null) {
+                        if (!req.parserDefined) {
+                            req.parser(Parser.xmlParser())
+                        }
                     }
+
                     res.charset =
                         DataUtil.getCharsetFromContentType(res.contentType) // may be null, readInputStream deals with it
                     if (conn.getContentLength() != 0 && req.method() != Connection.Method.HEAD) { // -1 means unknown, chunked. sun throws an IO exception on 500 response with no content when trying to read body

@@ -3,12 +3,12 @@ package net.dankito.ksoup.parser
 import net.dankito.ksoup.Jsoup
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.util.regex.Pattern
 
 /**
  * Token queue tests.
  */
 class TokenQueueTest {
+
     @Test
     fun chompBalanced() {
         val tq = TokenQueue(":contains(one (two) three) four")
@@ -86,19 +86,19 @@ class TokenQueueTest {
 
     @Test
     fun testNestedQuotes() {
-        TokenQueueTest.Companion.validateNestedQuotes(
+        validateNestedQuotes(
             "<html><body><a id=\"identifier\" onclick=\"func('arg')\" /></body></html>",
             "a[onclick*=\"('arg\"]"
         )
-        TokenQueueTest.Companion.validateNestedQuotes(
+        validateNestedQuotes(
             "<html><body><a id=\"identifier\" onclick=func('arg') /></body></html>",
             "a[onclick*=\"('arg\"]"
         )
-        TokenQueueTest.Companion.validateNestedQuotes(
+        validateNestedQuotes(
             "<html><body><a id=\"identifier\" onclick='func(\"arg\")' /></body></html>",
             "a[onclick*='(\"arg']"
         )
-        TokenQueueTest.Companion.validateNestedQuotes(
+        validateNestedQuotes(
             "<html><body><a id=\"identifier\" onclick=func(\"arg\") /></body></html>",
             "a[onclick*='(\"arg']"
         )
@@ -117,19 +117,19 @@ class TokenQueueTest {
     }
 
     @Test
-    fun testQuotedPattern() {
+    fun testLiteralRegex() {
         val doc = Jsoup.parse("<div>\\) foo1</div><div>( foo2</div><div>1) foo3</div>")
         Assertions.assertEquals(
             "\n\\) foo1",
-            doc.select("div:matches(" + Pattern.quote("\\)") + ")")[0].childNode(0).toString()
+            doc.select("div:matches(" + Regex.escape("\\)") + ")")[0].childNode(0).toString()
         )
         Assertions.assertEquals(
             "\n( foo2",
-            doc.select("div:matches(" + Pattern.quote("(") + ")")[0].childNode(0).toString()
+            doc.select("div:matches(" + Regex.escape("(") + ")")[0].childNode(0).toString()
         )
         Assertions.assertEquals(
             "\n1) foo3",
-            doc.select("div:matches(" + Pattern.quote("1)") + ")")[0].childNode(0).toString()
+            doc.select("div:matches(" + Regex.escape("1)") + ")")[0].childNode(0).toString()
         )
     }
 
