@@ -1,7 +1,9 @@
 package net.dankito.ksoup.internal
 
 import net.dankito.ksoup.helper.Validate
-import java.io.*
+import java.io.InputStream
+import java.io.BufferedInputStream
+import java.io.ByteArrayOutputStream
 import java.net.SocketTimeoutException
 import java.nio.ByteBuffer
 

@@ -1,8 +1,8 @@
 package net.dankito.ksoup.helper
 
 import net.dankito.ksoup.internal.StringUtil
+import net.dankito.ksoup.jvm.ImmutableMap
 import java.net.*
-import java.util.*
 
 /**
  * Helper functions to support the Cookie Manager / Cookie Storage in HttpConnection.
@@ -10,8 +10,9 @@ import java.util.*
  * @since 1.14.1
  */
 internal object CookieUtil {
+
     // cookie manager get() wants request headers but doesn't use them, so we just pass a dummy object here
-    private val EmptyRequestHeaders: Map<String, List<String>> = Collections.unmodifiableMap(HashMap())
+    private val EmptyRequestHeaders: Map<String, List<String>> = ImmutableMap(HashMap())
     private val Sep: String = "; "
     private val CookieName: String = "Cookie"
     private val Cookie2Name: String = "Cookie2"

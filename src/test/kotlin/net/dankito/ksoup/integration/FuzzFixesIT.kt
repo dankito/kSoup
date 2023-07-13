@@ -1,12 +1,12 @@
 package net.dankito.ksoup.integration
 
 import net.dankito.ksoup.Jsoup
+import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.parser.Parser.Companion.xmlParser
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import java.io.*
-import java.util.stream.Stream
+import java.io.File
 
 /**
  * Tests fixes for issues raised by the [OSS Fuzz project](https://oss-fuzz.com/testcases?project=jsoup). As
@@ -48,11 +48,13 @@ class FuzzFixesIT {
         var testDir: File = ParseTest.getFile("/fuzztests/")
 
         @JvmStatic
-        private fun testFiles(): Stream<File> {
-            val files: Array<File> = testDir.listFiles()
+        private fun testFiles(): List<File> {
+            val files = testDir.listFiles()
             Assertions.assertNotNull(files)
+            Validate.notNull(files)
             Assertions.assertTrue(files.size > 10)
-            return Stream.of(*files)
+
+            return files.toList()
         }
     }
 }

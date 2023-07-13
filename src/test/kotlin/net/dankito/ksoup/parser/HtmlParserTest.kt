@@ -19,8 +19,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import java.io.*
-import java.util.stream.Stream
+import java.io.File
+import java.io.ByteArrayInputStream
 
 /**
  * Tests for the Parser
@@ -28,6 +28,7 @@ import java.util.stream.Stream
  * @author Jonathan Hedley, jonathan@hedley.net
  */
 class HtmlParserTest {
+
     @Test
     fun parsesSimpleDocument() {
         val html =
@@ -2189,8 +2190,8 @@ class HtmlParserTest {
 
     companion object {
         @JvmStatic
-        private fun dupeAttributeData(): Stream<Arguments> {
-            return Stream.of(
+        private fun dupeAttributeData(): List<Arguments> {
+            return listOf(
                 Arguments.of(
                     "<p One=One ONE=Two Two=two one=Three One=Four two=Five>Text</p>",
                     "<p one=\"One\" two=\"two\">Text</p>"

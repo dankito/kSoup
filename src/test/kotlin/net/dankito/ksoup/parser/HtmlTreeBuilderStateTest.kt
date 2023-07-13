@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.lang.reflect.Modifier
-import java.util.*
 
 class HtmlTreeBuilderStateTest {
     @Test
@@ -107,8 +106,8 @@ class HtmlTreeBuilderStateTest {
 
         fun ensureSorted(constants: List<Array<Any>>) {
             for (array in constants) {
-                val copy = Arrays.copyOf(array, array.size)
-                Arrays.sort(array)
+                val copy = array.copyOf()
+                copy.sort()
                 Assertions.assertArrayEquals(array, copy)
             }
         }

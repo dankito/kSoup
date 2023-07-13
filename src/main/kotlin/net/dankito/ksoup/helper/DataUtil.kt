@@ -14,10 +14,9 @@ import java.io.*
 import java.nio.Buffer
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
-import java.nio.charset.IllegalCharsetNameException
-import java.util.*
 import java.util.zip.GZIPInputStream
 import javax.annotation.WillClose
+import kotlin.random.Random
 
 /**
  * Internal static utilities for handling data.
@@ -276,7 +275,7 @@ object DataUtil {
             if (Charset.isSupported(cs)) {
                 return cs
             }
-        } catch (e: IllegalCharsetNameException) {
+        } catch (e: Exception) {
             // if our this charset matching fails.... we just take the default
         }
         return null
@@ -288,7 +287,7 @@ object DataUtil {
     @JvmStatic
     fun mimeBoundary(): String {
         val mime = StringUtil.borrowBuilder()
-        val rand = Random()
+        val rand = Random.Default
 
         for (i in 0 until boundaryLength) {
             mime.append(mimeBoundaryChars.get(rand.nextInt(mimeBoundaryChars.size)))

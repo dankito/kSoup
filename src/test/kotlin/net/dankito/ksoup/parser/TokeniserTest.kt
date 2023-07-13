@@ -9,9 +9,9 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.nio.charset.Charset
-import java.util.*
 
 class TokeniserTest {
+
     @Test
     fun bufferUpInAttributeVal() {
         // https://github.com/jhy/jsoup/issues/967
@@ -69,7 +69,7 @@ class TokeniserTest {
         Assertions.assertNotNull(el)
         Assertions.assertEquals("One", el!!.text())
         val (key, value) = el.attributes().asList()[0]
-        Assertions.assertEquals(attrName.lowercase(Locale.getDefault()), key)
+        Assertions.assertEquals(attrName.lowercase(), key)
         Assertions.assertEquals("foo", value)
     }
 
@@ -194,7 +194,7 @@ class TokeniserTest {
         val cdataEnd = "]]>"
         val bufLen = CharacterReader.maxBufferLen - cdataStart.length - 1 // also breaks with -2, but not with -3 or 0
         val cdataContentsArray = CharArray(bufLen)
-        Arrays.fill(cdataContentsArray, 'x')
+        cdataContentsArray.fill('x')
         val cdataContents = String(cdataContentsArray)
         val testMarkup = cdataStart + cdataContents + cdataEnd
         val parser = Parser(HtmlTreeBuilder())

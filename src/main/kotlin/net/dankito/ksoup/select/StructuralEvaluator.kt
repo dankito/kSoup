@@ -1,8 +1,7 @@
 package net.dankito.ksoup.select
 
 import net.dankito.ksoup.nodes.Element
-import java.util.*
-import java.util.function.Supplier
+import java.util.IdentityHashMap
 
 /**
  * Base structural evaluator.
@@ -12,9 +11,7 @@ internal abstract class StructuralEvaluator(val evaluator: Evaluator) : Evaluato
     // Memoize inner matches, to save repeated re-evaluations of parent, sibling etc.
     // root + element: Boolean matches. ThreadLocal in case the Evaluator is compiled then reused across multi threads
     val threadMemo: ThreadLocal<IdentityHashMap<Element, IdentityHashMap<Element, Boolean>>> =
-        ThreadLocal.withInitial<IdentityHashMap<Element, IdentityHashMap<Element, Boolean>>>(
-            Supplier<IdentityHashMap<Element, IdentityHashMap<Element, Boolean>>>({ IdentityHashMap() })
-        )
+        ThreadLocal.withInitial { IdentityHashMap() }
 
     fun memoMatches(root: Element, element: Element): Boolean {
         // not using computeIfAbsent, as the lambda impl requires a new Supplier closure object on every hit: tons of GC

@@ -1,13 +1,11 @@
 package net.dankito.ksoup.nodes
 
 import net.dankito.ksoup.Jsoup
-import net.dankito.ksoup.Jsoup.parse
 import net.dankito.ksoup.TextUtil
 import net.dankito.ksoup.parser.Tag.Companion.valueOf
 import net.dankito.ksoup.select.NodeVisitor
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.util.function.Consumer
 
 /**
  * Tests Nodes
@@ -48,7 +46,7 @@ class NodeTest {
 
     @Test
     fun handlesAbsPrefix() {
-        val doc = parse("<a href=/foo>Hello</a>", "https://jsoup.org/")
+        val doc = Jsoup.parse("<a href=/foo>Hello</a>", "https://jsoup.org/")
         val a = doc.select("a").first()
         Assertions.assertEquals("/foo", a!!.attr("href"))
         Assertions.assertEquals("https://jsoup.org/foo", a.attr("abs:href"))
@@ -57,7 +55,7 @@ class NodeTest {
 
     @Test
     fun handlesAbsOnImage() {
-        val doc = parse("<p><img src=\"/rez/osi_logo.png\" /></p>", "https://jsoup.org/")
+        val doc = Jsoup.parse("<p><img src=\"/rez/osi_logo.png\" /></p>", "https://jsoup.org/")
         val img = doc.select("img").first()
         Assertions.assertEquals("https://jsoup.org/rez/osi_logo.png", img!!.attr("abs:src"))
         Assertions.assertEquals(img.absUrl("src"), img.attr("abs:src"))
@@ -88,7 +86,7 @@ class NodeTest {
 
     @Test
     fun handleAbsOnFileUris() {
-        val doc = parse("<a href='password'>One/a><a href='/var/log/messages'>Two</a>", "file:/etc/")
+        val doc = Jsoup.parse("<a href='password'>One/a><a href='/var/log/messages'>Two</a>", "file:/etc/")
         val one = doc.select("a").first()
         Assertions.assertEquals("file:/etc/password", one!!.absUrl("href"))
         val two = doc.select("a")[1]
@@ -97,20 +95,20 @@ class NodeTest {
 
     @Test
     fun handleAbsOnLocalhostFileUris() {
-        val doc = parse("<a href='password'>One/a><a href='/var/log/messages'>Two</a>", "file://localhost/etc/")
+        val doc = Jsoup.parse("<a href='password'>One/a><a href='/var/log/messages'>Two</a>", "file://localhost/etc/")
         val one = doc.select("a").first()
         Assertions.assertEquals("file://localhost/etc/password", one!!.absUrl("href"))
     }
 
     @Test
     fun handlesAbsOnProtocolessAbsoluteUris() {
-        val doc1 = parse("<a href='//example.net/foo'>One</a>", "http://example.com/")
-        val doc2 = parse("<a href='//example.net/foo'>One</a>", "https://example.com/")
+        val doc1 = Jsoup.parse("<a href='//example.net/foo'>One</a>", "http://example.com/")
+        val doc2 = Jsoup.parse("<a href='//example.net/foo'>One</a>", "https://example.com/")
         val one = doc1.select("a").first()
         val two = doc2.select("a").first()
         Assertions.assertEquals("http://example.net/foo", one!!.absUrl("href"))
         Assertions.assertEquals("https://example.net/foo", two!!.absUrl("href"))
-        val doc3 = parse("<img src=//www.google.com/images/errors/logo_sm.gif alt=Google>", "https://google.com")
+        val doc3 = Jsoup.parse("<img src=//www.google.com/images/errors/logo_sm.gif alt=Google>", "https://google.com")
         Assertions.assertEquals("https://www.google.com/images/errors/logo_sm.gif", doc3.select("img").attr("abs:src"))
     }
 
@@ -119,7 +117,7 @@ class NodeTest {
      */
     @Test
     fun absHandlesRelativeQuery() {
-        val doc = parse("<a href='?foo'>One</a> <a href='bar.html?foo'>Two</a>", "https://jsoup.org/path/file?bar")
+        val doc = Jsoup.parse("<a href='?foo'>One</a> <a href='bar.html?foo'>Two</a>", "https://jsoup.org/path/file?bar")
         val a1 = doc.select("a").first()
         Assertions.assertEquals("https://jsoup.org/path/file?foo", a1!!.absUrl("href"))
         val a2 = doc.select("a")[1]
@@ -128,7 +126,7 @@ class NodeTest {
 
     @Test
     fun absHandlesDotFromIndex() {
-        val doc = parse("<a href='./one/two.html'>One</a>", "http://example.com")
+        val doc = Jsoup.parse("<a href='./one/two.html'>One</a>", "http://example.com")
         val a1 = doc.select("a").first()
         Assertions.assertEquals("http://example.com/one/two.html", a1!!.absUrl("href"))
     }
@@ -297,7 +295,7 @@ class NodeTest {
     @Test
     fun forEachNode() {
         val doc = Jsoup.parse("<div><p>Hello</p></div><div>There</div><div id=1>Gone<p></div>")
-        doc.forEachNode(Consumer { node: Node ->
+        doc.forEachNode { node ->
             if (node is TextNode) {
                 val textNode = node
                 if (textNode.text() == "There") {
@@ -305,7 +303,8 @@ class NodeTest {
                     textNode.after("<p>Another")
                 }
             } else if (node.attr("id") == "1") node.remove()
-        })
+        }
+
         Assertions.assertEquals(
             "<div><p>Hello</p></div><div>There Now<p>Another</p></div>",
             TextUtil.stripNewlines(doc.body().html())

@@ -8,7 +8,10 @@ import net.dankito.ksoup.jvm.toByteArray
 import net.dankito.ksoup.parser.Parser.Companion.htmlParser
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.io.*
+import java.io.File
+import java.io.FileInputStream
+import java.io.InputStream
+import java.io.ByteArrayInputStream
 import java.net.URISyntaxException
 import java.nio.file.Files
 import java.util.zip.GZIPInputStream

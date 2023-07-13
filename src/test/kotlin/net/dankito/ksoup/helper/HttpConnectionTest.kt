@@ -8,8 +8,8 @@ import net.dankito.ksoup.helper.HttpConnection.KeyVal.Companion.create
 import net.dankito.ksoup.integration.ParseTest
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.net.*
-import java.util.*
+import java.net.URL
+import java.util.Locale
 
 class HttpConnectionTest {
     /* most actual network http connection tests are in integration */

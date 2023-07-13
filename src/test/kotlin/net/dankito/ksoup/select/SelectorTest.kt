@@ -7,8 +7,9 @@ import net.dankito.ksoup.parser.Parser.Companion.htmlParser
 import net.dankito.ksoup.parser.Parser.Companion.xmlParser
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.util.*
+import java.util.Locale
 
 /**
  * Tests that the selector selects correctly.
@@ -16,6 +17,7 @@ import java.util.*
  * @author Jonathan Hedley, jonathan@hedley.net
  */
 class SelectorTest {
+
     @Test
     fun testByTag() {
         // should be case insensitive
@@ -1106,4 +1108,29 @@ class SelectorTest {
 
         assertEquals(1, map.size) // root of doc 2
     }
+
+    @Test
+    fun testForIdentityNotEquality_EqualElements() {
+        val elements = listOf(
+            Element("div").appendText("Equal"),
+            Element("div").appendText("Equal")
+        )
+
+        val result = Selector.select("div", elements)
+
+        assertEquals(2, result.size)
+        assertTrue(result.contains(elements[0]))
+        assertTrue(result.contains(elements[1]))
+    }
+
+    @Test
+    fun testForIdentityNotEquality_IdenticalElements() {
+        val element = Element("div").appendText("Identical")
+        val elements = listOf(element, element)
+
+        val result = Selector.select("div", elements)
+
+        assertEquals(1, result.size)
+    }
+
 }

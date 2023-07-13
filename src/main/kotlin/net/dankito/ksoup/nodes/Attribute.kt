@@ -4,7 +4,6 @@ import net.dankito.ksoup.SerializationException
 import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.internal.Normalizer
 import net.dankito.ksoup.internal.StringUtil
-import java.util.*
 
 /**
  * A single key + value attribute. (Only used for presentation.)

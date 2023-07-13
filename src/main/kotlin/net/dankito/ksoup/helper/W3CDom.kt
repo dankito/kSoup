@@ -13,7 +13,8 @@ import net.dankito.ksoup.select.Selector
 import org.w3c.dom.*
 import org.w3c.dom.Node
 import java.io.*
-import java.util.*
+import java.util.Properties
+import java.util.Stack
 import javax.xml.parsers.DocumentBuilder
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.parsers.ParserConfigurationException
@@ -24,6 +25,8 @@ import javax.xml.transform.TransformerFactory
 import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
 import javax.xml.xpath.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 /**
  * Helper class to transform a [net.dankito.ksoup.nodes.Document] to a [org.w3c.dom.Document],

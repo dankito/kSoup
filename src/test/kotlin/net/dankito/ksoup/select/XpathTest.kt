@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import java.util.stream.Stream
 import javax.xml.xpath.*
 
 class XpathTest {
@@ -229,10 +228,10 @@ class XpathTest {
 
     companion object {
         @JvmStatic
-        private fun provideEvaluators(): Stream<Arguments> {
+        private fun provideEvaluators(): List<Arguments> {
             val html = "<div id=1><div id=2><p class=foo>Hello</p></div></div><DIV id=3>"
             val doc = Jsoup.parse(html)
-            return Stream.of(
+            return listOf(
                 Arguments.of(doc, "DIV", "//div"),
                 Arguments.of(doc, "div > p.foo", "//div/p[@class]"),
                 Arguments.of(doc, "div + div", "//div/following-sibling::div[1]"),

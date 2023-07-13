@@ -4,13 +4,12 @@ import net.dankito.ksoup.helper.ChangeNotifyingArrayList
 import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.internal.Normalizer
 import net.dankito.ksoup.internal.StringUtil
+import net.dankito.ksoup.jvm.ImmutableList
 import net.dankito.ksoup.parser.Tag
 import net.dankito.ksoup.parser.TokenQueue
 import net.dankito.ksoup.select.*
 import java.lang.ref.WeakReference
-import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.function.Consumer
 import kotlin.collections.LinkedHashSet
 
 /**
@@ -286,14 +285,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
 
         var children = shadowChildrenRef?.get()
         if (children == null) {
-            val size = childNodes.size
-            children = ArrayList(size)
-            for (i in 0 until size) {
-                val node = childNodes[i]
-                if (node is Element) {
-                    children.add(node)
-                }
-            }
+            children = childNodes.filterIsInstance<Element>()
             shadowChildrenRef = WeakReference(children)
         }
 
@@ -330,7 +322,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
         for (node in childNodes) {
             if (node is TextNode) textNodes.add(node)
         }
-        return Collections.unmodifiableList(textNodes)
+        return ImmutableList(textNodes)
     }
 
     /**
@@ -348,7 +340,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
         for (node in childNodes) {
             if (node is DataNode) dataNodes.add(node)
         }
-        return Collections.unmodifiableList(dataNodes)
+        return ImmutableList(dataNodes)
     }
 
     /**
@@ -1670,10 +1662,6 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
         return super.forEachNode(action) as Element
     }
 
-    fun forEachNode(consumer: Consumer<Node>): Node {
-        return forEachNode { node -> consumer.accept(node) }
-    }
-
     /**
      * Perform the supplied action on this Element and each of its descendant Elements, during a depth-first traversal.
      * Elements may be inspected, changed, added, replaced, or removed.
@@ -1681,12 +1669,12 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      * @return this Element, for chaining
      * @see Node.forEachNode
      */
-    fun forEach(action: Consumer<in Element>): Element {
+    fun forEach(action: (Element) -> Unit): Element {
         Validate.notNull(action)
 
         NodeTraversor.traverse(GenericNodeVisitor { node ->
             if (node is Element) {
-                action.accept(node)
+                action(node)
             }
         }, this)
 

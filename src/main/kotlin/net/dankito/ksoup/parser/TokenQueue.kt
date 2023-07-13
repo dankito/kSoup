@@ -2,7 +2,7 @@ package net.dankito.ksoup.parser
 
 import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.internal.StringUtil
-import java.util.*
+import java.util.Locale
 
 /**
  * A character queue with parsing helpers.

@@ -10,17 +10,18 @@ import net.dankito.ksoup.parser.Parser.Companion.parseFragment
 import net.dankito.ksoup.select.Elements
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.util.*
 
 class TokeniserStateTest {
+
     val whiteSpace = charArrayOf('\t', '\n', '\r', '\u000C', ' ')
     val quote = charArrayOf('\'', '"')
+
     @Test
     fun ensureSearchArraysAreSorted() {
         val arrays = arrayOf<CharArray>()
         for (array in arrays) {
-            val copy = Arrays.copyOf(array, array.size)
-            Arrays.sort(array)
+            val copy = array.copyOf()
+            copy.sort()
             Assertions.assertArrayEquals(array, copy)
         }
     }
@@ -197,9 +198,8 @@ class TokeniserStateTest {
     @Test
     fun testUnconsumeAtBufferBoundary() {
         val triggeringSnippet = "<a href=\"\"foo"
-        val padding =
-            CharArray(CharacterReader.readAheadLimit - triggeringSnippet.length + 2) // The "foo" part must be just at the limit.
-        Arrays.fill(padding, ' ')
+        val padding = CharArray(CharacterReader.readAheadLimit - triggeringSnippet.length + 2) // The "foo" part must be just at the limit.
+        padding.fill(' ')
         val paddedSnippet = String(padding) + triggeringSnippet
         val errorList = tracking(1)
         parseFragment(paddedSnippet, null, "", errorList)
@@ -210,9 +210,8 @@ class TokeniserStateTest {
     fun testUnconsumeAfterBufferUp() {
         // test for after consume() a bufferUp occurs (look-forward) but then attempts to unconsume. Would throw a "No buffer left to unconsume"
         val triggeringSnippet = "<title>One <span>Two"
-        val padding =
-            CharArray(CharacterReader.readAheadLimit - triggeringSnippet.length + 8) // The "<span" part must be just at the limit. The "containsIgnoreCase" scan does a bufferUp, losing the unconsume
-        Arrays.fill(padding, ' ')
+        val padding = CharArray(CharacterReader.readAheadLimit - triggeringSnippet.length + 8) // The "<span" part must be just at the limit. The "containsIgnoreCase" scan does a bufferUp, losing the unconsume
+        padding.fill(' ')
         val paddedSnippet = String(padding) + triggeringSnippet
         val errorList = tracking(1)
         parseFragment(paddedSnippet, null, "", errorList)

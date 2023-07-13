@@ -1,8 +1,8 @@
 package net.dankito.ksoup.internal
 
 import net.dankito.ksoup.helper.Validate
-import java.net.*
-import java.util.*
+import java.net.URL
+import java.util.Stack
 import kotlin.math.min
 
 /**
@@ -320,13 +320,13 @@ object StringUtil {
             val base: URL
             base = try {
                 URL(baseUrl)
-            } catch (e: MalformedURLException) {
+            } catch (e: Exception) {
                 // the base is unsuitable, but the attribute/rel may be abs on its own, so try that
                 val abs = URL(relUrl)
                 return abs.toExternalForm()
             }
             resolve(base, relUrl).toExternalForm()
-        } catch (e: MalformedURLException) {
+        } catch (e: Exception) {
             // it may still be valid, just that Java doesn't have a registered stream handler for it, e.g. tel
             // we test here vs at start to normalize supported URLs (e.g. HTTP -> http)
             if (validUriScheme.containsMatchIn(relUrl)) {

@@ -4,11 +4,11 @@ import net.dankito.ksoup.SerializationException
 import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.internal.StringUtil
 import net.dankito.ksoup.jvm.Cloneable
+import net.dankito.ksoup.jvm.ImmutableList
 import net.dankito.ksoup.select.GenericNodeVisitor
 import net.dankito.ksoup.select.NodeFilter
 import net.dankito.ksoup.select.NodeTraversor
 import net.dankito.ksoup.select.NodeVisitor
-import java.util.*
 
 /**
  * The base, abstract Node model. Elements, Documents, Comments etc are all Node instances.
@@ -236,7 +236,7 @@ abstract class Node protected constructor() : Cloneable<Node> {
         val children = ensureChildNodes()
 
         val rewrap = ArrayList(children) // wrapped so that looping and moving will not throw a CME as the source changes
-        return Collections.unmodifiableList(rewrap)
+        return ImmutableList(rewrap)
     }
 
     /**

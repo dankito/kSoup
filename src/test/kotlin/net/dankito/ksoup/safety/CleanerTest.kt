@@ -16,7 +16,7 @@ import net.dankito.ksoup.safety.Safelist.Companion.relaxed
 import net.dankito.ksoup.safety.Safelist.Companion.simpleText
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.util.*
+import java.util.Locale
 
 /**
  * Tests for the cleaner.
@@ -24,6 +24,7 @@ import java.util.*
  * @author Jonathan Hedley, jonathan@hedley.net
  */
 class CleanerTest {
+
     @Test
     fun simpleBehaviourTest() {
         val h = "<div><p class=foo><a href='http://evil.com'>Hello <b id=bar>there</b>!</a></div>"

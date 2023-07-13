@@ -5,7 +5,6 @@ import net.dankito.ksoup.integration.ParseTest
 import net.dankito.ksoup.jvm.StringReader
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.io.*
 
 /**
  * Test suite for character reader.

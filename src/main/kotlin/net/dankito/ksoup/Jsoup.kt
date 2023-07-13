@@ -7,8 +7,9 @@ import net.dankito.ksoup.nodes.Document
 import net.dankito.ksoup.parser.Parser
 import net.dankito.ksoup.safety.Cleaner
 import net.dankito.ksoup.safety.Safelist
-import java.io.*
-import java.net.*
+import java.io.File
+import java.io.InputStream
+import java.net.URL
 import javax.annotation.WillClose
 
 /**

@@ -3,7 +3,7 @@ package net.dankito.ksoup.parser
 import net.dankito.ksoup.MultiLocaleExtension.MultiLocaleTest
 import net.dankito.ksoup.nodes.Attributes
 import org.junit.jupiter.api.Assertions
-import java.util.*
+import java.util.Locale
 
 class ParserSettingsTest {
     @MultiLocaleTest

@@ -1,6 +1,6 @@
 package net.dankito.ksoup.integration
 
-import java.util.*
+import java.util.Date
 
 /**
  * Does an A/B test on two methods, and prints out how long each took.

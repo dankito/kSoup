@@ -4,7 +4,7 @@ import net.dankito.ksoup.MultiLocaleExtension.MultiLocaleTest
 import net.dankito.ksoup.parser.Tag.Companion.isKnownTag
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.util.*
+import java.util.Locale
 
 /**
  * Tag tests.

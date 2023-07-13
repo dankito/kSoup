@@ -1,20 +1,20 @@
 package net.dankito.ksoup.integration
 
 import net.dankito.ksoup.Jsoup
-import net.dankito.ksoup.Jsoup.parse
+import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.parser.Parser.Companion.xmlParser
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import java.io.*
-import java.util.stream.Stream
+import java.io.File
 
 /**
  * Tests fixes for issues raised by the OSS Fuzz project @ https://oss-fuzz.com/testcases?project=jsoup. Contains inline
  * string cases causing exceptions. Timeout tests are in FuzzFixesIT.
  */
 class FuzzFixesTest {
+
     @Test
     fun blankAbsAttr() {
         // https://github.com/jhy/jsoup/issues/1541
@@ -36,24 +36,25 @@ class FuzzFixesTest {
     @ParameterizedTest
     @MethodSource("testFiles")
     fun testHtmlParse(file: File?) {
-        val doc = parse(file!!, "UTF-8", "https://example.com/")
+        val doc = Jsoup.parse(file!!, "UTF-8", "https://example.com/")
         Assertions.assertNotNull(doc)
     }
 
     @ParameterizedTest
     @MethodSource("testFiles")
     fun testXmlParse(file: File?) {
-        val doc = parse(file!!, "UTF-8", "https://example.com/", xmlParser())
+        val doc = Jsoup.parse(file!!, "UTF-8", "https://example.com/", xmlParser())
         Assertions.assertNotNull(doc)
     }
 
     companion object {
         @JvmStatic
-        private fun testFiles(): Stream<File> {
-            val files: Array<File> = FuzzFixesIT.testDir.listFiles()
-            Assertions.assertNotNull(files)
+        private fun testFiles(): List<File> {
+            val files = FuzzFixesIT.testDir.listFiles()
+            Validate.notNull(files)
             Assertions.assertTrue(files.size > 10)
-            return Stream.of(*files)
+
+            return files.toList()
         }
     }
 }

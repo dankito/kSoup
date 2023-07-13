@@ -7,7 +7,6 @@ import net.dankito.ksoup.internal.StringUtil
 import net.dankito.ksoup.jvm.Cloneable
 import net.dankito.ksoup.parser.ParseSettings
 import net.dankito.ksoup.jvm.IOException
-import java.util.*
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 

@@ -421,13 +421,14 @@ class Elements : ArrayList<Element> {
         }
         return this
     }
+
     // filters
     /**
      * Find matching elements within this element list.
      * @param query A [Selector] query
      * @return the filtered list of elements, or an empty list if none match.
      */
-    fun select(query: String?): Elements {
+    fun select(query: String): Elements {
         return Selector.select(query, this)
     }
 

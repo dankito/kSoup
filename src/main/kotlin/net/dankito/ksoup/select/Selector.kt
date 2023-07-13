@@ -2,7 +2,6 @@ package net.dankito.ksoup.select
 
 import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.nodes.Element
-import java.util.*
 
 /**
  * CSS-like element selector, that finds elements matching a query.
@@ -104,7 +103,7 @@ object Selector {
      * @return matching elements, empty if none
      * @throws Selector.SelectorParseException (unchecked) on an invalid CSS query.
      */
-    fun select(query: String?, root: Element?): Elements {
+    fun select(query: String, root: Element): Elements {
         Validate.notEmpty(query)
         return select(QueryParser.parse(query), root)
     }
@@ -116,7 +115,7 @@ object Selector {
      * @param root root element to descend into
      * @return matching elements, empty if none
      */
-    fun select(evaluator: Evaluator?, root: Element?): Elements {
+    fun select(evaluator: Evaluator, root: Element): Elements {
         Validate.notNull(evaluator)
         Validate.notNull(root)
         return Collector.collect(evaluator, root)
@@ -129,20 +128,21 @@ object Selector {
      * @param roots root elements to descend into
      * @return matching elements, empty if none
      */
-    fun select(query: String?, roots: Iterable<Element?>): Elements {
+    fun select(query: String, roots: Iterable<Element>): Elements {
         Validate.notEmpty(query)
         Validate.notNull(roots)
 
         val evaluator: Evaluator = QueryParser.parse(query)
         val elements = Elements()
-        val seenElements: IdentityHashMap<Element, Boolean?> = IdentityHashMap()
+        val seenElements = mutableListOf<Element>()
 
         // dedupe elements by identity, not equality
-        for (root: Element? in roots) {
+        for (root in roots) {
             val found = select(evaluator, root)
             for (el in found) {
-                if (seenElements.put(el, true) == null) {
+                if (seenElements.none { it === el }) {
                     elements.add(el)
+                    seenElements.add(el)
                 }
             }
         }
@@ -172,7 +172,7 @@ object Selector {
      * @param root root element to descend into
      * @return the matching element, or **null** if none.
      */
-    fun selectFirst(cssQuery: String?, root: Element): Element? {
+    fun selectFirst(cssQuery: String, root: Element): Element? {
         Validate.notEmpty(cssQuery)
         return Collector.findFirst(QueryParser.parse(cssQuery), root)
     }

@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.stream.Stream
 
 
 /**
@@ -2760,8 +2759,8 @@ class ElementTest {
         }
 
         @JvmStatic
-        private fun testOutputSettings(): Stream<Document.OutputSettings> {
-            return Stream.of(
+        private fun testOutputSettings(): List<Document.OutputSettings> {
+            return listOf(
                 Document.OutputSettings().prettyPrint(true).indentAmount(4),
                 Document.OutputSettings().prettyPrint(true).indentAmount(1),
                 Document.OutputSettings().prettyPrint(true).indentAmount(4).outline(true),
