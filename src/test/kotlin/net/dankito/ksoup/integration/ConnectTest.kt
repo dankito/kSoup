@@ -721,7 +721,7 @@ class ConnectTest {
         Assertions.assertEquals("%E9%8D%B5=%E5%80%A4", ihVal("Query String", doc))
         Assertions.assertEquals(
             "鍵=値",
-            URLDecoder.decode(ihVal("Query String", doc), DataUtil.UTF_8.name())
+            URLDecoder.decode(ihVal("Query String", doc), DataUtil.UTF_8.name)
         )
     }
 

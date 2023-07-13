@@ -1,10 +1,11 @@
 package net.dankito.ksoup.parser
 
 import net.dankito.ksoup.Jsoup
+import net.dankito.ksoup.jvm.Charsets
+import net.dankito.ksoup.jvm.toByteArray
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
-import java.nio.charset.StandardCharsets
 
 class ParserTest {
     @Test
@@ -26,7 +27,7 @@ class ParserTest {
     @Test
     fun testUtf8() {
         // testcase for https://github.com/jhy/jsoup/issues/1557. no repro.
-        val parsed = Jsoup.parse(ByteArrayInputStream("<p>H\u00E9llo, w\u00F6rld!".toByteArray(StandardCharsets.UTF_8)), null, "")
+        val parsed = Jsoup.parse(ByteArrayInputStream("<p>H\u00E9llo, w\u00F6rld!".toByteArray(Charsets.UTF_8)), null, "")
         val text = parsed.selectFirst("p")!!.wholeText()
         Assertions.assertEquals(text, "H\u00E9llo, w\u00F6rld!")
     }

@@ -63,17 +63,22 @@ internal class UrlBuilder(var u: URL) {
     }
 
     fun appendKeyVal(kv: Connection.KeyVal?) {
-        if (q == null) q = StringUtil.borrowBuilder() else q!!.append('&')
+        if (q == null) {
+            q = StringUtil.borrowBuilder()
+        } else {
+            q!!.append('&')
+        }
+
         q!!
-            .append(URLEncoder.encode(kv!!.key(), DataUtil.UTF_8.name()))
+            .append(URLEncoder.encode(kv!!.key(), DataUtil.UTF_8.name))
             .append('=')
-            .append(URLEncoder.encode(kv.value(), DataUtil.UTF_8.name()))
+            .append(URLEncoder.encode(kv.value(), DataUtil.UTF_8.name))
     }
 
     companion object {
         private fun decodePart(encoded: String): String {
             try {
-                return URLDecoder.decode(encoded, DataUtil.UTF_8.name())
+                return URLDecoder.decode(encoded, DataUtil.UTF_8.name)
             } catch (e: Exception) {
                 throw RuntimeException(e) // wtf!
             }
@@ -86,7 +91,7 @@ internal class UrlBuilder(var u: URL) {
                 if (c == ' '.code) {
                     sb.append(if (spaceAsPlus) '+' else "%20")
                 } else if (c > 127) { // out of ascii range
-                    sb.append(URLEncoder.encode(String(Character.toChars(c)), DataUtil.UTF_8.name()))
+                    sb.append(URLEncoder.encode(String(Character.toChars(c)), DataUtil.UTF_8.name))
                     // ^^ is a bit heavy-handed - if perf critical, we could optimize
                 } else {
                     sb.append(c.toChar())

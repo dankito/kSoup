@@ -5,9 +5,10 @@ import net.dankito.ksoup.helper.DataUtil.readToByteBuffer
 import net.dankito.ksoup.integration.TestServer
 import net.dankito.ksoup.internal.StringUtil.isBlank
 import net.dankito.ksoup.internal.StringUtil.join
+import net.dankito.ksoup.jvm.Charsets
+import net.dankito.ksoup.jvm.String
 import net.dankito.ksoup.nodes.Entities.escape
 import java.io.PrintWriter
-import java.nio.charset.StandardCharsets
 import javax.servlet.MultipartConfigElement
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -81,7 +82,7 @@ class EchoServlet : BaseServlet() {
 
         // post body
         val byteBuffer = readToByteBuffer(req.inputStream, 0)
-        val postData = String(byteBuffer!!.array(), StandardCharsets.UTF_8)
+        val postData = String(byteBuffer!!.array(), Charsets.UTF_8)
         if (!isBlank(postData)) {
             EchoServlet.write(w, "Post Data", postData)
         }

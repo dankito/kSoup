@@ -3,11 +3,11 @@ package net.dankito.ksoup.nodes
 import net.dankito.ksoup.SerializationException
 import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.internal.StringUtil
+import net.dankito.ksoup.jvm.CharsetEncoder
 import net.dankito.ksoup.nodes.Document.OutputSettings
 import net.dankito.ksoup.nodes.Document.OutputSettings.Syntax
 import net.dankito.ksoup.parser.CharacterReader
 import net.dankito.ksoup.parser.Parser
-import java.nio.charset.CharsetEncoder
 
 /**
  * HTML entities, and escape routines. Source: [W3C
@@ -156,7 +156,7 @@ object Entities {
             }
 
             // surrogate pairs, split implementation for efficiency on single char common case (saves creating strings, char[]):
-            if (codePoint < StringUtil.MIN_SUPPLEMENTARY_CODE_POINT) {
+            if (codePoint < StringUtil.MinSupplementaryCodePoint) {
                 val c = codePoint.toChar()
                 when (codePoint) {
                     0xA0 -> if (escapeMode != EscapeMode.xhtml) accum.append("&nbsp;") else accum.append("&#xa0;")
@@ -164,11 +164,12 @@ object Entities {
                     else -> {
                         when (c) {
                             '&' -> accum.append("&amp;")
-                            '<' ->                         // escape when in character data or when in a xml attribute val or XML syntax; not needed in html attr val
-                                if (!inAttribute || escapeMode == EscapeMode.xhtml || out.syntax() === Syntax.xml) accum.append(
-                                    "&lt;"
-                                ) else accum.append(c)
-
+                            '<' -> // escape when in character data or when in a xml attribute val or XML syntax; not needed in html attr val
+                                if (!inAttribute || escapeMode == EscapeMode.xhtml || out.syntax() === Syntax.xml) {
+                                    accum.append("&lt;")
+                                } else {
+                                    accum.append(c)
+                                }
                             '>' -> if (!inAttribute) accum.append("&gt;") else accum.append(c)
                             '"' -> if (inAttribute) accum.append("&quot;") else accum.append(c)
                             else -> {
@@ -196,9 +197,11 @@ object Entities {
 
     private fun appendEncoded(accum: Appendable, escapeMode: EscapeMode, codePoint: Int) {
         val name = escapeMode.nameForCodepoint(codePoint)
-        if (emptyName != name) // ok for identity check
-            accum.append('&').append(name).append(';') else accum.append("&#x")
-            .append(codePoint.toString(16)).append(';')
+        if (emptyName != name) { // ok for identity check
+            accum.append('&').append(name).append(';')
+        } else {
+            accum.append("&#x").append(codePoint.toString(16)).append(';')
+        }
     }
 
     /**

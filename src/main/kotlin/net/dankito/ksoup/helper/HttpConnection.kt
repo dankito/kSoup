@@ -6,15 +6,14 @@ import net.dankito.ksoup.UnsupportedMimeTypeException
 import net.dankito.ksoup.internal.ConstrainableInputStream
 import net.dankito.ksoup.internal.Normalizer
 import net.dankito.ksoup.internal.StringUtil
+import net.dankito.ksoup.jvm.*
 import net.dankito.ksoup.nodes.Document
 import net.dankito.ksoup.parser.Parser
 import net.dankito.ksoup.parser.TokenQueue
 import java.io.*
+import java.io.IOException
 import java.net.*
-import java.nio.Buffer
 import java.nio.ByteBuffer
-import java.nio.charset.Charset
-import java.nio.charset.IllegalCharsetNameException
 import java.util.zip.GZIPInputStream
 import java.util.zip.Inflater
 import java.util.zip.InflaterInputStream
@@ -651,7 +650,10 @@ class HttpConnection : Connection {
 
         override fun postDataCharset(charset: String): Connection.Request {
             Validate.notNullParam(charset, "charset")
-            if (!Charset.isSupported(charset)) throw IllegalCharsetNameException(charset)
+            if (!Charset.isSupported(charset)) {
+                throw IllegalArgumentException("Charset '$charset' is not supported")
+            }
+
             postDataCharset = charset
             return this
         }
@@ -727,9 +729,9 @@ class HttpConnection : Connection {
                 inputStreamRead = false // ok to reparse if in bytes
             }
             Validate.isFalse(inputStreamRead, "Input stream already read and parsed, cannot re-read.")
-            val doc = DataUtil.parseInputStream(bodyStream, charset, url!!.toExternalForm(), req.parser())
+            val doc = DataUtil.parseInputStream(bodyStream, charset, url.toExternalForm(), req.parser())
             doc.connection(HttpConnection(req, this)) // because we're static, don't have the connection obj. // todo - maybe hold in the req?
-            charset = doc.outputSettings().charset()!!.name() // update charset from meta-equiv, possibly
+            charset = doc.outputSettings().charset()!!.name // update charset from meta-equiv, possibly
             inputStreamRead = true
             safeClose()
             return doc
@@ -752,11 +754,12 @@ class HttpConnection : Connection {
 
         override fun body(): String {
             prepareByteData()
-            Validate.notNull(byteData)
+            val byteData = Validate.ensureNotNull(byteData)
+
             // charset gets set from header on execute, and from meta-equiv on parse. parse may not have happened yet
-            val body: String = (if (charset == null) DataUtil.UTF_8 else Charset.forName(charset))
-                .decode(byteData).toString()
-            (byteData as Buffer?)!!.rewind() // cast to avoid covariant return type change in jdk9
+            val charset = charset?.let { Charset.forName(it) } ?: DataUtil.UTF_8
+            val body = charset.decode(byteData).toString()
+            byteData.rewind() // cast to avoid covariant return type change in jdk9
             return body
         }
 
@@ -775,7 +778,7 @@ class HttpConnection : Connection {
             Validate.isTrue(executed, "Request must be executed (with .execute(), .get(), or .post() before getting response body")
             Validate.isFalse(inputStreamRead, "Request has already been read")
             inputStreamRead = true
-            return ConstrainableInputStream.Companion.wrap(bodyStream, DataUtil.bufferSize, req.maxBodySize())
+            return ConstrainableInputStream.wrap(bodyStream, DataUtil.bufferSize, req.maxBodySize())
         }
 
         /**
@@ -1029,7 +1032,7 @@ class HttpConnection : Connection {
             private fun writePost(req: Connection.Request, outputStream: OutputStream, boundary: String?) {
                 val data: Collection<Connection.KeyVal?>? = req.data()
                 val w: BufferedWriter =
-                    BufferedWriter(OutputStreamWriter(outputStream, Charset.forName(req.postDataCharset())))
+                    BufferedWriter(OutputStreamWriter(outputStream, Charset.forName(req.postDataCharset()).asJvmCharset()))
                 if (boundary != null) {
                     // boundary will be set if we're in multipart mode
                     for (keyVal: Connection.KeyVal? in data!!) {

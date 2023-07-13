@@ -5,12 +5,12 @@ import net.dankito.ksoup.Jsoup
 import net.dankito.ksoup.helper.DataUtil
 import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.internal.StringUtil
+import net.dankito.ksoup.jvm.Charset
+import net.dankito.ksoup.jvm.CharsetEncoder
 import net.dankito.ksoup.parser.ParseSettings
 import net.dankito.ksoup.parser.Parser
 import net.dankito.ksoup.parser.Tag
 import net.dankito.ksoup.select.Evaluator
-import java.nio.charset.Charset
-import java.nio.charset.CharsetEncoder
 
 /**
  * A HTML Document.
@@ -312,32 +312,32 @@ class Document(private val location: String) :
      */
     private fun ensureMetaCharsetElement() {
         if (updateMetaCharset) {
-            val syntax = outputSettings()!!.syntax()
+            val syntax = outputSettings().syntax()
             if (syntax == OutputSettings.Syntax.html) {
                 val metaCharset = selectFirst("meta[charset]")
                 if (metaCharset != null) {
-                    metaCharset.attr("charset", charset()!!.displayName())
+                    metaCharset.attr("charset", charset()!!.displayName)
                 } else {
-                    head()!!.appendElement("meta").attr("charset", charset()!!.displayName())
+                    head().appendElement("meta").attr("charset", charset()!!.displayName)
                 }
-                select("meta[name=charset]")?.remove() // Remove obsolete elements
+                select("meta[name=charset]").remove() // Remove obsolete elements
             } else if (syntax == OutputSettings.Syntax.xml) {
-                val node = ensureChildNodes()[0]!!
+                val node = ensureChildNodes()[0]
                 if (node is XmlDeclaration) {
                     var decl = node
                     if (decl.name() == "xml") {
-                        decl.attr("encoding", charset()!!.displayName())
+                        decl.attr("encoding", charset()!!.displayName)
                         if (decl.hasAttr("version")) decl.attr("version", "1.0")
                     } else {
                         decl = XmlDeclaration("xml", false)
                         decl.attr("version", "1.0")
-                        decl.attr("encoding", charset()!!.displayName())
+                        decl.attr("encoding", charset()!!.displayName)
                         prependChild(decl)
                     }
                 } else {
                     val decl = XmlDeclaration("xml", false)
                     decl.attr("version", "1.0")
-                    decl.attr("encoding", charset()!!.displayName())
+                    decl.attr("encoding", charset()!!.displayName)
                     prependChild(decl)
                 }
             }
@@ -418,7 +418,7 @@ class Document(private val location: String) :
          * @param charset the new charset (by name) to use.
          * @return the document's output settings, for chaining
          */
-        fun charset(charset: String?): OutputSettings {
+        fun charset(charset: String): OutputSettings {
             charset(Charset.forName(charset))
             return this
         }
@@ -427,7 +427,7 @@ class Document(private val location: String) :
             // created at start of OuterHtmlVisitor so each pass has own encoder, so OutputSettings can be shared among threads
             val encoder = charset.newEncoder()
             encoderThreadLocal.set(encoder)
-            coreCharset = Entities.CoreCharset.Companion.byName(encoder.charset().name())
+            coreCharset = Entities.CoreCharset.byName(encoder.charset().name)
             return encoder
         }
 
@@ -540,7 +540,7 @@ class Document(private val location: String) :
             } catch (e: CloneNotSupportedException) {
                 throw RuntimeException(e)
             }
-            clone.charset(charset.name()) // new charset and charset encoder
+            clone.charset(charset.name) // new charset and charset encoder
             clone.escapeMode = Entities.EscapeMode.valueOf(escapeMode.name)
             // indentAmount, maxPaddingWidth, and prettyPrint are primitives so object.clone() will handle
             return clone

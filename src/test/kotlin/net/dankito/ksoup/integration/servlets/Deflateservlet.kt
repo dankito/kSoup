@@ -1,7 +1,8 @@
 package net.dankito.ksoup.integration.servlets
 
 import net.dankito.ksoup.integration.TestServer
-import java.nio.charset.StandardCharsets
+import net.dankito.ksoup.jvm.Charsets
+import net.dankito.ksoup.jvm.toByteArray
 import java.util.zip.Deflater
 import java.util.zip.DeflaterOutputStream
 import javax.servlet.http.HttpServletRequest
@@ -10,7 +11,7 @@ import javax.servlet.http.HttpServletResponse
 class Deflateservlet : BaseServlet() {
 
     override fun doGet(req: HttpServletRequest, res: HttpServletResponse) {
-        res.contentType = BaseServlet.Companion.TextHtml
+        res.contentType = BaseServlet.TextHtml
         res.status = HttpServletResponse.SC_OK
         res.setHeader("Content-Encoding", "deflate")
         val doc = "<p>Hello, World!<p>That should be enough, right?<p>Hello, World!<p>That should be enough, right?"
@@ -18,7 +19,7 @@ class Deflateservlet : BaseServlet() {
             res.outputStream,
             Deflater(Deflater.BEST_COMPRESSION, true)
         ) // true = nowrap zlib headers
-        stream.write(doc.toByteArray(StandardCharsets.UTF_8))
+        stream.write(doc.toByteArray(Charsets.UTF_8))
         stream.close()
     }
 

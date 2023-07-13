@@ -1613,7 +1613,7 @@ class HtmlParserTest {
         // that charset can't be encoded, so make sure we flip to utf
         val `in` = "<html><meta charset=\"ISO-2022-CN\"/>One</html>"
         val doc = Jsoup.parse(ByteArrayInputStream(`in`.toByteArray()), null, "")
-        Assertions.assertEquals("UTF-8", doc.charset()!!.name())
+        Assertions.assertEquals("UTF-8", doc.charset()!!.name)
         Assertions.assertEquals("One", doc.text())
         val html = doc.outerHtml()
         Assertions.assertEquals(

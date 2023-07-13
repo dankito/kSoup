@@ -7,6 +7,8 @@ import net.dankito.ksoup.helper.W3CDom.Companion.OutputXml
 import net.dankito.ksoup.helper.W3CDom.Companion.asString
 import net.dankito.ksoup.helper.W3CDom.Companion.convert
 import net.dankito.ksoup.integration.ParseTest
+import net.dankito.ksoup.jvm.Charsets
+import net.dankito.ksoup.jvm.toByteArray
 import net.dankito.ksoup.nodes.*
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -15,7 +17,6 @@ import org.w3c.dom.Node
 import org.w3c.dom.NodeList
 import org.xml.sax.InputSource
 import java.io.*
-import java.nio.charset.StandardCharsets
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.OutputKeys
 import javax.xml.xpath.XPathConstants
@@ -346,7 +347,7 @@ class W3CDomTest {
                         return@setEntityResolver null
                     }
                 }
-                val dom = builder.parse(ByteArrayInputStream(xml.toByteArray(StandardCharsets.UTF_8)))
+                val dom = builder.parse(ByteArrayInputStream(xml.toByteArray(Charsets.UTF_8)))
                 dom.normalizeDocument()
                 dom
             } catch (e: Exception) {

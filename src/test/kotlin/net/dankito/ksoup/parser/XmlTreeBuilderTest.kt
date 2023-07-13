@@ -3,16 +3,14 @@ package net.dankito.ksoup.parser
 import net.dankito.ksoup.Jsoup
 import net.dankito.ksoup.Jsoup.parse
 import net.dankito.ksoup.TextUtil
+import net.dankito.ksoup.jvm.Charsets
 import net.dankito.ksoup.nodes.*
 import net.dankito.ksoup.nodes.Document.Companion.createShell
-import net.dankito.ksoup.parser.*
 import net.dankito.ksoup.parser.Parser.Companion.htmlParser
 import net.dankito.ksoup.parser.Parser.Companion.parseXmlFragment
 import net.dankito.ksoup.parser.Parser.Companion.xmlParser
 import org.junit.jupiter.api.*
 import java.io.*
-import java.net.URISyntaxException
-import java.nio.charset.StandardCharsets
 
 /**
  * Tests XmlTreeBuilder.
@@ -142,7 +140,7 @@ class XmlTreeBuilderTest {
         val xmlFile = File(XmlTreeBuilder::class.java.getResource("/htmltests/xml-charset.xml").toURI())
         val inStream: InputStream = FileInputStream(xmlFile)
         val doc = parse(inStream, null, "http://example.com/", xmlParser())
-        Assertions.assertEquals("ISO-8859-1", doc.charset()!!.name())
+        Assertions.assertEquals("ISO-8859-1", doc.charset()!!.name)
         Assertions.assertEquals(
             "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><data>äöåéü</data>",
             TextUtil.stripNewlines(doc.html())
@@ -182,7 +180,7 @@ class XmlTreeBuilderTest {
     fun testCreatesValidProlog() {
         val document = createShell("")
         document.outputSettings().syntax(Document.OutputSettings.Syntax.xml)
-        document.charset(StandardCharsets.UTF_8)
+        document.charset(Charsets.UTF_8)
         Assertions.assertEquals(
             """<?xml version="1.0" encoding="UTF-8"?>
 <html>

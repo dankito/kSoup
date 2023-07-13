@@ -3,14 +3,16 @@ package net.dankito.ksoup.nodes
 import net.dankito.ksoup.Jsoup
 import net.dankito.ksoup.TextUtil
 import net.dankito.ksoup.integration.ParseTest
+import net.dankito.ksoup.jvm.Charset
+import net.dankito.ksoup.jvm.Charsets
+import net.dankito.ksoup.jvm.String
+import net.dankito.ksoup.jvm.toByteArray
 import net.dankito.ksoup.parser.ParseSettings
 import net.dankito.ksoup.parser.Parser.Companion.htmlParser
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
 import java.io.StringWriter
-import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
 
 
 /**
@@ -49,7 +51,7 @@ class DocumentTest {
         val doc = Jsoup.parse("<p title=π>π & < > </p>")
         // default is utf-8
         Assertions.assertEquals("<p title=\"π\">π &amp; &lt; &gt;</p>", doc.body().html())
-        Assertions.assertEquals("UTF-8", doc.outputSettings().charset()!!.name())
+        Assertions.assertEquals("UTF-8", doc.outputSettings().charset()!!.name)
         doc.outputSettings().charset("ascii")
         Assertions.assertEquals(Entities.EscapeMode.base, doc.outputSettings().escapeMode())
         Assertions.assertEquals("<p title=\"&#x3c0;\">&#x3c0; &amp; &lt; &gt;</p>", doc.body().html())
@@ -251,7 +253,7 @@ class DocumentTest {
 </html>"""
         Assertions.assertEquals(htmlCharsetUTF8, doc.toString())
         val selectedElement = doc.select("meta[charset]").first()
-        Assertions.assertEquals(charsetUtf8, doc.charset()!!.name())
+        Assertions.assertEquals(charsetUtf8, doc.charset()!!.name)
         Assertions.assertEquals(charsetUtf8, selectedElement!!.attr("charset"))
         Assertions.assertEquals(doc.charset(), doc.outputSettings().charset())
     }
@@ -269,7 +271,7 @@ class DocumentTest {
 </html>"""
         Assertions.assertEquals(htmlCharsetISO, doc.toString())
         val selectedElement = doc.select("meta[charset]").first()
-        Assertions.assertEquals(charsetIso8859, doc.charset()!!.name())
+        Assertions.assertEquals(charsetIso8859, doc.charset()!!.name)
         Assertions.assertEquals(charsetIso8859, selectedElement!!.attr("charset"))
         Assertions.assertEquals(doc.charset(), doc.outputSettings().charset())
     }
@@ -356,7 +358,7 @@ class DocumentTest {
 </root>"""
         Assertions.assertEquals(xmlCharsetUTF8, doc.toString())
         val selectedNode = doc.childNode(0) as XmlDeclaration
-        Assertions.assertEquals(charsetUtf8, doc.charset()!!.name())
+        Assertions.assertEquals(charsetUtf8, doc.charset()!!.name)
         Assertions.assertEquals(charsetUtf8, selectedNode.attr("encoding"))
         Assertions.assertEquals(doc.charset(), doc.outputSettings().charset())
     }
@@ -372,7 +374,7 @@ class DocumentTest {
 </root>"""
         Assertions.assertEquals(xmlCharsetISO, doc.toString())
         val selectedNode = doc.childNode(0) as XmlDeclaration
-        Assertions.assertEquals(charsetIso8859, doc.charset()!!.name())
+        Assertions.assertEquals(charsetIso8859, doc.charset()!!.name)
         Assertions.assertEquals(charsetIso8859, selectedNode.attr("encoding"))
         Assertions.assertEquals(doc.charset(), doc.outputSettings().charset())
     }
@@ -449,10 +451,11 @@ class DocumentTest {
                 + "before&nbsp;after"
                 + "</body>"
                 + "</html>")
-        val `is` = ByteArrayInputStream(input.toByteArray(StandardCharsets.US_ASCII))
+        val `is` = ByteArrayInputStream(input.toByteArray(Charsets.US_ASCII))
         val doc = Jsoup.parse(`is`, null, "http://example.com")
         doc.outputSettings().escapeMode(Entities.EscapeMode.xhtml)
-        val output = String(doc.html().toByteArray(doc.outputSettings().charset()!!), doc.outputSettings().charset()!!)
+        val charset = doc.outputSettings().charset()!!
+        val output = String(doc.html().toByteArray(charset), charset)
         Assertions.assertFalse(output.contains("?"), "Should not have contained a '?'.")
         Assertions.assertTrue(
             output.contains("&#xa0;") || output.contains("&nbsp;"),
@@ -470,12 +473,12 @@ class DocumentTest {
         Assertions.assertEquals(html, p.outerHtml())
         val thread = Thread {
             out[0] = p.outerHtml()
-            doc.outputSettings().charset(StandardCharsets.US_ASCII)
+            doc.outputSettings().charset(Charsets.US_ASCII)
         }
         thread.start()
         thread.join()
         Assertions.assertEquals(html, out[0])
-        Assertions.assertEquals(StandardCharsets.US_ASCII, doc.outputSettings().charset())
+        Assertions.assertEquals(Charsets.US_ASCII, doc.outputSettings().charset())
         Assertions.assertEquals(asci, p.outerHtml())
     }
 

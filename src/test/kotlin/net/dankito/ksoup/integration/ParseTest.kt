@@ -3,12 +3,13 @@ package net.dankito.ksoup.integration
 import net.dankito.ksoup.Jsoup
 import net.dankito.ksoup.Jsoup.parse
 import net.dankito.ksoup.helper.DataUtil.readToByteBuffer
+import net.dankito.ksoup.jvm.Charsets
+import net.dankito.ksoup.jvm.toByteArray
 import net.dankito.ksoup.parser.Parser.Companion.htmlParser
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.io.*
 import java.net.URISyntaxException
-import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.util.zip.GZIPInputStream
 
@@ -25,18 +26,18 @@ class ParseTest {
         var `in`: File = getFile("/htmltests/meta-charset-1.html")
         var doc = parse(`in`, null, "http://example.com/") //gb2312, has html5 <meta charset>
         Assertions.assertEquals("新", doc.text())
-        Assertions.assertEquals("GB2312", doc.outputSettings().charset()!!.displayName())
+        Assertions.assertEquals("GB2312", doc.outputSettings().charset()!!.displayName)
 
         // double check, no charset, falls back to utf8 which is incorrect
         `in` = getFile("/htmltests/meta-charset-2.html") //
         doc = parse(`in`, null, "http://example.com") // gb2312, no charset
-        Assertions.assertEquals("UTF-8", doc.outputSettings().charset()!!.displayName())
+        Assertions.assertEquals("UTF-8", doc.outputSettings().charset()!!.displayName)
         Assertions.assertNotEquals("新", doc.text())
 
         // confirm fallback to utf8
         `in` = getFile("/htmltests/meta-charset-3.html")
         doc = parse(`in`, null, "http://example.com/") // utf8, no charset
-        Assertions.assertEquals("UTF-8", doc.outputSettings().charset()!!.displayName())
+        Assertions.assertEquals("UTF-8", doc.outputSettings().charset()!!.displayName)
         Assertions.assertEquals("新", doc.text())
     }
 
@@ -51,7 +52,7 @@ class ParseTest {
     """.trimIndent()
         )
         val doc = parse(`in`, null, "http://example.com/")
-        Assertions.assertEquals("UTF-8", doc.outputSettings().charset()!!.displayName())
+        Assertions.assertEquals("UTF-8", doc.outputSettings().charset()!!.displayName)
     }
 
     @Test
@@ -60,7 +61,7 @@ class ParseTest {
         val doc = parse(`in`, null)
         val form = doc.select("#form").first()
         Assertions.assertEquals(2, form!!.children().size)
-        Assertions.assertEquals("UTF-8", doc.outputSettings().charset()!!.name())
+        Assertions.assertEquals("UTF-8", doc.outputSettings().charset()!!.name)
     }
 
     @Test
@@ -136,7 +137,7 @@ class ParseTest {
         }
 
         fun inputStreamFrom(s: String): InputStream {
-            return ByteArrayInputStream(s.toByteArray(StandardCharsets.UTF_8))
+            return ByteArrayInputStream(s.toByteArray(Charsets.UTF_8))
         }
 
         fun getFileAsString(file: File): String {

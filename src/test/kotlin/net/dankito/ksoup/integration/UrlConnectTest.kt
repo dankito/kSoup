@@ -24,7 +24,7 @@ class UrlConnectTest {
     fun fetchBaidu() {
         val res = Jsoup.connect("http://www.baidu.com/").timeout(10 * 1000).execute()
         val doc = res.parse()
-        Assertions.assertEquals("GBK", doc.outputSettings().charset()!!.displayName())
+        Assertions.assertEquals("GBK", doc.outputSettings().charset()!!.displayName)
         Assertions.assertEquals("GBK", res.charset())
         assert(res.hasCookie("BAIDUID"))
         Assertions.assertEquals("text/html;charset=gbk", res.contentType())
@@ -358,7 +358,7 @@ class UrlConnectTest {
         val res1 = Jsoup.connect(charsetUrl).execute()
         Assertions.assertNull(res1.charset()) // not set in headers
         val doc1 = res1.parse()
-        Assertions.assertEquals("windows-1252", doc1.charset()!!.displayName()) // but determined at parse time
+        Assertions.assertEquals("windows-1252", doc1.charset()!!.displayName) // but determined at parse time
         Assertions.assertEquals("Cost is €100", doc1.select("p").text())
         Assertions.assertTrue(doc1.text().contains("€"))
 
@@ -366,7 +366,7 @@ class UrlConnectTest {
         val res2 = Jsoup.connect(noCharsetUrl).execute()
         Assertions.assertNull(res2.charset()) // not set in headers
         val doc2 = res2.parse()
-        Assertions.assertEquals("UTF-8", doc2.charset()!!.displayName()) // so defaults to utf-8
+        Assertions.assertEquals("UTF-8", doc2.charset()!!.displayName) // so defaults to utf-8
         Assertions.assertEquals("Cost is �100", doc2.select("p").text())
         Assertions.assertTrue(doc2.text().contains("�"))
 
@@ -376,7 +376,7 @@ class UrlConnectTest {
         res3.charset("windows-1252")
         Assertions.assertEquals("windows-1252", res3.charset()) // read back
         val doc3 = res3.parse()
-        Assertions.assertEquals("windows-1252", doc3.charset()!!.displayName()) // from override
+        Assertions.assertEquals("windows-1252", doc3.charset()!!.displayName) // from override
         Assertions.assertEquals("Cost is €100", doc3.select("p").text())
         Assertions.assertTrue(doc3.text().contains("€"))
     }

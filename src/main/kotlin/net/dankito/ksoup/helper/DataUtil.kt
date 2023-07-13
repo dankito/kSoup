@@ -4,7 +4,9 @@ import net.dankito.ksoup.UncheckedIOException
 import net.dankito.ksoup.internal.ConstrainableInputStream
 import net.dankito.ksoup.internal.Normalizer
 import net.dankito.ksoup.internal.StringUtil
+import net.dankito.ksoup.jvm.Charset
 import net.dankito.ksoup.jvm.JavaIoReaderWrapper
+import net.dankito.ksoup.jvm.asJvmCharset
 import net.dankito.ksoup.nodes.*
 import net.dankito.ksoup.parser.Parser
 import net.dankito.ksoup.select.Elements
@@ -12,7 +14,6 @@ import java.io.*
 import java.nio.Buffer
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
-import java.nio.charset.Charset
 import java.nio.charset.IllegalCharsetNameException
 import java.util.*
 import java.util.zip.GZIPInputStream
@@ -28,7 +29,7 @@ object DataUtil {
     private val illegalCharsetCharacters = "[\"']".toRegex()
 
     val UTF_8: Charset = Charset.forName("UTF-8") // Don't use StandardCharsets, as those only appear in Android API 19, and we target 10.
-    val defaultCharsetName: String = UTF_8.name() // used if not found in header or meta charset
+    val defaultCharsetName: String = UTF_8.name // used if not found in header or meta charset
     private const val firstReadBufferSize = 1024 * 5
     const val bufferSize = 1024 * 32
     private val mimeBoundaryChars = "-_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray()
@@ -145,7 +146,7 @@ object DataUtil {
 
             if (foundCharsetName == null) { // determine from meta. safe first parse as UTF-8
                 try {
-                    val defaultDecoded: CharBuffer = UTF_8.decode(firstBytes)
+                    val defaultDecoded: CharBuffer = UTF_8.asJvmCharset().decode(firstBytes)
                     if (defaultDecoded.hasArray()) {
                         val reader = CharArrayReader(defaultDecoded.array(), defaultDecoded.arrayOffset(), defaultDecoded.limit())
                         doc = parser.parseInput(JavaIoReaderWrapper(reader), baseUri)
@@ -187,8 +188,11 @@ object DataUtil {
             }
 
             if (doc == null) {
-                if (foundCharsetName == null) foundCharsetName = defaultCharsetName
-                val reader = BufferedReader(InputStreamReader(input, Charset.forName(foundCharsetName)), bufferSize) // Android level does not allow us try-with-resources
+                if (foundCharsetName == null) {
+                    foundCharsetName = defaultCharsetName
+                }
+
+                val reader = BufferedReader(InputStreamReader(input, Charset.forName(foundCharsetName).asJvmCharset()), bufferSize) // Android level does not allow us try-with-resources
 
                 reader.use {
                     if (bomCharset != null && bomCharset.offset) { // creating the buffered reader ignores the input pos, so must skip here
@@ -259,13 +263,19 @@ object DataUtil {
     }
 
     private fun validateCharset(cs: String?): String? {
-        var cs: String? = cs
-        if (cs == null || cs.length == 0) return null
-        cs = cs.trim({ it <= ' ' }).replace("[\"']".toRegex(), "")
+        if (cs.isNullOrEmpty()) {
+            return null
+        }
+
+        var cs = cs.trim().replace("[\"']".toRegex(), "")
         try {
-            if (Charset.isSupported(cs)) return cs
+            if (Charset.isSupported(cs)) {
+                return cs
+            }
             cs = cs.uppercase()
-            if (Charset.isSupported(cs)) return cs
+            if (Charset.isSupported(cs)) {
+                return cs
+            }
         } catch (e: IllegalCharsetNameException) {
             // if our this charset matching fails.... we just take the default
         }

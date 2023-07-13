@@ -4,10 +4,11 @@ import net.dankito.ksoup.Jsoup
 import net.dankito.ksoup.integration.servlets.FileServlet
 import net.dankito.ksoup.integration.servlets.SlowRider
 import net.dankito.ksoup.internal.ConstrainableInputStream
+import net.dankito.ksoup.jvm.Charsets
+import net.dankito.ksoup.jvm.String
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.net.SocketTimeoutException
-import java.nio.charset.StandardCharsets
 
 /**
  * Failsafe integration tests for Connect methods. These take a bit longer to run, so included as Integ, not Unit, tests.
@@ -112,7 +113,7 @@ class ConnectIT {
                 stream.mark(bufferSize)
                 val firstBytes = stream.readToByteBuffer(bufferSize)
                 val array = firstBytes.array()
-                val firstText = String(array, StandardCharsets.UTF_8)
+                val firstText = String(array, Charsets.UTF_8)
                 Assertions.assertTrue(firstText.startsWith("<html><head><title>Large"))
                 Assertions.assertEquals(bufferSize, array.size)
                 val fullyRead = stream.read() == -1
@@ -123,7 +124,7 @@ class ConnectIT {
                 val fullRead = stream.readToByteBuffer(0)
                 val fullArray = fullRead.array()
                 Assertions.assertEquals(capSize, fullArray.size)
-                val fullText = String(fullArray, StandardCharsets.UTF_8)
+                val fullText = String(fullArray, Charsets.UTF_8)
                 Assertions.assertTrue(fullText.startsWith(firstText))
             }
     }
@@ -141,7 +142,7 @@ class ConnectIT {
             stream.mark(bufferSize)
             val firstBytes = stream.readToByteBuffer(bufferSize)
             val array = firstBytes.array()
-            val firstText = String(array, StandardCharsets.UTF_8)
+            val firstText = String(array, Charsets.UTF_8)
             Assertions.assertTrue(firstText.startsWith("<html><head><title>Large"))
             Assertions.assertEquals(bufferSize, array.size)
 
@@ -150,7 +151,7 @@ class ConnectIT {
             val fullRead = stream.readToByteBuffer(0)
             val fullArray = fullRead.array()
             Assertions.assertEquals(280735, fullArray.size)
-            val fullText = String(fullArray, StandardCharsets.UTF_8)
+            val fullText = String(fullArray, Charsets.UTF_8)
             Assertions.assertTrue(fullText.startsWith(firstText))
         }
     }

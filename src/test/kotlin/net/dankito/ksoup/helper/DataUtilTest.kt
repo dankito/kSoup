@@ -6,12 +6,13 @@ import net.dankito.ksoup.helper.DataUtil.mimeBoundary
 import net.dankito.ksoup.helper.DataUtil.parseInputStream
 import net.dankito.ksoup.helper.DataUtil.readToByteBuffer
 import net.dankito.ksoup.integration.ParseTest
+import net.dankito.ksoup.jvm.Charset
+import net.dankito.ksoup.jvm.Charsets
+import net.dankito.ksoup.jvm.toByteArray
 import net.dankito.ksoup.parser.Parser.Companion.htmlParser
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.io.*
-import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 
 class DataUtilTest {
@@ -36,7 +37,7 @@ class DataUtilTest {
     }
 
     private fun stream(data: String): InputStream {
-        return ByteArrayInputStream(data.toByteArray(StandardCharsets.UTF_8))
+        return ByteArrayInputStream(data.toByteArray(Charsets.UTF_8))
     }
 
     private fun stream(data: String, charset: String): InputStream {
@@ -55,7 +56,7 @@ class DataUtilTest {
         val html = "\uFEFF<html><head><title>One</title></head><body>Two</body></html>"
         val doc = parseInputStream(stream(html), null, "http://foo.com/", htmlParser())
         Assertions.assertEquals("One", doc.head().text())
-        Assertions.assertEquals("UTF-8", doc.outputSettings().charset()!!.displayName())
+        Assertions.assertEquals("UTF-8", doc.outputSettings().charset()!!.displayName)
     }
 
     @Test
@@ -167,9 +168,7 @@ class DataUtilTest {
 
     @Test
     fun noExtraNULLBytes() {
-        val b = "<html><head><meta charset=\"UTF-8\"></head><body><div><u>ü</u>ü</div></body></html>".toByteArray(
-            StandardCharsets.UTF_8
-        )
+        val b = "<html><head><meta charset=\"UTF-8\"></head><body><div><u>ü</u>ü</div></body></html>".toByteArray(Charsets.UTF_8)
         val doc = parse(ByteArrayInputStream(b), null, "")
         Assertions.assertFalse(doc.outerHtml().contains("\u0000"))
     }
@@ -191,9 +190,8 @@ class DataUtilTest {
         val soup: InputStream = ByteArrayInputStream(
             ("<?xml version=\"1.0\" encoding=\"iso-8859-1\"?>" +
                     "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">" +
-                    "<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">Hellö Wörld!</html>").toByteArray(
-                Charset.forName(encoding)
-            )
+                    "<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" xml:lang=\"en\">Hellö Wörld!</html>")
+                .toByteArray(Charset.forName(encoding))
         )
         val doc = parse(soup, null, "")
         Assertions.assertEquals("Hellö Wörld!", doc.body().text())

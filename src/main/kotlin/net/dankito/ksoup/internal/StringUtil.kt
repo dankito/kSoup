@@ -239,7 +239,7 @@ object StringUtil {
         }
     }
 
-    const val MIN_SUPPLEMENTARY_CODE_POINT = 65536
+    const val MinSupplementaryCodePoint = 65536 // = all codepoints for which two bytes are not sufficient to encode them
 
     /**
      * Determines the number of char values needed to represent the specified character (Unicode code point). If the specified character is equal to or greater than 0x10000, then the method returns 2. Otherwise, the method returns 1.
@@ -249,7 +249,8 @@ object StringUtil {
      * @return 2 if the character is a valid supplementary character; 1 otherwise.
      */
     fun charCount(codePoint: Int): Int {
-        return if (codePoint >= MIN_SUPPLEMENTARY_CODE_POINT) 2 else 1
+        // in Java a Char is a 16 bit value -> below MinSupplementaryCodePoint only one Char instance is needed to encode a character
+        return if (codePoint >= MinSupplementaryCodePoint) 2 else 1
     }
 
     fun toChars(codePoint: Int): CharArray {
