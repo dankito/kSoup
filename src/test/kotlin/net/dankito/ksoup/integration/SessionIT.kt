@@ -4,11 +4,11 @@ import net.dankito.ksoup.Jsoup.newSession
 import net.dankito.ksoup.UncheckedIOException
 import net.dankito.ksoup.integration.servlets.FileServlet
 import net.dankito.ksoup.integration.servlets.SlowRider
+import net.dankito.ksoup.jvm.AtomicInt
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import net.dankito.ksoup.jvm.IOException
-import java.util.concurrent.atomic.AtomicInteger
 
 /** Integration tests to test longer running Connection  */
 class SessionIT {
@@ -94,8 +94,8 @@ class SessionIT {
     }
 
     internal class ThreadCatcher : Thread.UncaughtExceptionHandler {
-        var exceptionCount = AtomicInteger()
-        var multiThreadExceptions = AtomicInteger()
+        var exceptionCount = AtomicInt()
+        var multiThreadExceptions = AtomicInt()
         override fun uncaughtException(t: Thread, e: Throwable) {
             if (e is IllegalArgumentException && e.message!!.contains("Multiple threads")) multiThreadExceptions.incrementAndGet() else e.printStackTrace()
             exceptionCount.incrementAndGet()

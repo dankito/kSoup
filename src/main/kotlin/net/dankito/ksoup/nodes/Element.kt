@@ -4,12 +4,12 @@ import net.dankito.ksoup.helper.ChangeNotifyingArrayList
 import net.dankito.ksoup.helper.Validate
 import net.dankito.ksoup.internal.Normalizer
 import net.dankito.ksoup.internal.StringUtil
+import net.dankito.ksoup.jvm.AtomicBoolean
 import net.dankito.ksoup.jvm.ImmutableList
+import net.dankito.ksoup.jvm.WeakReference
 import net.dankito.ksoup.parser.Tag
 import net.dankito.ksoup.parser.TokenQueue
 import net.dankito.ksoup.select.*
-import java.lang.ref.WeakReference
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.collections.LinkedHashSet
 
 /**
@@ -1352,6 +1352,7 @@ open class Element @JvmOverloads constructor(private var tag: Tag, baseUri: Stri
      */
     fun hasText(): Boolean {
         val hasText = AtomicBoolean(false)
+
         filter(GenericNodeFilter { node ->
             if (node is TextNode && node.isNotBlank) {
                 hasText.set(true)

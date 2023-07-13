@@ -3,6 +3,7 @@ package net.dankito.ksoup.nodes
 import net.dankito.ksoup.Jsoup
 import net.dankito.ksoup.TextUtil
 import net.dankito.ksoup.helper.ValidationException
+import net.dankito.ksoup.jvm.AtomicInt
 import net.dankito.ksoup.parser.ParseSettings
 import net.dankito.ksoup.parser.Parser
 import net.dankito.ksoup.parser.Tag
@@ -11,7 +12,6 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import java.util.concurrent.atomic.AtomicInteger
 
 
 /**
@@ -1843,7 +1843,7 @@ class ElementTest {
         val doc = Jsoup.parse("<div><p>One<p>Two<p>Three")
         val div = doc.selectFirst("div")
         Assertions.assertNotNull(div)
-        val counter = AtomicInteger(0)
+        val counter = AtomicInt(0)
         val div2 = div!!.traverse(object : NodeVisitor {
             override fun head(node: Node, depth: Int) {
                 counter.incrementAndGet()
@@ -1860,7 +1860,7 @@ class ElementTest {
         val doc = Jsoup.parse("<div><p>One<p>Two<p>Three")
         val div = doc.selectFirst("div")
         Assertions.assertNotNull(div)
-        val counter = AtomicInteger(0)
+        val counter = AtomicInt(0)
         val div2 = div!!.traverse(GenericNodeVisitor.jvmNodeVisitor { node: Node? -> counter.incrementAndGet() })
         Assertions.assertEquals(7, counter.get())
         Assertions.assertEquals(div2, div)
