@@ -120,3 +120,13 @@ tasks.named<Test>("jvmTest") {
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     }
 }
+
+
+
+ext["projectDescription"] = "Port of the popular Jsoup library for Kotlin Multiplatform"
+ext["sourceCodeRepositoryBaseUrl"] = "github.com/dankito/kSoup"
+
+val publishingScript = File(File(project.gradle.gradleUserHomeDir, "scripts"), "publish-dankito.gradle.kts")
+if (publishingScript.exists()) {
+    apply(from = publishingScript)
+}
