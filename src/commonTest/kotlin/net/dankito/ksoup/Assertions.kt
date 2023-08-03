@@ -10,7 +10,7 @@ object Assertions {
 
         list1.forEachIndexed { index, firstElement ->
             val secondElement = list2[index]
-            assertEquals(firstElement, secondElement, "At index $index element of first List ($firstElement) does not equal element of second list ($secondElement)")
+            assertEquals(firstElement, secondElement, "At index $index element of first List ($firstElement) does not equal element of second List ($secondElement)")
         }
     }
 
